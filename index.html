@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>SwipeShop</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div class="phone-frame">
+        <!-- Top bar -->
+        <div class="top-bar">
+            <span id="category-name">Fashion</span>
+            <button id="search-btn">🔍</button>
+        </div>
+
+        <!-- Vertical scroll container -->
+        <div class="vertical-scroll" id="verticalScroll">
+            <!-- JS will inject .item-panel slides here -->
+        </div>
+
+        <!-- side buttons -->
+        <div class="side-buttons">
+            <button>❤️</button>
+            <button>🛒</button>
+            <button>🔗</button>
+            <button id="info-btn">ℹ️</button>
+        </div>
+
+        <!-- Title / Serial / Price -->
+        <div class="title-section">
+            <div id="item-title">Title</div>
+            <div id="item-serial">#0000</div>
+            <div id="item-price">KES 0</div>
+        </div>
+
+        <!-- Bottom nav -->
+        <div class="nav-bar">
+            <button>🏠</button>
+            <button>👤</button>
+            <button>🛒</button>
+        </div>
+    </div>
+
+    <!-- Info popup -->
+    <div id="info-popup" class="popup hidden">
+        <div class="popup-content">
+            <p id="popup-description"></p>
+            <button onclick="closeInfo()">Close</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
