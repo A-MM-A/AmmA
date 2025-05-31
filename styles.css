@@ -41,12 +41,12 @@ body {
     position: relative;
     width: 100%;
     max-width: var(--max-w);
-    height: 100vh;
+    height: 90vh;
     margin: auto;
     display: flex;
     flex-direction: column;
     background: var(--muted);
-    border-radius: 1rem;
+    /* border-radius: 1rem; */
     overflow: hidden;
 }
 
@@ -276,9 +276,9 @@ body {
     align-items: center;
     justify-content:space-around;
 }
-.side-buttons button:hover {
+/* .side-buttons button:hover {
     box-shadow: 0 6px 6px -5px rgba(0, 0, 0, 0.6);
-}
+} */
 
 
 
