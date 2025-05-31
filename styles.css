@@ -41,7 +41,7 @@ body {
     position: relative;
     width: 100%;
     max-width: var(--max-w);
-    height: 100vh;
+    height: 100dvh;
     /* stretch entire viewport height */
     margin: auto;
     display: flex;
@@ -339,23 +339,19 @@ body {
 /* navigation bar */
 
 .nav-bar {
-
     justify-content: space-around;
     flex: 0 0 auto;
     position: absolute;
-    /* float over the blur */
     bottom: var(--pad);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: var(--pad);
     background: rgba(0, 0, 0, 0.5);
-    /* semi‑transparent black pill */
     padding: 8px 12px;
     border-radius: 40px;
     z-index: 5;
     min-width: 80%;
-    /* stretch most of the phone width */
     max-width: 400px;
 }
 
@@ -385,7 +381,7 @@ body {
     padding: 2px;
     border-radius: 999px;
     pointer-events: none;
-    
+
 }
 
 .cart-badge.hidden {
