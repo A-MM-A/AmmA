@@ -11,11 +11,11 @@
 <body>
     <div class="phone-frame">
         <!-- Top bar -->
+
         <div class="top-bar">
             <span id="category-name">Fashion</span>
-            <button id="search-btn">🔍</button>
+            <button id="search-btn"><img class="svg" src="icons/search-line.svg" alt="Search"></button>
         </div>
-
         <!-- Vertical scroll container -->
         <div class="vertical-scroll" id="verticalScroll">
             <!-- JS will inject .item-panel slides here -->
@@ -23,10 +23,20 @@
 
         <!-- side buttons -->
         <div class="side-buttons">
-            <button>❤️</button>
-            <button>🛒</button>
-            <button>🔗</button>
-            <button id="info-btn">ℹ️</button>
+            <button onclick="toggleIcon(this)">
+                <img class="svg" src="icons/heart-line.svg" data-default="icons/heart-line.svg"
+                    data-active="icons/heart-fill.svg" alt="Like">
+            </button>
+            <button onclick="toggleIcon(this)">
+                <img class="svg" src="icons/shopping-cart-line.svg" data-default="icons/shopping-cart-line.svg"
+                    data-active="icons/shopping-cart-fill.svg" alt="Add to Cart">
+            </button>
+            <button id="info-btn">
+                <img class="svg" src="icons/list-view.svg" alt="Info">
+            </button>
+            <button>
+                <img class="svg" src="icons/share-forward-line.svg" alt="Share">
+            </button>
         </div>
 
         <!-- Title / Serial / Price -->
@@ -38,9 +48,16 @@
 
         <!-- Bottom nav -->
         <div class="nav-bar">
-            <button>🏠</button>
-            <button>👤</button>
-            <button>🛒</button>
+            <button>
+                <img class="svg" src="icons/user-line.svg" alt="Account">
+            </button>
+            <button style="box-shadow: 0 6px 3px -3px rgb(0, 128, 255);">
+                <img class="svg" src="icons/home-fill.svg" alt="Home">
+            </button>
+            <button>
+                <img class="svg" src="icons/shopping-cart-line.svg" alt="Checkout">
+                <span class="cart-badge hidden" data-count="0"></span>
+            </button>
         </div>
     </div>
 
@@ -53,6 +70,24 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        function toggleIcon(button) {
+            const img = button.querySelector('img');
+            const defaultSrc = img.getAttribute('data-default');
+            const activeSrc = img.getAttribute('data-active');
+
+            // Toggle the image source
+            if (img.src.endsWith(defaultSrc)) {
+                img.src = activeSrc;
+            } else {
+                img.src = defaultSrc;
+            }
+        }
+
+
+        
+
+    </script>
 </body>
 
 </html>

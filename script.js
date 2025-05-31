@@ -1,300 +1,361 @@
-// document.addEventListener("DOMContentLoaded", () => {
-//   // Utility: pad numbers (e.g. 1 → "01")
-//   function zeroPad(num, length = 2) {
-//     return String(num).padStart(length, "0");
-//   }
 
-//   
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
+//                                                                 scrolling system
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
 
-//   let currentItemIndex = 0;
-//   let currentVersionIndex = 0;
-
-//   // Cache elements
-//   const itemContainer = document.getElementById("item-container");
-//   const itemTitle     = document.getElementById("item-title");
-//   const itemSerial    = document.getElementById("item-serial");
-//   const itemPrice     = document.getElementById("item-price");
-//   const popup         = document.getElementById("info-popup");
-//   const popupDesc     = document.getElementById("popup-description");
-
-//   // Render current item + version
-//   function renderItem() {
-//     const item    = items[currentItemIndex];
-//     const version = item.versions[currentVersionIndex];
-//     const versionCode = zeroPad(currentVersionIndex + 1);
-//     const fullSerial  = item.baseSerial + versionCode;       // e.g. "FT01" + "01"
-//     const imgPath     = `assets/${fullSerial}.jpg`;
-
-//     // Inject blurred bg + fg image
-//     itemContainer.innerHTML = `
-//       <div class="item-view">
-//         <div class="bg" style="background-image:url('${imgPath}')"></div>
-//         <img class="fg" src="${imgPath}"
-//              alt="${item.title} — ${version}"
-//              onerror="this.onerror=null;this.src='assets/placeholder.png';"/>
-//       </div>`;
-
-//     itemTitle.innerText  = item.title;
-//     itemSerial.innerText = "#" + fullSerial;
-//     itemPrice.innerText  = item.price;
-//   }
-
-//   
-
-//   // Swipe handling (shared for touch & mouse)
-//   let startX = 0, startY = 0, isMouseDown = false;
-
-//   function handleStart(x, y) {
-//     startX = x; startY = y;
-//   }
-
-//   function handleEnd(x, y) {
-//     const dx = x - startX, dy = y - startY;
-//     if (Math.abs(dy) > Math.abs(dx)) {
-//       // Vertical swipe → change item
-//       if (dy < -30) {
-//         currentItemIndex = (currentItemIndex + 1) % items.length;
-//         currentVersionIndex = 0;
-//       } else if (dy > 30) {
-//         currentItemIndex = (currentItemIndex - 1 + items.length) % items.length;
-//         currentVersionIndex = 0;
-//       }
-//     } else {
-//       // Horizontal swipe → change version
-//       const vCount = items[currentItemIndex].versions.length;
-//       if (dx < -30) {
-//         currentVersionIndex = (currentVersionIndex + 1) % vCount;
-//       } else if (dx > 30) {
-//         currentVersionIndex = (currentVersionIndex - 1 + vCount) % vCount;
-//       }
-//     }
-//     renderItem();
-//   }
-
-//   // Touch events
-//   itemContainer.addEventListener("touchstart", e =>
-//     handleStart(e.touches[0].clientX, e.touches[0].clientY)
-//   );
-//   itemContainer.addEventListener("touchend", e =>
-//     handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
-//   );
-
-//   // Mouse events
-//   itemContainer.addEventListener("mousedown", e => {
-//     isMouseDown = true;
-//     handleStart(e.clientX, e.clientY);
-//   });
-//   window.addEventListener("mouseup", e => {
-//     if (!isMouseDown) return;
-//     isMouseDown = false;
-//     handleEnd(e.clientX, e.clientY);
-//   });
-
-//   // First draw
-//   renderItem();
-// });
-
-
-
-
-
-
-
-
-// Track the centered item & version
+// Track which item panel & which version are centered
 let currentPanelIndex = 0;
 let currentVersionIndex = 0;
 
-
-
 document.addEventListener("DOMContentLoaded", () => {
-    const items = [
+    // —————————————————————————
+    // 1) Raw product data (unsorted)
+    //    Serial: [Cat][Gender][XXX][VV], e.g. "FMA00101.jpg"
+    // —————————————————————————
+    const rawItems = [
         {
-            title: "Men's Jacket", baseSerial: "FT01", price: "KES 1500",
+            title: "Men's Jacket",
+            baseSerial: "FMA001",      
+            price: "KES 1500",
             description: "Slim-fit classic jacket for cold.",
-            versions: ["FT0101.jpg", "FT0102.jpg"]
+            versions: ["FMA00101.jpg", "FMA00102.jpg"]
         },
         {
-            title: "Jeans", baseSerial: "FT02", price: "KES 800",
+            title: "Jeans",
+            baseSerial: "FMA002",
+            price: "KES 800",
             description: "Stylish blue jeans for men.",
-            versions: ["FT0201.jpg", "FT0202.jpg", "FT0203.jpg"]
+            versions: ["FMA00201.jpg", "FMA00202.jpg", "FMA00203.jpg"]
         },
         {
-            title: "Elegant Top", baseSerial: "FT03", price: "KES 3000",
+            title: "Elegant Top",
+            baseSerial: "FMA003",      
+            price: "KES 3000",
             description: "Perfect for parties and formal events.",
-            versions: ["FT0301.jpg", "FT0302.jpg", "FT0303.jpg"]
+            versions: ["FMA00301.jpg", "FMA00302.jpg", "FMA00303.jpg"]
+        },
+        {
+            title: "Trend Jacket Pants",
+            baseSerial: "FMA004",
+            price: "KES 2000",
+            description: "Spring/fall zipper pants.",
+            versions: ["FMA00401.jpg", "FMA00402.jpg", "FMA00403.jpg", "FMA00404.jpg", "FMA00405.jpg"]
+        },
+        {
+            title: "M",
+            baseSerial: "FMA005",      
+            price: "KES 3000",
+            description: "Perfect for parties and formal events.",
+            versions: ["FMA00501.jpg", "FMA00502.jpg", "FMA00503.jpg"]
+        },
+        {
+            title: "Elegant Top",
+            baseSerial: "FMA006",      
+            price: "KES 3000",
+            description: "Perfect for parties and formal events.",
+            versions: ["FMA00601.jpg", "FMA00602.jpg", "FMA00603.jpg"]
+        },
+        {
+            title: "Elegant Top",
+            baseSerial: "FFA001",      
+            price: "KES 3000",
+            description: "Perfect for parties and formal events.",
+            versions: ["FFA00101.jpg", "FFA00102.jpg", "FFA00103.jpg"]
+        },
+        {
+            title: "Elegant Top",
+            baseSerial: "FFA002",      
+            price: "KES 3000",
+            description: "Perfect for parties and formal events.",
+            versions: ["FFA00201.jpg", "FFA00202.jpg", "FFA00203.jpg"]
         }
     ];
 
+    // —————————————————————————
+    // 2) Recommendation algorithm
+    //    Scores items by browse, like, cart; sorts descending
+    //    Then appends 2 random others for diversification
+    // —————————————————————————
+    function computeScore(meta) {
+        const WEIGHTS = { browse: 1, like: 3, cart: 5 };
+        return (meta.browseCount || 0) * WEIGHTS.browse
+            + (meta.liked ? 1 : 0) * WEIGHTS.like
+            + (meta.inCart ? 1 : 0) * WEIGHTS.cart;
+    }
+    function recommend(items) {
+        // Attach dummy metadata if missing
+        items.forEach(it => {
+            it.meta = it.meta || { browseCount: 0, liked: false, inCart: false };
+            it.score = computeScore(it.meta);
+        });
+        // Sort by score descending
+        items.sort((a, b) => b.score - a.score);
+
+        // Diversify: take top N-2, then 2 random from the rest
+        const N = items.length;
+        const main = items.slice(0, N - 2);
+        const other = items.slice(N - 2);
+        // shuffle 'other'
+        for (let i = other.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [other[i], other[j]] = [other[j], other[i]];
+        }
+        return main.concat(other.slice(0, 2));
+    }
+    let itemsOrdered = recommend(rawItems);
+
     const vContainer = document.getElementById("verticalScroll");
 
-    // Build the panels
-    items.forEach((item, i) => {
-        const panel = document.createElement("div");
-        panel.className = "item-panel";
+    // —————————————————————————
+    // 3) build panels
+    // —————————————————————————
+    function buildPanels() {
+        vContainer.innerHTML = ""; // clear existing
+        itemsOrdered.forEach(item => {
+            const panel = document.createElement("div");
+            panel.className = "item-panel";
+            const h = document.createElement("div");
+            h.className = "horizontal-scroll";
+            const pag = document.createElement("div"); pag.className = "pagination";
+            const idxDisp = document.createElement("div"); idxDisp.className = "index-display";
+            idxDisp.style.opacity = 0;
 
-        // Nested horizontal
-        const h = document.createElement("div");
-        h.className = "horizontal-scroll";
-        // inject versions
-        item.versions.forEach((imgFile, vi) => {
-            const vp = document.createElement("div");
-            vp.className = "version-panel";
+            item.versions.forEach((imgFile, vIdx) => {
+                const vp = document.createElement("div"); vp.className = "version-panel";
+                vp.style.setProperty("--bgUrl", `url("assets/${imgFile}")`);
+                const imgEl = document.createElement("img");
+                imgEl.src = `assets/${imgFile}`; imgEl.onerror = () => imgEl.src = "assets/placeholder.png";
+                vp.appendChild(imgEl);
+                h.appendChild(vp);
 
+                const dot = document.createElement("span"); dot.className = "dot";
+                if (vIdx === 0) dot.classList.add("active");
+                pag.appendChild(dot);
+            });
 
-            // 1) set the CSS variable for the blurred bg
-            const imgSrc = `assets/${imgFile}`;
-            vp.style.setProperty('--bgUrl', `url("${imgSrc}")`);
-
-            // 2) create the <img>
-            const img = document.createElement("img");
-            img.src = imgSrc;
-            img.onerror = () => img.src = "assets/placeholder.png";
-
-
-            vp.appendChild(img);
-            h.appendChild(vp);
+            idxDisp.innerText = `1/${item.versions.length}`;
+            panel.append(h, pag, idxDisp);
+            vContainer.appendChild(panel);
         });
 
-        panel.appendChild(h);
-        vContainer.appendChild(panel);
-    });
+        document.querySelectorAll(".horizontal-scroll").forEach(hs => {
+            hs.removeEventListener("scroll", updateInfo);
+            hs.addEventListener("scroll", updateInfo);
+            makeDraggableScroll(hs, false, 3);
+        });
 
-    // Helper to update bottom info
+        // document.querySelectorAll(".horizontal-scroll").forEach(hs => {
+        //     hs.addEventListener("scroll", () => {
+        //         // immediate dot/index update
+        //         updateInfo();
+        //     });
+        // });
+    }
+
+    // —————————————————————————
+    // 4) Cache bottom‐info elements
+    // —————————————————————————
     const titleEl = document.getElementById("item-title");
     const serialEl = document.getElementById("item-serial");
     const priceEl = document.getElementById("item-price");
 
+
+    // —————————————————————————
+    // 5) updateInfo(): center detection, UI update, dots & index display
+    // —————————————————————————
     function updateInfo() {
         const panels = Array.from(document.querySelectorAll(".item-panel"));
-        const midY = window.innerHeight / 2;
-        let currentIdx = 0;
-
-        panels.forEach((panel, idx) => {
-            const rect = panel.getBoundingClientRect();
-            if (rect.top <= midY && rect.bottom >= midY) {
-                currentIdx = idx;
-            }
+        const midY = window.innerHeight / 2; let pIdx = 0;
+        panels.forEach((p, i) => {
+            const r = p.getBoundingClientRect();
+            if (r.top <= midY && r.bottom >= midY) pIdx = i;
         });
 
-        // within that panel, find center version
-        const versionPanels = panels[currentIdx].querySelectorAll(".version-panel");
-        const hScroll = panels[currentIdx].querySelector(".horizontal-scroll");
-        const midX = window.innerWidth / 2;
-        let verIdx = 0;
-
-        versionPanels.forEach((vp, i) => {
+        const vPanels = panels[pIdx].querySelectorAll(".version-panel");
+        const midX = window.innerWidth / 2; let vIdx = 0;
+        vPanels.forEach((vp, i) => {
             const r = vp.getBoundingClientRect();
-            if (r.left <= midX && r.right >= midX) {
-                verIdx = i;
-            }
+            if (r.left <= midX && r.right >= midX) vIdx = i;
         });
 
-        // Save the indices for showInfo()
-        currentPanelIndex = currentIdx;
-        currentVersionIndex = verIdx;
+        currentPanelIndex = pIdx;
+        currentVersionIndex = vIdx;
 
-        // Update UI text
-        const item = items[currentIdx];
-        const vnum = String(verIdx + 1).padStart(2, "0");
-        document.getElementById("item-title").innerText = item.title;
-        document.getElementById("item-serial").innerText = `#${item.baseSerial}${vnum}`;
-        document.getElementById("item-price").innerText = item.price;
+        // bottom info
+        const item = itemsOrdered[pIdx];
+        const verNum = String(vIdx + 1).padStart(2, "0");
+        titleEl.innerText = item.title;
+        serialEl.innerText = `#${item.baseSerial}${verNum}`;
+        priceEl.innerText = item.price;
+
+        // update dots
+        const dots = panels[pIdx].querySelectorAll(".dot");
+        dots.forEach((d, i) => d.classList.toggle("active", i === vIdx));
+
+        // show & fade index display
+        const idxEl = panels[pIdx].querySelector(".index-display");
+        idxEl.innerText = `${vIdx + 1}/${item.versions.length}`;
+        idxEl.style.opacity = 1;
+        clearTimeout(idxEl._timeout);
+        idxEl._timeout = setTimeout(() => idxEl.style.opacity = 0, 1200);
     }
 
-    // Grab the Info button and wire it
-    const infoBtn = document.getElementById("info-btn");
-    infoBtn.addEventListener("click", () => {
-        // Get the description for the current panel
-        const desc = items[currentPanelIndex].description;
-        document.getElementById("popup-description").innerText = desc;
-        document.getElementById("info-popup").classList.remove("hidden");
-    });
-
-    // And wire the Close button
+    // —————————————————————————
+    // 6) Info popup wiring
+    // —————————————————————————
+    document.getElementById("info-btn")
+        .addEventListener("click", () => {
+            const desc = itemsOrdered[currentPanelIndex].description;
+            document.getElementById("popup-description").innerText = desc;
+            document.getElementById("info-popup").classList.remove("hidden");
+        });
     document.querySelector("#info-popup .popup-content button")
         .addEventListener("click", () => {
             document.getElementById("info-popup").classList.add("hidden");
         });
 
-
-    // Listen to scroll end (debounced)
-    let timeout;
+    // —————————————————————————
+    // 7) Scroll listeners (debounced)
+    // —————————————————————————
+    let scrollTimeout;
     vContainer.addEventListener("scroll", () => {
-        clearTimeout(timeout);
-        timeout = setTimeout(updateInfo, 100);
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateInfo, 100);
     });
-    // Also listen on each horizontal
-    document.querySelectorAll(".horizontal-scroll").forEach(hs => {
-        hs.addEventListener("scroll", () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(updateInfo, 100);
-        });
-    });
-    // Helper: make a scroll container draggable with mouse
-    /**
-  * Enable click‑and‑drag to scroll, with adjustable sensitivity.
-  * @param {HTMLElement} container ‑ the scrollable element
-  * @param {boolean} isVertical ‑ true for vertical‑only, false for horizontal
-  * @param {number} speedFactor ‑ how much to multiply the drag distance
-  */
-    function makeDraggableScroll(container, isVertical, speedFactor = 2) {
-        let isDown = false;
-        let startX, startY, scrollLeft, scrollTop;
 
+
+    // —————————————————————————
+    // 8) Draggable scroll helper (mouse & touch support)
+    // —————————————————————————
+    function makeDraggableScroll(container, isVertical, speed = 2) {
+        let down = false, startX, startY, sL, sT;
         container.addEventListener("mousedown", e => {
-            isDown = true;
-            container.classList.add("dragging");
-            startX = e.pageX;
-            startY = e.pageY;
-            scrollLeft = container.scrollLeft;
-            scrollTop = container.scrollTop;
+            down = true; container.classList.add("dragging");
+            startX = e.pageX; startY = e.pageY;
+            sL = container.scrollLeft; sT = container.scrollTop;
             e.preventDefault();
         });
-
         window.addEventListener("mouseup", () => {
-            if (!isDown) return;
-            isDown = false;
+            if (!down) return; down = false;
             container.classList.remove("dragging");
         });
-
         container.addEventListener("mousemove", e => {
-            if (!isDown) return;
-            const dx = e.pageX - startX;
-            const dy = e.pageY - startY;
-            if (isVertical) {
-                // amplify the vertical drag
-                container.scrollTop = scrollTop - dy * speedFactor;
-            } else {
-                // amplify the horizontal drag
-                container.scrollLeft = scrollLeft - dx * speedFactor;
-            }
+            if (!down) return;
+            const dx = e.pageX - startX, dy = e.pageY - startY;
+            if (isVertical) container.scrollTop = sT - dy * speed;
+            else container.scrollLeft = sL - dx * speed;
             e.preventDefault();
         });
-
-        // Prevent native image dragging
         container.addEventListener("dragstart", e => e.preventDefault());
     }
-
-    // Usage: after your scroll setup
-    // 2× speed on vertical scroll:
     makeDraggableScroll(vContainer, true, 3);
-    // 3× speed on each horizontal:
-    document.querySelectorAll(".horizontal-scroll").forEach(hs => {
-        makeDraggableScroll(hs, false, 3);
-    });
+    document.querySelectorAll(".horizontal-scroll")
+        .forEach(hs => makeDraggableScroll(hs, false, 3));
 
-    updateInfo();  // initial
-    // Info popup functions
-    window.showInfo = () => {
-        const desc = items[currentPanelIndex].description;
-        document.getElementById("popup-description").innerText = desc;
-        document.getElementById("info-popup").classList.remove("hidden");
-    };
+    // —————————————————————————
+    // 9) Initial render & random
+    // —————————————————————————
+    shuffle(itemsOrdered);
+    buildPanels();
+    updateInfo();
 
-    window.closeInfo = () => {
-        document.getElementById("info-popup").classList.add("hidden");
-    };
 
+    // —————————————————————————
+    // 10) Re-Loading animation
+    // —————————————————————————
+
+
+
+
+
+
+
+
+
+    // Helper to shuffle an array
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.random() * (i + 1) | 0;
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+    }
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
+//                                                                 cart system
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
+// Automatically adds commas like 1,000
+function formatNumberWithCommas(number) {
+    return number.toLocaleString();
+}
+// Automatically adds '/=' like 1,000/=
+function formatKESAmount(number) {
+    return `${number.toLocaleString()} /=`;
+}
+// update any changes
+function updateCartCount(count) {
+    const badge = document.querySelector('.cart-badge');
+
+    // Save raw number in data-count for future math
+    badge.dataset.count = count;
+
+    if (count <= 0) {
+        badge.classList.add('hidden');
+        badge.textContent = '';
+        badge.dataset.count = '0';
+        return;
+    }
+    badge.classList.remove('hidden');
+
+    // Show if over limit
+    const cartlimit = 100000;
+
+    if (count > cartlimit) {
+        badge.textContent = `${cartlimit.toLocaleString()}+ /=`;;
+    } else {
+        badge.textContent = formatKESAmount(count);
+    }
+
+}
+// adds value to cart
+function addToCartCount(amount) {
+    const badge = document.querySelector('.cart-badge');
+
+    // Get the current count from data attribute
+    let current = parseInt(badge.dataset.count || '0', 10);
+    let newCount = current + amount;
+
+    updateCartCount(newCount);
+}
+// removes value from cart
+function removeFromCartCount(amount) {
+    const badge = document.querySelector('.cart-badge');
+
+    // Get the current count from data attribute
+    let current = parseInt(badge.dataset.count || '0', 10);
+    let newCount = current - amount;
+
+    updateCartCount(newCount);
+}
+
+//  testing code
+updateCartCount(32000);
+addToCartCount(57482);
+removeFromCartCount(7482);
