@@ -22,28 +22,18 @@
         </div>
 
         <!-- side buttons -->
-        <div class="side-buttons">
-            <button onclick="toggleIcon(this)">
-                <img class="svg" src="icons/heart-line.svg" data-default="icons/heart-line.svg"
-                    data-active="icons/heart-fill.svg" alt="Like">
-            </button>
-            <button onclick="toggleIcon(this)">
-                <img class="svg" src="icons/shopping-cart-line.svg" data-default="icons/shopping-cart-line.svg"
-                    data-active="icons/shopping-cart-fill.svg" alt="Add to Cart">
-            </button>
-            <button id="info-btn">
-                <img class="svg" src="icons/list-view.svg" alt="Info">
-            </button>
-            <button>
-                <img class="svg" src="icons/share-forward-line.svg" alt="Share">
-            </button>
-        </div>
+        <!-- in the js  -->
 
         <!-- Title / Serial / Price -->
-        <div class="title-section">
+        <!-- <div class="title-section">
             <div id="item-title">Title</div>
             <div id="item-serial">#0000</div>
             <div id="item-price">KES 0</div>
+        </div> -->
+        <div class="floating-title">
+            <div id="item-title">Loading…</div>
+            <div id="item-serial">#0000</div>
+            <div id="item-price">KES 0</div>
         </div>
 
         <!-- Bottom nav -->
@@ -54,38 +44,46 @@
             <button style="box-shadow: 0 6px 3px -3px rgb(0, 128, 255);">
                 <img class="svg" src="icons/home-fill.svg" alt="Home">
             </button>
-            <button>
+            <button class="cart-button">
                 <img class="svg" src="icons/shopping-cart-line.svg" alt="Checkout">
-                <span class="cart-badge hidden" data-count="0"></span>
+                <span class="cart-badge" data-count="0">0</span>
             </button>
         </div>
+
     </div>
 
-    <!-- Info popup -->
-    <div id="info-popup" class="popup hidden">
+    <!-- Info Popup (initially hidden) -->
+    <div id="info-popup" class="hidden">
         <div class="popup-content">
-            <p id="popup-description"></p>
-            <button onclick="closeInfo()">Close</button>
+            <h3 id="popup-title">Item Info</h3>
+            <div id="popup-body">
+                <!-- We'll inject sizes, material, weight, etc. here. -->
+                <p id="popup-description"></p>
+                <p><strong>Sizes:</strong> <span id="popup-sizes"></span></p>
+                <p><strong>Material:</strong> <span id="popup-material"></span></p>
+                <p><strong>Weight:</strong> <span id="popup-weight"></span></p>
+            </div>
+            <button id="popup-close">Close</button>
         </div>
     </div>
 
     <script src="script.js"></script>
     <script>
-        function toggleIcon(button) {
-            const img = button.querySelector('img');
-            const defaultSrc = img.getAttribute('data-default');
-            const activeSrc = img.getAttribute('data-active');
+        // function toggleIcon(button) {
+        //     const img = button.querySelector('img');
+        //     const defaultSrc = img.getAttribute('data-default');
+        //     const activeSrc = img.getAttribute('data-active');
 
-            // Toggle the image source
-            if (img.src.endsWith(defaultSrc)) {
-                img.src = activeSrc;
-            } else {
-                img.src = defaultSrc;
-            }
-        }
+        //     // Toggle the image source
+        //     if (img.src.endsWith(defaultSrc)) {
+        //         img.src = activeSrc;
+        //     } else {
+        //         img.src = defaultSrc;
+        //     }
+        // }
 
 
-        
+
 
     </script>
 </body>
