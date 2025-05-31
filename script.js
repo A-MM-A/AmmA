@@ -50,28 +50,28 @@ document.addEventListener("DOMContentLoaded", () => {
     //         versions: ["FMA00401.jpg", "FMA00402.jpg", "FMA00403.jpg", "FMA00404.jpg", "FMA00405.jpg"]
     //     },
     //     {
-    //         title: "M",
+    //         title: "Male thobes Oman Style",
     //         baseSerial: "FMA005",
     //         price: "KES 3000",
-    //         description: "Perfect for parties and formal events.",
+    //         description: "new look oman style for eid",
     //         versions: ["FMA00501.jpg", "FMA00502.jpg", "FMA00503.jpg"]
     //     },
     //     {
-    //         title: "Elegant Top",
+    //         title: "male thobe mexican style",
     //         baseSerial: "FMA006",
     //         price: "KES 3000",
-    //         description: "Perfect for parties and formal events.",
+    //         description: "mexican muslim wear in all designs",
     //         versions: ["FMA00601.jpg", "FMA00602.jpg", "FMA00603.jpg"]
     //     },
     //     {
-    //         title: "Elegant Top",
+    //         title: "full size women dress laced neck",
     //         baseSerial: "FFA001",
     //         price: "KES 3000",
-    //         description: "Perfect for parties and formal events.",
+    //         description: "Perfect for home wearing",
     //         versions: ["FFA00101.jpg", "FFA00102.jpg", "FFA00103.jpg"]
     //     },
     //     {
-    //         title: "Elegant Top",
+    //         title: "full size women dress braided neck",
     //         baseSerial: "FFA002",
     //         price: "KES 3000",
     //         description: "Perfect for parties and formal events.",
@@ -171,6 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3) Cache bottom‐info elements
     // —————————————————————————
     const vContainer = document.getElementById("verticalScroll");
+    const hContainers = document.querySelectorAll(".horizontal-scroll");
     const titleEl = document.getElementById("item-title");
     const serialEl = document.getElementById("item-serial");
     const priceEl = document.getElementById("item-price");
@@ -249,6 +250,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Inject side‑buttons inside vp
                 vp.insertAdjacentHTML("beforeend", sideButtonsHTML());
 
+                // Inject a panel‐title overlay inside this version panel
+                vp.insertAdjacentHTML("beforeend", `
+                  <div class="panel-title">
+                    <div class="panel-title-text">${item.title}</div>
+                    <div class="panel-serial-text">#${item.baseSerial}${String(vIdx + 1).padStart(2, "0")}</div>
+                    <div class="panel-price-text">${item.price}</div>
+                  </div>
+                `);
+
                 // append to horizontal scroll
                 hScroll.appendChild(vp);
 
@@ -311,11 +321,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-
     // —————————————————————————
     // 5) updateInfo(): center detection + UI + dots + index display + buttons
     // —————————————————————————
-    
+
     function updateSideButtons(sbContainer, pIdx, vIdx) {
         const state = itemsOrdered[pIdx].versionsState[vIdx];
 
@@ -362,7 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     };
-    
+
     function updateInfo() {
         const panels = Array.from(document.querySelectorAll(".item-panel"));
         const midY = window.innerHeight / 2;
@@ -383,12 +392,8 @@ document.addEventListener("DOMContentLoaded", () => {
         currentPanelIndex = pIdx;
         currentVersionIndex = vIdx;
 
-        // bottom info
         const item = itemsOrdered[pIdx];
         const verNum = String(vIdx + 1).padStart(2, "0");
-        titleEl.innerText = item.title;
-        serialEl.innerText = `#${item.baseSerial}${verNum}`;
-        priceEl.innerText = item.price;
 
         // update dots
         const dots = panels[pIdx].querySelectorAll(".dot");
@@ -408,9 +413,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+
     // —————————————————————————
     // 6) Info popup wiring
     // —————————————————————————
+
     document.querySelector("#info-popup .popup-content button").onclick = () => {
         document.getElementById("info-popup").classList.add("hidden");
     };
@@ -418,45 +425,191 @@ document.addEventListener("DOMContentLoaded", () => {
     // —————————————————————————
     // 7) Scroll listeners (debounced)
     // —————————————————————————
+    // let scrollTimeout;
+    // vContainer.addEventListener("scroll", () => {
+    //     clearTimeout(scrollTimeout);
+    //     scrollTimeout = setTimeout(updateInfo, 100);
+    // });
+
+
+    // —————————————————————————
+    // 8) Touch / Mouse control
+    // —————————————————————————
+    const TOUCH_THRESHOLD = 80;  // TOUCH_THRESHOLD: Minimum swipe distance (px) to move one slide. best Setting ~50–80 
+    const MOUSE_SPEED = 3;  // MOUSE_SPEED: Multiplier for click‑and‑drag movement (horizontal & vertical). Lower = slower drag; higher = faster drag. Typical: 2–4.
+    const WHEEL_SENSITIVITY = 1.0;  // WHEEL_SENSITIVITY: Multiplier for wheel scrolling. Lower = finer control. Typical range: 0.5–2.
+
+    // function getPanelHeight() {
+    //     // assume every .item-panel is 100% of vContainer's height
+    //     return vContainer.clientHeight;
+    // }
+    // function getPanelWidth(hScroll) {
+    //     // assume each .version-panel is 100% of hScroll's width
+    //     return hScroll.clientWidth;
+    // }
+
+    // touch control
+    (function () {
+        // Vertical container swipe
+        let vTouchStartY = null;
+        let vTouchStartX = null;
+        let vStartScrollTop = 0;
+
+        vContainer.addEventListener("touchstart", e => {
+            if (e.touches.length !== 1) return;
+            const t = e.touches[0];
+            vTouchStartY = t.clientY;
+            vTouchStartX = t.clientX;
+            vStartScrollTop = vContainer.scrollTop;
+        }, { passive: true });
+
+        vContainer.addEventListener("touchend", e => {
+            if (vTouchStartY === null) return;
+
+            const t = e.changedTouches[0];
+            const dy = t.clientY - vTouchStartY;
+            const dx = t.clientX - vTouchStartX;
+            const absY = Math.abs(dy);
+            const absX = Math.abs(dx);
+            const panelHeight = vContainer.clientHeight;
+
+            // Vertical‑dominant swipe → snap one panel
+            if (absY > absX && absY > TOUCH_THRESHOLD) {
+                if (dy < 0) {
+                    // Swipe up → next panel
+                    const newScroll = Math.min(
+                        vContainer.scrollTop + panelHeight,
+                        vContainer.scrollHeight - panelHeight
+                    );
+                    vContainer.scrollTo({ top: newScroll, behavior: "smooth" });
+                } else {
+                    // Swipe down → previous panel
+                    const newScroll = Math.max(vContainer.scrollTop - panelHeight, 0);
+                    vContainer.scrollTo({ top: newScroll, behavior: "smooth" });
+                }
+            } else {
+                // If not a large enough swipe, snap to the nearest panel boundary
+                // Compute current index = Math.round(scrollTop / panelHeight)
+                const idx = Math.round(vContainer.scrollTop / panelHeight);
+                vContainer.scrollTo({ top: idx * panelHeight, behavior: "smooth" });
+
+            }
+            vTouchStartY = null;
+            vTouchStartX = null;
+        }, { passive: true });
+
+
+
+        // Horizontal container swipe
+        hContainers.forEach(hScroll => {
+            let hTouchStartX = null;
+            let hTouchStartY = null;
+
+            hScroll.addEventListener("touchstart", e => {
+                if (e.touches.length !== 1) return;
+                const t = e.touches[0];
+                hTouchStartX = t.clientX;
+                hTouchStartY = t.clientY;
+            }, { passive: true });
+
+            hScroll.addEventListener("touchend", e => {
+                if (hTouchStartX === null) return;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - hTouchStartX;
+                const dy = t.clientY - hTouchStartY;
+                const absX = Math.abs(dx);
+                const absY = Math.abs(dy);
+                const panelWidth = hScroll.clientWidth;
+
+                // Horizontal‑dominant swipe → snap one version
+                if (absX > absY && absX > TOUCH_THRESHOLD) {
+                    if (dx < 0) {
+                        // Swipe left → next version
+                        const newScroll = Math.min(
+                            hScroll.scrollLeft + panelWidth,
+                            hScroll.scrollWidth - panelWidth
+                        );
+                        hScroll.scrollTo({ left: newScroll, behavior: "smooth" });
+                    } else {
+                        // Swipe right → previous version
+                        const newScroll = Math.max(hScroll.scrollLeft - panelWidth, 0);
+                        hScroll.scrollTo({ left: newScroll, behavior: "smooth" });
+                    }
+                }
+                hTouchStartX = null;
+                hTouchStartY = null;
+            }, { passive: true });
+        });
+    })();
+
+
+    // mouse direction
+    function makeDraggableScroll(container, isVertical) {
+        let down = false, startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0;
+
+        container.addEventListener("mousedown", e => {
+            down = true;
+            container.classList.add("dragging");
+            startX = e.pageX;
+            startY = e.pageY;
+            scrollLeft = container.scrollLeft;
+            scrollTop = container.scrollTop;
+            e.preventDefault();
+        });
+
+        window.addEventListener("mouseup", () => {
+            if (!down) return;
+            down = false;
+            container.classList.remove("dragging");
+        });
+
+        container.addEventListener("mousemove", e => {
+            if (!down) return;
+            const dx = e.pageX - startX;
+            const dy = e.pageY - startY;
+
+            if (isVertical) {
+                // Vertical drag: move vContainer.scrollTop
+                container.scrollTop = scrollTop - (dy * MOUSE_SPEED);
+            } else {
+                // Horizontal drag: move container.scrollLeft
+                container.scrollLeft = scrollLeft - (dx * MOUSE_SPEED);
+            }
+            e.preventDefault();
+        });
+
+        container.addEventListener("dragstart", e => e.preventDefault());
+    }
+
+    makeDraggableScroll(vContainer, true); // Attach to vertical
+
+    document.querySelectorAll(".horizontal-scroll") // Attach to each horizontal
+        .forEach(hs => makeDraggableScroll(hs, false));
+
+
+    // MOUSE WHEEL SCROLLING (Vertical only)
+    vContainer.addEventListener("wheel", e => {
+        e.preventDefault();
+        // Multiply deltaY by sensitivity; then let scroll‑snap do the rest
+        vContainer.scrollBy({
+            top: e.deltaY * WHEEL_SENSITIVITY,
+            left: 0,
+            behavior: "auto"
+        });
+        // Debounce updating Info
+        clearTimeout(vContainer._wheelTO);
+        vContainer._wheelTO = setTimeout(updateInfo, 100);
+    }, { passive: false });
+
+
+
+    // ──────────────────────────────────────────────────
+    // 4) Update Info on scroll end (only vertical)
+    // ──────────────────────────────────────────────────
     let scrollTimeout;
     vContainer.addEventListener("scroll", () => {
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(updateInfo, 100);
-    });
-
-
-    // —————————————————————————
-    // 8) Draggable scroll helper (mouse & touch support)
-    // —————————————————————————
-    function makeDraggableScroll(container, isVertical, speed = 2) {
-        let down = false, startX, startY, sL, sT;
-        container.addEventListener("mousedown", e => {
-            down = true; container.classList.add("dragging");
-            startX = e.pageX; startY = e.pageY;
-            sL = container.scrollLeft; sT = container.scrollTop;
-            e.preventDefault();
-        });
-        window.addEventListener("mouseup", () => {
-            if (!down) return; down = false;
-            container.classList.remove("dragging");
-        });
-        container.addEventListener("mousemove", e => {
-            if (!down) return;
-            const dx = e.pageX - startX, dy = e.pageY - startY;
-            if (isVertical) container.scrollTop = sT - dy * speed;
-            else container.scrollLeft = sL - dx * speed;
-            e.preventDefault();
-        });
-        container.addEventListener("dragstart", e => e.preventDefault());
-    }
-    makeDraggableScroll(vContainer, true, 3);
-    document.querySelectorAll(".horizontal-scroll")
-        .forEach(hs => makeDraggableScroll(hs, false, 3));
-
-    let to;
-    vContainer.addEventListener("scroll", () => {
-        clearTimeout(to);
-        to = setTimeout(updateInfo, 100);
     });
 
     // —————————————————————————

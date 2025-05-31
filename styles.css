@@ -141,6 +141,8 @@ body {
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     cursor: grab;
+    /* touch-action: none; */
+    touch-action: pan-y;
 }
 
 .vertical-scroll::-webkit-scrollbar {
@@ -164,6 +166,7 @@ body {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     cursor: grab;
+    touch-action: pan-x;
 }
 
 .horizontal-scroll::-webkit-scrollbar {
@@ -313,23 +316,40 @@ body {
 
 
 /* title section */
-.floating-title {
+
+.panel-title {
     position: absolute;
-    bottom: 150px;
-    /* a few pixels above the nav bar */
     left: 10px;
+    bottom: 110px;
     background: rgba(0, 0, 0, 0.3);
-    /* dark semi‑transparent pill */
+    text-shadow: 1px 0#000000;
     color: #fff;
     padding: 8px 12px;
     border-radius: 8px;
+    z-index: 5;
+    max-width: 80%;
     font-size: 0.9rem;
     line-height: 1.2;
-    max-width: 80%;
-    z-index: 5;
-    text-shadow: 1px 0#000000;
 }
 
+.panel-title-text,
+.panel-serial-text,
+.panel-price-text {
+    margin: 2px 0;
+}
+
+.panel-title-text {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.panel-serial-text,
+.panel-price-text {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
 
 
 
