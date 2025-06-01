@@ -117,9 +117,10 @@ body {
 
 .logo {
     position: absolute;
-    width: 55px;
+    width: 64px;
     height: 55px;
     left: 45%;
+    right: 50%;
 
 }
 
@@ -150,7 +151,8 @@ body {
     scroll-behavior: smooth;
     cursor: grab;
     /* touch-action: none; */
-    /* touch-action: pan-y; */
+    touch-action: pan-y;
+    overscroll-behavior: contain;
 }
 
 .vertical-scroll::-webkit-scrollbar {
@@ -174,7 +176,7 @@ body {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     cursor: grab;
-    /* touch-action: pan-x; */
+    touch-action: pan-x;
 }
 
 .horizontal-scroll::-webkit-scrollbar {

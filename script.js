@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // —————————————————————————
             const vContainer = document.getElementById("verticalScroll");
             if (!vContainer) return;
-            // const hContainers = document.querySelectorAll(".horizontal-scroll");
+            const hContainers = document.querySelectorAll(".horizontal-scroll");
 
             // const titleEl = document.getElementById("item-title");
             // const serialEl = document.getElementById("item-serial");
@@ -448,41 +448,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
-            // window.toggleIcon = function (btn) {
-            //     const img = btn.querySelector("img");
-            //     const defaultSrc = img.dataset.default;
-            //     const activeSrc = img.dataset.active;
-            //     const currentSrc = img.getAttribute("src");
-
-            //     // Determine panelIdx & versionIdx
-            //     const vp = btn.closest(".version-panel");
-            //     const pIdx = parseInt(vp.dataset.panelIndex, 10);
-            //     const vIdx = parseInt(vp.dataset.versionIndex, 10);
-            //     const state = itemsOrdered[pIdx].versionsState[vIdx];
-
-            //     if (currentSrc.endsWith(defaultSrc)) {
-            //         // Switch to active
-            //         img.src = activeSrc;
-            //         if (defaultSrc.includes("heart")) {
-            //             state.liked = true;
-            //             img.style.transform = "scale(1.3)";
-            //             setTimeout(() => img.style.transform = "scale(1)", 200);
-            //         } else if (defaultSrc.includes("shopping-cart")) {
-            //             state.inCart = true;
-            //         }
-            //     } else {
-            //         // Switch back to default
-            //         img.src = defaultSrc;
-            //         if (defaultSrc.includes("heart")) {
-            //             state.liked = false;
-            //             img.style.transform = "scale(0.5)";
-            //             setTimeout(() => img.style.transform = "scale(1)", 200);
-            //         } else if (defaultSrc.includes("shopping-cart")) {
-            //             state.inCart = false;
-            //         }
-            //     }
-            // };
-
             window.toggleIcon = function (btn) {
                 const img = btn.querySelector("img");
                 const defaultSrc = img.dataset.default;
@@ -757,188 +722,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-            // ──────────────────────────────────────────────────
-            //   Update Info on scroll end (only vertical)
-            // ──────────────────────────────────────────────────
-            // let scrollTimeout;
-            // vContainer.addEventListener("scroll", () => {
-            //     clearTimeout(scrollTimeout);
-            //     scrollTimeout = setTimeout(updateInfo, 100);
-            // });
-
-
-
-            // —————————————————————————
-            // 8) Touch / Mouse control
-            // —————————————————————————
-
-            // const TOUCH_THRESHOLD = 80;  // TOUCH_THRESHOLD: Minimum swipe distance (px) to move one slide. best Setting ~50–80 
-            // const MOUSE_SPEED = 3;  // MOUSE_SPEED: Multiplier for click‑and‑drag movement (horizontal & vertical). Lower = slower drag; higher = faster drag. Typical: 2–4.
-            // const WHEEL_SENSITIVITY = 1.0;  // WHEEL_SENSITIVITY: Multiplier for wheel scrolling. Lower = finer control. Typical range: 0.5–2.
-
-            // // function getPanelHeight() {
-            // //     // assume every .item-panel is 100% of vContainer's height
-            // //     return vContainer.clientHeight;
-            // // }
-            // // function getPanelWidth(hScroll) {
-            // //     // assume each .version-panel is 100% of hScroll's width
-            // //     return hScroll.clientWidth;
-            // // }
-
-
-            // // touch control
-
-            // (function () {
-            //     // Vertical container swipe
-            //     let vTouchStartY = null;
-            //     let vTouchStartX = null;
-            //     let vStartScrollTop = 0;
-
-            //     vContainer.addEventListener("touchstart", e => {
-            //         if (e.touches.length !== 1) return;
-            //         const t = e.touches[0];
-            //         vTouchStartY = t.clientY;
-            //         vTouchStartX = t.clientX;
-            //         vStartScrollTop = vContainer.scrollTop;
-            //     }, { passive: true });
-
-            //     vContainer.addEventListener("touchend", e => {
-            //         if (vTouchStartY === null) return;
-
-            //         const t = e.changedTouches[0];
-            //         const dy = t.clientY - vTouchStartY;
-            //         const dx = t.clientX - vTouchStartX;
-            //         const absY = Math.abs(dy);
-            //         const absX = Math.abs(dx);
-            //         const panelHeight = vContainer.clientHeight;
-
-            //         // Vertical‑dominant swipe → snap one panel
-            //         if (absY > absX && absY > TOUCH_THRESHOLD) {
-            //             if (dy < 0) {
-            //                 // Swipe up → next panel
-            //                 const newScroll = Math.min(
-            //                     vContainer.scrollTop + panelHeight,
-            //                     vContainer.scrollHeight - panelHeight
-            //                 );
-            //                 vContainer.scrollTo({ top: newScroll, behavior: "smooth" });
-            //             } else {
-            //                 // Swipe down → previous panel
-            //                 const newScroll = Math.max(vContainer.scrollTop - panelHeight, 0);
-            //                 vContainer.scrollTo({ top: newScroll, behavior: "smooth" });
-            //             }
-            //         } else {
-            //             // If not a large enough swipe, snap to the nearest panel boundary
-            //             // Compute current index = Math.round(scrollTop / panelHeight)
-            //             const idx = Math.round(vContainer.scrollTop / panelHeight);
-            //             vContainer.scrollTo({ top: idx * panelHeight, behavior: "smooth" });
-
-            //         }
-            //         vTouchStartY = null;
-            //         vTouchStartX = null;
-            //     }, { passive: true });
-
-
-
-            //     // Horizontal container swipe
-            //     hContainers.forEach(hScroll => {
-            //         let hTouchStartX = null;
-            //         let hTouchStartY = null;
-
-            //         hScroll.addEventListener("touchstart", e => {
-            //             if (e.touches.length !== 1) return;
-            //             const t = e.touches[0];
-            //             hTouchStartX = t.clientX;
-            //             hTouchStartY = t.clientY;
-            //         }, { passive: true });
-
-            //         hScroll.addEventListener("touchend", e => {
-            //             if (hTouchStartX === null) return;
-            //             const t = e.changedTouches[0];
-            //             const dx = t.clientX - hTouchStartX;
-            //             const dy = t.clientY - hTouchStartY;
-            //             const absX = Math.abs(dx);
-            //             const absY = Math.abs(dy);
-            //             const panelWidth = hScroll.clientWidth;
-
-            //             // Horizontal‑dominant swipe → snap one version
-            //             if (absX > absY && absX > TOUCH_THRESHOLD) {
-            //                 if (dx < 0) {
-            //                     // Swipe left → next version
-            //                     const newScroll = Math.min(
-            //                         hScroll.scrollLeft + panelWidth,
-            //                         hScroll.scrollWidth - panelWidth
-            //                     );
-            //                     hScroll.scrollTo({ left: newScroll, behavior: "smooth" });
-            //                 } else {
-            //                     // Swipe right → previous version
-            //                     const newScroll = Math.max(hScroll.scrollLeft - panelWidth, 0);
-            //                     hScroll.scrollTo({ left: newScroll, behavior: "smooth" });
-            //                 }
-            //             }
-            //             hTouchStartX = null;
-            //             hTouchStartY = null;
-            //         }, { passive: true });
-            //     });
-            // })();
-
-
-            // // mouse direction
-            // function makeDraggableScroll(container, isVertical) {
-            //     let down = false, startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0;
-
-            //     container.addEventListener("mousedown", e => {
-            //         down = true;
-            //         container.classList.add("dragging");
-            //         startX = e.pageX;
-            //         startY = e.pageY;
-            //         scrollLeft = container.scrollLeft;
-            //         scrollTop = container.scrollTop;
-            //         e.preventDefault();
-            //     });
-
-            //     window.addEventListener("mouseup", () => {
-            //         if (!down) return;
-            //         down = false;
-            //         container.classList.remove("dragging");
-            //     });
-
-            //     container.addEventListener("mousemove", e => {
-            //         if (!down) return;
-            //         const dx = e.pageX - startX;
-            //         const dy = e.pageY - startY;
-
-            //         if (isVertical) {
-            //             // Vertical drag: move vContainer.scrollTop
-            //             container.scrollTop = scrollTop - (dy * MOUSE_SPEED);
-            //         } else {
-            //             // Horizontal drag: move container.scrollLeft
-            //             container.scrollLeft = scrollLeft - (dx * MOUSE_SPEED);
-            //         }
-            //         e.preventDefault();
-            //     });
-
-            //     container.addEventListener("dragstart", e => e.preventDefault());
-            // }
-            // makeDraggableScroll(vContainer, true); // Attach to vertical
-            // document.querySelectorAll(".horizontal-scroll") // Attach to each horizontal
-            //     .forEach(hs => makeDraggableScroll(hs, false));
-
-
-            // // MOUSE WHEEL SCROLLING (Vertical only)
-            // vContainer.addEventListener("wheel", e => {
-            //     e.preventDefault();
-            //     // Multiply deltaY by sensitivity; then let scroll‑snap do the rest
-            //     vContainer.scrollBy({
-            //         top: e.deltaY * WHEEL_SENSITIVITY,
-            //         left: 0,
-            //         behavior: "auto"
-            //     });
-            //     // Debounce updating Info
-            //     clearTimeout(vContainer._wheelTO);
-            //     vContainer._wheelTO = setTimeout(updateInfo, 100);
-            // }, { passive: false });
-
-
             function makeDraggableScroll(container, isVertical, speed = 2) {
                 let down = false, startX, startY, sL, sT;
                 container.addEventListener("mousedown", e => {
@@ -981,11 +764,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-
-
         })
         .catch(err => {
-            loadingStart(0.55);
+            // loadingStart(0.55);
             // loadingWait('Loading',1);
             console.error("Failed to load data.json:", err);
         });
@@ -1242,6 +1023,7 @@ function addToCart() {
 
     let overlay = null;
     let animationInterval = null;
+    let autoCloseTimer = null;
 
     // Prevent background scroll/touch
     function disableScroll() {
@@ -1259,7 +1041,7 @@ function addToCart() {
     // ----------------------------------------------------
     // Create a full‐screen overlay, fetch & insert the SVG
     // ----------------------------------------------------
-    function createOverlay(withText, message, scale, isBlocking) {
+    function createOverlay(withText, message, scale, isBlocking, timeoutSec) {
         if (overlay) {
             printline("Overlay already exists; skipping creation.");
             return;
@@ -1388,6 +1170,14 @@ function addToCart() {
                     printline("Some shape IDs are missing; animation may be incomplete.");
                 }
                 startAnimation();
+
+                if (typeof timeoutSec === 'number' && timeoutSec > 0) {
+                    printline("Will auto‐close in " + timeoutSec + "s");
+                    setTimeout(() => {
+                        printline("Auto‐closing loader after " + timeoutSec + "s");
+                        removeOverlay();
+                    }, timeoutSec * 1000);
+                }
             })
             .catch(err => {
                 printline("ERROR loading SVG: " + err);
@@ -1458,6 +1248,10 @@ function addToCart() {
 
     // Remove overlay, stop animation, re‐enable scroll
     function removeOverlay() {
+        if (autoCloseTimer !== null) {
+            clearTimeout(autoCloseTimer);
+            autoCloseTimer = null;
+        }
         if (!overlay) {
             printline("Overlay does not exist; nothing to remove.");
             return;
@@ -1478,10 +1272,11 @@ function addToCart() {
         printline("loadingStart() called with scale: " + scale, "blocking:", isBlocking);
         createOverlay(false, "", scale, isBlocking);
     };
-    window.loadingWait = function (message, scale = 1.0, isBlocking = true) {
-        printline("loadingWait() called with scale:", scale, "blocking:", isBlocking);
-        createOverlay(true, message, scale, isBlocking);
+    window.loadingWait = function (message, scale = 1.0, isBlocking = true, timeoutSec) {
+        printline("loadingWait() called with scale:", scale, "blocking:", isBlocking, "timeoutSec:", timeoutSec);
+        createOverlay(true, message, scale, isBlocking, timeoutSec);
     };
+
     window.loadingStop = function () {
         printline("loadingStop() called.");
         removeOverlay();
