@@ -114,11 +114,12 @@ body {
     width: 30px;
     height: 30px;
 }
-.logo{
+
+.logo {
     position: absolute;
-    width: 30px;
-    height: 30px;
-    left: 48%;
+    width: 55px;
+    height: 55px;
+    left: 45%;
 
 }
 
@@ -316,10 +317,21 @@ body {
 } */
 
 @keyframes heartbeat {
-    0% { transform: scale(1); }
-    30% { transform: scale(1.2); }
-    60% { transform: scale(0.95); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(1.2);
+    }
+
+    60% {
+        transform: scale(0.95);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .heartbeat {
@@ -435,7 +447,7 @@ body {
     background: rgba(0, 0, 0, 0.5);
     padding: 8px 12px;
     border-radius: 40px;
-    z-index: 5;
+    z-index: 10;
     min-width: 80%;
     max-width: 400px;
 }
@@ -457,15 +469,15 @@ body {
 .cart-badge {
     position: absolute;
     bottom: -7px;
-    left: -14px;
-    width: 70px;
+    right: 1px;
     background-color: red;
     color: white;
     font-size: 10px;
     font-weight: bold;
-    padding: 2px;
-    border-radius: 999px;
+    padding: 1px 4px;
+    border-radius: 9px;
     pointer-events: none;
+    white-space: nowrap;
 
 }
 
@@ -500,14 +512,15 @@ body {
 
 /* The inner dialog box */
 #info-popup .popup-content {
-    background: var(--muted-color);
+    background: #2c2c2c4e;
     color: var(--fg-color);
     padding: 1.5rem 2rem;
     border-radius: 0.5rem;
-    width: 90%;
-    max-width: 360px;
+    width: 80%;
+    max-width: 310px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     text-align: left;
+    backdrop-filter: blur(10px);
 }
 
 /* Heading inside popup */
@@ -527,10 +540,11 @@ body {
 #popup-close {
     display: block;
     margin: 1rem auto 0;
-    padding: 0.5rem 1rem;
-    background: var(--accent-color);
+    padding: 3% 30%;
+    background: rgba(255, 0, 0, 0.24);
     border: none;
-    border-radius: 0.25rem;
+    /* width: 60%; */
+    border-radius: 20px;
     color: var(--bg-color);
     font-size: var(--font-md);
     cursor: pointer;

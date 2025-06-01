@@ -1,27 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Panel</title>
-    <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <div class="admin-login" id="loginDiv">
-    <h2>Admin Login</h2>
-    <input type="password" id="adminPass" placeholder="Password" />
-    <button id="loginBtn">Login</button>
-    <div id="loginMsg"></div>
+
+  <div class="phone-frame">
+    <div class="admin-login" id="loginDiv">
+      <h2>Admin Login</h2>
+      <input type="password" id="adminPass" placeholder="Password" />
+      <button id="loginBtn">Login</button>
+      <div id="loginMsg"></div>
+    </div>
+    <div class="admin-panel hidden" id="panelDiv">
+      <h2>Add New Item</h2>
+      <input type="text" id="newCategory" placeholder="Category" />
+      <input type="text" id="newName" placeholder="Item Name" />
+      <input type="text" id="newSerial" placeholder="Serial No" />
+      <input type="number" id="newPrice" placeholder="Price" />
+      <input type="text" id="newVariants" placeholder="Variants (comma separated)" />
+      <button id="addItemBtn">Add Item</button>
+    </div>
+    
+    <button onclick="loadingStart(0.5)">Start Loading</button>
+    <button onclick="loadingStop()">Stop Loading</button>
+    <button onclick="loadingWait('Waiting for confirmation...\n • Enter your Mpesa - PIN\n • You can retry after 30 seconds')">Wait with Message</button>
+    <button onclick="loadingWait('Hi how are you Dev',1.1)">Wait with Message</button>
+    <button onclick="loadingWaitStop()">Stop Wait</button>
+    <!-- <img src="logo/logo.svg" alt=""> -->
+    
   </div>
-  <div class="admin-panel hidden" id="panelDiv">
-    <h2>Add New Item</h2>
-    <input type="text" id="newCategory" placeholder="Category" />
-    <input type="text" id="newName" placeholder="Item Name" />
-    <input type="text" id="newSerial" placeholder="Serial No" />
-    <input type="number" id="newPrice" placeholder="Price" />
-    <input type="text" id="newVariants" placeholder="Variants (comma separated)" />
-    <button id="addItemBtn">Add Item</button>
-  </div>
-  <script src="admin.js"></script>
+
+  <!-- <script src="admin.js"></script> -->
+  <script src="script.js"></script>
 </body>
+
 </html>

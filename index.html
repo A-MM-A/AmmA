@@ -5,8 +5,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SwipeShop</title>
+
+    <link rel="shortcut icon" href="logo/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="logo/favicon.ico" type="image/x-icon">
+
     <link rel="stylesheet" href="styles.css" />
 </head>
+
 
 <body>
     <div class="phone-frame">
@@ -14,8 +19,9 @@
 
         <div class="top-bar">
             <span id="category-name">Fashion</span>
-            <img class="logo" src="icons/Logo.svg" alt="">
-            <button id="search-btn"><img onclick="Saved()" class="svg" src="icons/search-line.svg" alt="Search"></button>
+            <img class="logo" src="logo/logo.svg" alt="">
+            <button id="search-btn"><img onclick="Saved()" class="svg" src="icons/search-line.svg"
+                    alt="Search"></button>
         </div>
         <!-- Vertical scroll container -->
         <div class="vertical-scroll" id="verticalScroll">
@@ -39,16 +45,22 @@
 
         <!-- Bottom nav -->
         <div class="nav-bar">
-            <button>
-                <img class="svg" src="icons/user-line.svg" alt="Account">
-            </button>
-            <button style="box-shadow: 0 6px 3px -3px rgb(0, 128, 255);">
-                <img class="svg" src="icons/home-fill.svg" alt="Home">
-            </button>
-            <button class="cart-button">
-                <img class="svg" src="icons/shopping-cart-line.svg" alt="Checkout">
-                <span class="cart-badge hidden" data-count="0">0</span>
-            </button>
+            <a href="user.html">
+                <button>
+                    <img href="#" class="svg" src="icons/user-line.svg" alt="Account">
+                </button>
+            </a>
+            <a href="#">
+                <button style="box-shadow: 0 6px 3px -3px rgb(0, 128, 255);">
+                    <img class="svg" src="icons/home-fill.svg" alt="Home">
+                </button>
+            </a>
+            <a href="checkout.html">
+                <button class="cart-button">
+                    <img href="#" class="svg" src="icons/shopping-cart-line.svg" alt="Checkout">
+                    <span class="cart-badge hidden" data-count="0">0</span>
+                </button>
+            </a>
         </div>
 
     </div>
@@ -69,24 +81,6 @@
     </div>
 
     <script src="script.js"></script>
-    <script>
-        // function toggleIcon(button) {
-        //     const img = button.querySelector('img');
-        //     const defaultSrc = img.getAttribute('data-default');
-        //     const activeSrc = img.getAttribute('data-active');
-
-        //     // Toggle the image source
-        //     if (img.src.endsWith(defaultSrc)) {
-        //         img.src = activeSrc;
-        //     } else {
-        //         img.src = defaultSrc;
-        //     }
-        // }
-
-
-
-
-    </script>
 </body>
 
 </html>

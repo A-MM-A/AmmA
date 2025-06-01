@@ -1,0 +1,13 @@
+What's Included in the SVG:
+The full image is embedded for reference.
+
+Named <g> groups for each of the following:
+
+Shapes: top_cone_left, top_cone_middle, top_cone_right, top_cone_filler, ring_outer, ring_middle, ring_inner, ring_center
+
+Text letters: letter_A, letter_M1, letter_M2, letter_A2
+
+Next Steps:
+To fully animate each shape, you can replace the placeholder rectangles with exact vector paths using a tool like Adobe Illustrator, Inkscape, or Figma.
+
+You now have precise group IDs to target in JavaScript or CSS for your loading screen animation.
