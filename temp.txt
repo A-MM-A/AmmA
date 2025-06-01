@@ -1,0 +1,434 @@
+
+............
+continued on the next message, dont reply yet, let me first paste the full js code
+                plusBtn.style.height = "32px";
+                plusBtn.style.borderRadius = "16px";
+                plusBtn.style.border = "none";
+                plusBtn.style.background = "var(--gray)";
+                plusBtn.style.color = "var(--fg)";
+                plusBtn.style.fontSize = "1.2rem";
+                plusBtn.style.cursor = "pointer";
+
+                qtyContainer.append(minusBtn, qtyDisplay, plusBtn);
+                box.appendChild(qtyContainer);
+
+                // Initial quantity = 1
+                let currentQty = 1;
+                minusBtn.onclick = () => {
+                    if (currentQty > 1) {
+                        currentQty--;
+                        qtyDisplay.innerText = currentQty;
+                        updateTotal(); // recalc total price
+                    }
+                };
+                plusBtn.onclick = () => {
+                    currentQty++;
+                    qtyDisplay.innerText = currentQty;
+                    updateTotal();
+                };
+
+                // 6) Total line (“Total: KES X,XXX”)
+                const totalLine = document.createElement("div");
+                totalLine.id = "popup-total-line";
+                totalLine.style.fontSize = "1rem";
+                totalLine.style.marginBottom = "1rem";
+                totalLine.style.textAlign = "center";
+                // Helper to update total
+                function updateTotal() {
+                    const total = unitPrice * currentQty;
+                    totalLine.innerText = `Total: KES ${total.toLocaleString()}`;
+                }
+                updateTotal();
+                box.appendChild(totalLine);
+
+                // 7) Confirm button
+                const confirmBtn = document.createElement("button");
+                confirmBtn.innerText = "Confirm";
+                confirmBtn.style.width = "100%";
+                confirmBtn.style.padding = "0.5rem";
+                confirmBtn.style.border = "none";
+                confirmBtn.style.borderRadius = "6px";
+                confirmBtn.style.background = "var(--accent)";
+                confirmBtn.style.color = "var(--bg)";
+                confirmBtn.style.fontSize = "1rem";
+                confirmBtn.style.cursor = "pointer";
+                confirmBtn.onclick = () => {
+                    // Pass the final quantity back to caller
+                    callback(currentQty);
+                    document.body.removeChild(overlay);
+                };
+box.appendChild(confirmBtn); 
+
+                // 8) Assemble and show
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+            }
+
+
+
+
+
+
+            // —————————————————————————
+            //    Info popup wiring
+            // —————————————————————————
+
+            document.querySelector("#info-popup .popup-content button").onclick = () => {
+                document.getElementById("info-popup").classList.add("hidden");
+            };
+
+
+
+            
+            // ──────────────────────────────────────────────────
+            //   Update Info on scroll end (only vertical)
+            // ──────────────────────────────────────────────────
+            // let scrollTimeout;
+            // vContainer.addEventListener("scroll", () => {
+            //     clearTimeout(scrollTimeout);
+            //     scrollTimeout = setTimeout(updateInfo, 100);
+            // });
+
+
+
+            // —————————————————————————
+            // 8) Touch / Mouse control
+            // —————————————————————————
+
+            // const TOUCH_THRESHOLD = 80;  // TOUCH_THRESHOLD: Minimum swipe distance (px) to move one slide. best Setting ~50–80 
+            // const MOUSE_SPEED = 3;  // MOUSE_SPEED: Multiplier for click‑and‑drag movement (horizontal & vertical). Lower = slower drag; higher = faster drag. Typical: 2–4.
+            // const WHEEL_SENSITIVITY = 1.0;  // WHEEL_SENSITIVITY: Multiplier for wheel scrolling. Lower = finer control. Typical range: 0.5–2.
+
+            // // function getPanelHeight() {
+            // //     // assume every .item-panel is 100% of vContainer's height
+            // //     return vContainer.clientHeight;
+            // // }
+            // // function getPanelWidth(hScroll) {
+            // //     // assume each .version-panel is 100% of hScroll's width
+            // //     return hScroll.clientWidth;
+            // // }
+
+
+            // // touch control
+
+            // (function () {
+            //     // Vertical container swipe
+            //     let vTouchStartY = null;
+            //     let vTouchStartX = null;
+            //     let vStartScrollTop = 0;
+
+            //     vContainer.addEventListener("touchstart", e => {
+            //         if (e.touches.length !== 1) return;
+            //         const t = e.touches[0];
+            //         vTouchStartY = t.clientY;
+            //         vTouchStartX = t.clientX;
+            //         vStartScrollTop = vContainer.scrollTop;
+            //     }, { passive: true });
+
+            //     vContainer.addEventListener("touchend", e => {
+            //         if (vTouchStartY === null) return;
+
+            //         const t = e.changedTouches[0];
+            //         const dy = t.clientY - vTouchStartY;
+            //         const dx = t.clientX - vTouchStartX;
+            //         const absY = Math.abs(dy);
+            //         const absX = Math.abs(dx);
+            //         const panelHeight = vContainer.clientHeight;
+
+            //         // Vertical‑dominant swipe → snap one panel
+            //         if (absY > absX && absY > TOUCH_THRESHOLD) {
+            //             if (dy < 0) {
+            //                 // Swipe up → next panel
+            //                 const newScroll = Math.min(
+            //                     vContainer.scrollTop + panelHeight,
+            //                     vContainer.scrollHeight - panelHeight
+            //                 );
+            //                 vContainer.scrollTo({ top: newScroll, behavior: "smooth" });
+            //             } else {
+            //                 // Swipe down → previous panel
+            //                 const newScroll = Math.max(vContainer.scrollTop - panelHeight, 0);
+            //                 vContainer.scrollTo({ top: newScroll, behavior: "smooth" });
+            //             }
+            //         } else {
+            //             // If not a large enough swipe, snap to the nearest panel boundary
+            //             // Compute current index = Math.round(scrollTop / panelHeight)
+            //             const idx = Math.round(vContainer.scrollTop / panelHeight);
+            //             vContainer.scrollTo({ top: idx * panelHeight, behavior: "smooth" });
+
+            //         }
+            //         vTouchStartY = null;
+            //         vTouchStartX = null;
+            //     }, { passive: true });
+
+
+
+            //     // Horizontal container swipe
+            //     hContainers.forEach(hScroll => {
+            //         let hTouchStartX = null;
+            //         let hTouchStartY = null;
+
+            //         hScroll.addEventListener("touchstart", e => {
+            //             if (e.touches.length !== 1) return;
+            //             const t = e.touches[0];
+            //             hTouchStartX = t.clientX;
+            //             hTouchStartY = t.clientY;
+            //         }, { passive: true });
+
+            //         hScroll.addEventListener("touchend", e => {
+            //             if (hTouchStartX === null) return;
+            //             const t = e.changedTouches[0];
+            //             const dx = t.clientX - hTouchStartX;
+            //             const dy = t.clientY - hTouchStartY;
+            //             const absX = Math.abs(dx);
+            //             const absY = Math.abs(dy);
+            //             const panelWidth = hScroll.clientWidth;
+
+            //             // Horizontal‑dominant swipe → snap one version
+            //             if (absX > absY && absX > TOUCH_THRESHOLD) {
+            //                 if (dx < 0) {
+            //                     // Swipe left → next version
+            //                     const newScroll = Math.min(
+            //                         hScroll.scrollLeft + panelWidth,
+            //                         hScroll.scrollWidth - panelWidth
+            //                     );
+            //                     hScroll.scrollTo({ left: newScroll, behavior: "smooth" });
+            //                 } else {
+            //                     // Swipe right → previous version
+            //                     const newScroll = Math.max(hScroll.scrollLeft - panelWidth, 0);
+            //                     hScroll.scrollTo({ left: newScroll, behavior: "smooth" });
+            //                 }
+            //             }
+            //             hTouchStartX = null;
+            //             hTouchStartY = null;
+            //         }, { passive: true });
+            //     });
+            // })();
+
+
+            // // mouse direction
+            // function makeDraggableScroll(container, isVertical) {
+            //     let down = false, startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0;
+
+            //     container.addEventListener("mousedown", e => {
+            //         down = true;
+            //         container.classList.add("dragging");
+            //         startX = e.pageX;
+            //         startY = e.pageY;
+            //         scrollLeft = container.scrollLeft;
+            //         scrollTop = container.scrollTop;
+            //         e.preventDefault();
+            //     });
+
+            //     window.addEventListener("mouseup", () => {
+            //         if (!down) return;
+            //         down = false;
+            //         container.classList.remove("dragging");
+            //     });
+
+            //     container.addEventListener("mousemove", e => {
+            //         if (!down) return;
+            //         const dx = e.pageX - startX;
+            //         const dy = e.pageY - startY;
+
+            //         if (isVertical) {
+            //             // Vertical drag: move vContainer.scrollTop
+            //             container.scrollTop = scrollTop - (dy * MOUSE_SPEED);
+            //         } else {
+            //             // Horizontal drag: move container.scrollLeft
+            //             container.scrollLeft = scrollLeft - (dx * MOUSE_SPEED);
+            //         }
+            //         e.preventDefault();
+            //     });
+
+            //     container.addEventListener("dragstart", e => e.preventDefault());
+            // }
+            // makeDraggableScroll(vContainer, true); // Attach to vertical
+            // document.querySelectorAll(".horizontal-scroll") // Attach to each horizontal
+            //     .forEach(hs => makeDraggableScroll(hs, false));
+
+
+            // // MOUSE WHEEL SCROLLING (Vertical only)
+            // vContainer.addEventListener("wheel", e => {
+            //     e.preventDefault();
+            //     // Multiply deltaY by sensitivity; then let scroll‑snap do the rest
+            //     vContainer.scrollBy({
+            //         top: e.deltaY * WHEEL_SENSITIVITY,
+            //         left: 0,
+            //         behavior: "auto"
+            //     });
+            //     // Debounce updating Info
+            //     clearTimeout(vContainer._wheelTO);
+            //     vContainer._wheelTO = setTimeout(updateInfo, 100);
+            // }, { passive: false });
+
+
+            function makeDraggableScroll(container, isVertical, speed = 2) {
+                let down = false, startX, startY, sL, sT;
+                container.addEventListener("mousedown", e => {
+                    down = true; container.classList.add("dragging");
+                    startX = e.pageX; startY = e.pageY;
+                    sL = container.scrollLeft; sT = container.scrollTop;
+                    e.preventDefault();
+                });
+                window.addEventListener("mouseup", () => {
+                    if (!down) return; down = false;
+                    container.classList.remove("dragging");
+                });
+                container.addEventListener("mousemove", e => {
+                    if (!down) return;
+                    const dx = e.pageX - startX, dy = e.pageY - startY;
+                    if (isVertical) container.scrollTop = sT - dy * speed;
+                    else container.scrollLeft = sL - dx * speed;
+                    e.preventDefault();
+                });
+                container.addEventListener("dragstart", e => e.preventDefault());
+            }
+            makeDraggableScroll(vContainer, true, 3);
+            document.querySelectorAll(".horizontal-scroll")
+                .forEach(hs => makeDraggableScroll(hs, false, 3));
+
+            let to;
+            vContainer.addEventListener("scroll", () => {
+                clearTimeout(to);
+                to = setTimeout(updateInfo, 100);
+            });
+
+
+            // —————————————————————————
+            // 9) Initial render & random
+            // —————————————————————————
+            shuffle(itemsOrdered);
+            buildPanels();
+            updateInfo();
+
+
+
+
+
+
+        })
+        .catch(err => {
+            console.error("Failed to load data.json:", err);
+        });
+
+});
+
+if some changes are needed tell me where and how i fix themqtyDisplay.style.transform = "scale(1.1)";
+                        setTimeout(() => qtyDisplay.style.transform = "scale(1)", 100);
+
+
+
+
+
+                            // const rawItems = [
+    //     {
+    //         title: "Men's Jacket",
+    //         baseSerial: "FMA001",
+    //         price: "KES 1500",
+    //         description: "Slim-fit classic jacket for cold.",
+    //         versions: ["FMA00101.jpg", "FMA00102.jpg"]
+    //     },
+    //     {
+    //         title: "Jeans",
+    //         baseSerial: "FMA002",
+    //         price: "KES 800",
+    //         description: "Stylish blue jeans for men.",
+    //         versions: ["FMA00201.jpg", "FMA00202.jpg", "FMA00203.jpg"]
+    //     },
+    //     {
+    //         title: "Elegant Top",
+    //         baseSerial: "FMA003",
+    //         price: "KES 3000",
+    //         description: "Perfect for parties and formal events.",
+    //         versions: ["FMA00301.jpg", "FMA00302.jpg", "FMA00303.jpg"]
+    //     },
+    //     {
+    //         title: "Trend Jacket Pants",
+    //         baseSerial: "FMA004",
+    //         price: "KES 2000",
+    //         description: "Spring/fall zipper pants.",
+    //         versions: ["FMA00401.jpg", "FMA00402.jpg", "FMA00403.jpg", "FMA00404.jpg", "FMA00405.jpg"]
+    //     },
+    //     {
+    //         title: "Male thobes Oman Style",
+    //         baseSerial: "FMA005",
+    //         price: "KES 3000",
+    //         description: "new look oman style for eid",
+    //         versions: ["FMA00501.jpg", "FMA00502.jpg", "FMA00503.jpg"]
+    //     },
+    //     {
+    //         title: "male thobe mexican style",
+    //         baseSerial: "FMA006",
+    //         price: "KES 3000",
+    //         description: "mexican muslim wear in all designs",
+    //         versions: ["FMA00601.jpg", "FMA00602.jpg", "FMA00603.jpg"]
+    //     },
+    //     {
+    //         title: "full size women dress laced neck",
+    //         baseSerial: "FFA001",
+    //         price: "KES 3000",
+    //         description: "Perfect for home wearing",
+    //         versions: ["FFA00101.jpg", "FFA00102.jpg", "FFA00103.jpg"]
+    //     },
+    //     {
+    //         title: "full size women dress braided neck",
+    //         baseSerial: "FFA002",
+    //         price: "KES 3000",
+    //         description: "Perfect for parties and formal events.",
+    //         versions: ["FFA00201.jpg", "FFA00202.jpg", "FFA00203.jpg"]
+    //     }
+    // ];
+    const rawItems = [
+        {
+            title: "Men's Jacket",
+            baseSerial: "FMA001",
+            price: "KES 1500",
+            description: "Slim-fit classic jacket with zip closure and side pockets.",
+            versions: ["FMA00101.jpg", "FMA00102.jpg"],
+            versionsState: [],         // will fill below
+            sizes: ["S", "M", "L", "XL"],
+            material: "100% Cotton",
+            weight: "450g"
+        },
+        {
+            title: "Jeans",
+            baseSerial: "FMA002",
+            price: "KES 800",
+            description: "Dark-wash straight-leg jeans with five-pocket styling.",
+            versions: ["FMA00201.jpg", "FMA00202.jpg", "FMA00203.jpg"],
+            versionsState: [],
+            sizes: ["30", "32", "34", "36"],
+            material: "Denim (98% Cotton, 2% Spandex)",
+            weight: "600g"
+        },
+        {
+            title: "Elegant Top",
+            baseSerial: "FMA003",
+            price: "KES 3000",
+            description: "Silk blend top with pleated neckline and cap sleeves.",
+            versions: ["FMA00301.jpg", "FMA00302.jpg", "FMA00303.jpg"],
+            versionsState: [],
+            sizes: ["XS", "S", "M", "L"],
+            material: "Silk Blend",
+            weight: "200g"
+        },
+        {
+            title: "Trend Pants",
+            baseSerial: "FMA004",
+            price: "KES 2000",
+            description: "Zippered jogger pants with elastic cuffs and cargo pockets.",
+            versions: ["FMA00401.jpg", "FMA00402.jpg", "FMA00403.jpg", "FMA00404.jpg", "FMA00405.jpg"],
+            versionsState: [],
+            sizes: ["S", "M", "L", "XL"],
+            material: "Polyester Blend",
+            weight: "550g"
+        }
+    ];
+
+    // Add per-version state to each item
+    rawItems.forEach(item => {
+        item.versionsState = item.versions.map(() => ({
+            liked: false,
+            inCart: false
+        }));
+    });

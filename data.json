@@ -1,0 +1,459 @@
+[
+    {
+        "itemCategoryTitle": "Men's Jackets",
+        "baseSerial": "FMA001",
+        "versions": [
+            {
+                "img": "FMA00101.jpg",
+                "versionSerial": "01",
+                "title": "Men's Jacket (Red)",
+                "priceValue": 1500,
+                "description": "Red slim-fit jacket…",
+                "sizes": [
+                    "Small",
+                    "Meduim",
+                    "Large"
+                ],
+                "material": "100% Cotton",
+                "weight": "450g",
+                "dateAdded": "19-09-2025",
+                "inStock": true
+            },
+            {
+                "img": "FMA00102.jpg",
+                "versionSerial": "02",
+                "title": "Men's Jacket (Blue)",
+                "priceValue": 1800,
+                "description": "Blue slim-fit jacket…",
+                "sizes": [
+                    "M",
+                    "L",
+                    "XL"
+                ],
+                "material": "100% Cotton",
+                "weight": "450g",
+                "dateAdded": "05-12-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Jeans",
+        "baseSerial": "FMA002",
+        "versions": [
+            {
+                "img": "FMA00201.jpg",
+                "versionSerial": "01",
+                "title": "Blue Jeans (Light Wash)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FMA00202.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FMA00203.jpg",
+                "versionSerial": "03",
+                "title": "Black Jeans",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Jeans",
+        "baseSerial": "FMA003",
+        "versions": [
+            {
+                "img": "FMA00301.jpg",
+                "versionSerial": "01",
+                "title": "Blue Jeans (Light Wash)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FMA00302.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FMA00303.jpg",
+                "versionSerial": "03",
+                "title": "Black Jeans",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Jeans",
+        "baseSerial": "FMA004",
+        "versions": [
+            {
+                "img": "FMA00401.jpg",
+                "versionSerial": "01",
+                "title": "Blue Jeans (Light Wash)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FMA00402.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FMA00403.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FMA00404.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FMA00405.jpg",
+                "versionSerial": "03",
+                "title": "Black Jeans",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Jeans",
+        "baseSerial": "FMA005",
+        "versions": [
+            {
+                "img": "FMA00501.jpg",
+                "versionSerial": "01",
+                "title": "Blue Jeans (Light Wash)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FMA00502.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FMA00503.jpg",
+                "versionSerial": "03",
+                "title": "Black Jeans",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Jeans",
+        "baseSerial": "FMA006",
+        "versions": [
+            {
+                "img": "FMA00601.jpg",
+                "versionSerial": "01",
+                "title": "Blue Jeans (Light Wash)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FMA00602.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FMA00603.jpg",
+                "versionSerial": "03",
+                "title": "Black Jeans",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Jeans",
+        "baseSerial": "FFA001",
+        "versions": [
+            {
+                "img": "FFA00101.jpg",
+                "versionSerial": "01",
+                "title": "Blue Jeans (Light Wash)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FFA00102.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FFA00103.jpg",
+                "versionSerial": "03",
+                "title": "Black Jeans",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Jeans",
+        "baseSerial": "FFA002",
+        "versions": [
+            {
+                "img": "FFA00201.jpg",
+                "versionSerial": "01",
+                "title": "Blue Jeans (Light Wash)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FFA00202.jpg",
+                "versionSerial": "02",
+                "title": "Blue Jeans (Dark Wash)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FFA00203.jpg",
+                "versionSerial": "03",
+                "title": "Black Jeans",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    }
+]

@@ -114,6 +114,13 @@ body {
     width: 30px;
     height: 30px;
 }
+.logo{
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 48%;
+
+}
 
 .top-bar button:hover {
     /* background: fixed;
@@ -142,7 +149,7 @@ body {
     scroll-behavior: smooth;
     cursor: grab;
     /* touch-action: none; */
-    touch-action: pan-y;
+    /* touch-action: pan-y; */
 }
 
 .vertical-scroll::-webkit-scrollbar {
@@ -153,7 +160,7 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
-    scroll-snap-align: center;
+    scroll-snap-align: start;
     display: flex;
     /* nest horizontal scroll inside */
 }
@@ -166,7 +173,7 @@ body {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     cursor: grab;
-    touch-action: pan-x;
+    /* touch-action: pan-x; */
 }
 
 .horizontal-scroll::-webkit-scrollbar {
@@ -175,7 +182,7 @@ body {
 
 .version-panel {
     flex: 0 0 100%;
-    scroll-snap-align: center;
+    scroll-snap-align: start;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -224,7 +231,7 @@ body {
 /* Pagination dots */
 .pagination {
     position: absolute;
-    bottom: 140px;
+    bottom: 200px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -308,6 +315,17 @@ body {
     box-shadow: 0 6px 6px -5px rgba(0, 0, 0, 0.6);
 } */
 
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.2); }
+    60% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.heartbeat {
+    animation: heartbeat 0.4s ease;
+}
+
 
 
 
@@ -320,16 +338,17 @@ body {
 .panel-title {
     position: absolute;
     left: 10px;
-    bottom: 110px;
-    background: rgba(0, 0, 0, 0.3);
+    bottom: 130px;
+    background: rgba(0, 0, 0, 0.2);
     text-shadow: 1px 0#000000;
     color: #fff;
-    padding: 8px 12px;
+    padding: 3px 12px;
     border-radius: 8px;
     z-index: 5;
     max-width: 80%;
     font-size: 0.9rem;
     line-height: 1.2;
+    backdrop-filter: blur(3px);
 }
 
 .panel-title-text,
@@ -350,6 +369,52 @@ body {
     font-size: 0.85rem;
     white-space: nowrap;
 }
+
+.panel-extra {
+    position: absolute;
+    bottom: 81px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    text-shadow: 1px 0#000000;
+    border-radius: 20px;
+    padding: 0.4rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    z-index: 5;
+    backdrop-filter: blur(10px);
+}
+
+/* Date text (first line) */
+.panel-extra .date-text {
+    font-size: 0.75rem;
+    color: var(--fg);
+}
+
+/* Stock row (second line) */
+.panel-extra .stock-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.panel-extra .stock-icon {
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    /* white square behind the SVG, per request */
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.panel-extra .stock-text {
+    font-size: 0.75rem;
+    color: var(--fg);
+}
+
+
+
 
 
 
