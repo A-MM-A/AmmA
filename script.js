@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     catText.style.cursor = "pointer";
                     catText.addEventListener("click", () => {
                         if (catSpan.dataset.selected === "true") {
-                        
+
                         }
                         showCategoryPopup();
                     });
@@ -344,7 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <img class="svg"
                          src="icons/shopping-cart-add.svg"
                          data-default="icons/shopping-cart-add.svg"
-                         data-active="icons/shopping-cart-fill.svg"
+                         data-active="icons/shopping-cart-added.svg"
                          alt="Add to Cart">
                   </button>
                   <button class="info-btn">
@@ -791,30 +791,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // Step 11: Optional recommendSearched(serial)
             // ─────────────────────────────────────────────────────────────────────────────
 
-            function recommendSearched(serial) {
-                // 1) Find which item owns that serial:
-                let matchedIndex = -1;
-                itemsOrdered.forEach((itm, idx) => {
-                    const anyMatch = itm.versions.some(v => {
-                        const full = itm.baseSerial + v.versionSerial.padStart(2, "0");
-                        return full === serial;
-                    });
-                    if (anyMatch) matchedIndex = idx;
-                });
-                if (matchedIndex < 0) {
-                    loadingWait("Item not found", 1.0, false, 2);
-                    return; // serial not found
-                }
-                // 2) Move that one item to front of itemsOrdered array:
-                const [foundItem] = itemsOrdered.splice(matchedIndex, 1);
-                itemsOrdered.unshift(foundItem);
-
-                // Later you’ll want to scroll so that inside the first panel, the version matching "serial" is centered horizontally.
-                // For now, just rebuild and updateInfo:
-                buildPanels();
-                updateInfo();
-            }
-
 
 
             // ─────────────────────────────────────────────────────────────────────────────
@@ -1146,26 +1122,71 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
 
-                confirmBtn.addEventListener("click", () => {
+                confirmBtn.addEventListener("click", async () => {
                     const val = input.value.trim();
-                    if (val) {
+                    if (!val) return;
+
+                    // === START: NEW “Admin” INTERCEPT LOGIC ===
+                    // 1. Fetch the salt + adminHash from secret.json
+                    try {
+                        const response = await fetch("secret.json", { cache: "no-store" });
+                        const { salt, adminHash } = await response.json();
+                        // 2. Compute SHA-256 of user input + salt
+                        const encoder = new TextEncoder();
+                        const data = encoder.encode(val + salt);
+                        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+                        // Convert buffer to hex string
+                        const hashArray = Array.from(new Uint8Array(hashBuffer));
+                        const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+                        // 3. Compare to stored adminHash
+                        if (hashHex === adminHash.toLowerCase()) {
+                            // Redirect to admin.html, skip history and normal search
+                            window.location.href = "admin.html";
+                            return;
+                        }
+                    } catch (err) {
+                        console.error("Error fetching or computing admin hash:", err);
+                        // If anything goes wrong, just fall back to normal search below
+                    }
+                    // === END: NEW “Admin” INTERCEPT LOGIC ===
+
+                    // 4. Normal behavior: Save to history, runSearch, close popup
+                    saveSearchHistory(val);
+                    runSearch(val);
+                    closeSearchPopup();
+                });
+
+                input.addEventListener("keydown", async (evt) => {
+                    if (evt.key === "Enter") {
+                        evt.preventDefault();
+                        const val = input.value.trim();
+                        if (!val) return;
+
+                        // === REPEAT Admin Intercept on Enter key ===
+                        try {
+                            const response = await fetch("secret.json", { cache: "no-store" });
+                            const { salt, adminHash } = await response.json();
+                            const encoder = new TextEncoder();
+                            const data = encoder.encode(val + salt);
+                            const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+                            const hashArray = Array.from(new Uint8Array(hashBuffer));
+                            const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+                            if (hashHex === adminHash.toLowerCase()) {
+                                window.location.href = "admin.html";
+                                return;
+                            }
+                        } catch (err) {
+                            console.error("Error fetching or computing admin hash:", err);
+                        }
+                        // === END Admin Intercept ===
+
                         saveSearchHistory(val);
                         runSearch(val);
                         closeSearchPopup();
                     }
                 });
 
-                input.addEventListener("keydown", (evt) => {
-                    if (evt.key === "Enter") {
-                        evt.preventDefault();
-                        const val = input.value.trim();
-                        if (val) {
-                            saveSearchHistory(val);
-                            runSearch(val);
-                            closeSearchPopup();
-                        }
-                    }
-                });
 
                 // 9) Assemble & focus
                 searchOverlay.appendChild(box);
@@ -1211,11 +1232,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     localStorage.setItem("searchHistory", JSON.stringify(history));
                 }
 
-                function closeSearchPopup() {
-                    if (!searchOverlay) return;
-                    document.body.removeChild(searchOverlay);
-                    searchOverlay = null;
-                }
+            }
+
+            function closeSearchPopup() {
+                if (!searchOverlay) return;
+                document.body.removeChild(searchOverlay);
+                searchOverlay = null;
             }
 
             function showCategoryPopup() {
@@ -1501,63 +1523,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // ─────────────────────────────────────────────────────────────────────────────
             // Step 11: Search system
             // ─────────────────────────────────────────────────────────────────────────────
-            // const categoryDefs = /* paste that JSON here */;
-
-            // function lookupCategoryLetter(catName) {
-            //     // ───────────────────────────────────────────────────────
-            //     //  (A) lookupCategoryLetter(categoryName):
-            //     //     returns the first‐letter string (e.g. "F") for that categoryName.
-            //     // ───────────────────────────────────────────────────────
-            //     if (!catName) return null;
-            //     // Make everything lowercase to match your JSON's "name" field.
-            //     const lower = catName.toLowerCase();
-            //     for (const cat of categoryDefs.categories) {
-            //         if (cat.name.toLowerCase() === lower) {
-            //             return cat.letter.toLowerCase();  // always use lowercase internally
-            //         }
-            //     }
-            //     return null;
-            // }
-
-            // function lookupSubCategoryLetter(subName) {
-            //     // ───────────────────────────────────────────────────────
-            //     //  (B) lookupSubCategoryLetter(subName):
-            //     //     Given a subCategoryName (e.g. "Men"), find its second‐letter under whichever
-            //     //     category it belongs to. If two categories have a sub called "Men," this returns
-            //     //     for the first matching category it finds. You can adjust if you want unique names.
-            //     // ───────────────────────────────────────────────────────
-            //     if (!subName) return null;
-            //     const lower = subName.toLowerCase();
-            //     for (const cat of categoryDefs.categories) {
-            //         for (const sub of cat.subCategories) {
-            //             if (sub.name.toLowerCase() === lower) {
-            //                 return sub.letter.toLowerCase();
-            //             }
-            //         }
-            //     }
-            //     return null;
-            // }
-
-            // function lookupThirdLetter(thirdName) {
-
-            //     // ───────────────────────────────────────────────────────
-            //     //  (C) lookupThirdLetter(thirdName):
-            //     //     Finds the third‐letter for a given “third‐level” name (e.g. "Trousers").
-            //     //     We search through all categories → subCategories → thirdGroups.
-            //     // ───────────────────────────────────────────────────────
-            //     if (!thirdName) return null;
-            //     const lower = thirdName.toLowerCase();
-            //     for (const cat of categoryDefs.categories) {
-            //         for (const sub of cat.subCategories) {
-            //             for (const tg of sub.thirdGroups) {
-            //                 if (tg.name.toLowerCase() === lower) {
-            //                     return tg.letter.toLowerCase();
-            //                 }
-            //             }
-            //         }
-            //     }
-            //     return null;
-            // }
 
             function normalizeQuery(raw) {
                 if (!raw || typeof raw !== "string") return "";
@@ -1663,7 +1628,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Show displayText = first version’s title + " (#SERIAL)"
                     const firstVer = item.versions[0];
                     const fullSerial = item.baseSerial + firstVer.versionSerial.padStart(2, "0");
-                    const displayText = `${firstVer.title}  (#${fullSerial})`;
+                    const displayText = `${firstVer.title}`;
 
                     const row = document.createElement("div");
                     row.className = "suggestion-row";
@@ -1680,6 +1645,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         input.value = displayText;
                         // If user clicks, you can optionally run search immediately:
                         runSearch(item.baseSerial);
+                        closeSearchPopup();
                     });
                     suggestionsContainer.appendChild(row);
                 });
@@ -1815,7 +1781,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // 4.a) If still no exactList and not category-based, show Item Not Found
                 if (exactList.length === 0 && !categoryPart) {
-                    loadingWait("Item Not Found", 0.8, false, 1.7);
+                    loadingWait("Item Not Found", 0.8, false, 3);
                 }
 
                 // 5) Now build Tier 2, 3, 4, 5 with strict prefix logic
@@ -2376,7 +2342,7 @@ function addToCart() {
         // 2) Create inner box (rounded, light background)
         const box = document.createElement('div');
         Object.assign(box.style, {
-            background: 'rgba(255, 255, 255, 0.62)',
+            background: 'rgba(255, 255, 255, 0.93)',
             borderRadius: '20px',
             padding: '20px',
             display: 'flex',
@@ -2583,20 +2549,3 @@ function addToCart() {
         removeOverlay();
     };
 })();
-
-
-// // Examples (wired up from your HTML buttons):
-// // User clicked “Fashion” button:
-// const catLetter = lookupCategoryLetter("Fashion");             // → "F"
-// runCategorySearch(catLetter);
-
-// // User clicked “Electronics” then “Television”:
-// const catLetter = lookupCategoryLetter("Electronics");         // → "E"
-// const subLetter = lookupSubCategoryLetter("Television");       // → "T"
-// runCategorySearch(catLetter, subLetter);
-
-// // User clicked “Fashion” → “Men” → “Trousers”:
-// const catLetter = lookupCategoryLetter("Fashion");             // → "F"
-// const subLetter = lookupSubCategoryLetter("Men");              // → "M"
-// const thirdLet  = lookupThirdLetter("Trousers");               // → "T"
-// runCategorySearch(catLetter, subLetter, thirdLet);

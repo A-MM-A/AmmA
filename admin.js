@@ -25,9 +25,167 @@ document.getElementById('addItemBtn').onclick = () => {
 
 
 
+async function showSecretKeyGeneratorPopup() {
+  // 1) Create overlay container
+  const overlay = document.createElement("div");
+  overlay.id = "secret-generator-overlay";
+  Object.assign(overlay.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(0, 0, 0, 0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: "9999"
+  });
 
+  // 2) Create the pop-up box
+  const box = document.createElement("div");
+  box.id = "secret-generator-box";
+  Object.assign(box.style, {
+    background: "#2c2c2c4e",
+    color: "var(--fg)",
+    borderRadius: "12px",
+    width: "90%",
+    maxWidth: "400px",
+    padding: "1.5rem",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+    position: "relative",
+    backdropFilter: "blur(10px)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem"
+  });
 
+  // 3) Close (“✕”) button (top-right)
+  const closeBtn = document.createElement("button");
+  closeBtn.innerText = "✕";
+  Object.assign(closeBtn.style, {
+    position: "absolute",
+    top: "8px",
+    right: "12px",
+    background: "none",
+    border: "none",
+    color: "var(--fg)",
+    fontSize: "1.2rem",
+    cursor: "pointer"
+  });
+  closeBtn.onclick = () => document.body.removeChild(overlay);
+  box.appendChild(closeBtn);
 
+  // 4) Heading
+  const heading = document.createElement("h2");
+  heading.innerText = "Generate New Secret-Key JSON";
+  Object.assign(heading.style, {
+    margin: "0 0 0.5rem 0",
+    fontSize: "1.25rem",
+    textAlign: "center",
+    color: "var(--fg)"
+  });
+  box.appendChild(heading);
+
+  // 5) Input field (for new secret phrase)
+  const inputLabel = document.createElement("label");
+  inputLabel.innerText = "Enter new secret phrase (case-sensitive):";
+  Object.assign(inputLabel.style, {
+    fontSize: "1rem",
+    marginBottom: "0.25rem",
+    color: "var(--fg)"
+  });
+  box.appendChild(inputLabel);
+
+  const input = document.createElement("input");
+  input.id = "secret-generator-input";
+  input.type = "text";
+  input.placeholder = "e.g. Login as Admin";
+  Object.assign(input.style, {
+    width: "100%",
+    padding: "0.6rem 0.8rem",
+    borderRadius: "6px",
+    border: "1px solid var(--gray)",
+    background: "var(--muted)",
+    color: "var(--fg)",
+    fontSize: "1rem"
+  });
+  box.appendChild(input);
+
+  // 6) “Generate” button
+  const generateBtn = document.createElement("button");
+  generateBtn.id = "secret-generator-generate";
+  generateBtn.innerText = "Generate";
+  Object.assign(generateBtn.style, {
+    width: "100%",
+    padding: "0.8rem",
+    borderRadius: "8px",
+    border: "none",
+    background: "var(--accent)",
+    color: "var(--bg)",
+    fontSize: "1rem",
+    cursor: "pointer"
+  });
+  box.appendChild(generateBtn);
+
+  // 7) Info / instructions line
+  const info = document.createElement("div");
+  info.innerText = "Open the console (F12) to copy the resulting JSON.";
+  Object.assign(info.style, {
+    fontSize: "0.85rem",
+    color: "var(--fg)",
+    textAlign: "center",
+    marginTop: "0.5rem"
+  });
+  box.appendChild(info);
+
+  // 8) Assemble and show
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  input.focus();
+
+  // 9) When “Generate” is clicked → compute and log JSON
+  generateBtn.addEventListener("click", async () => {
+    const phrase = input.value.trim();
+    if (!phrase) {
+      console.warn("Please enter a nonempty secret phrase.");
+      return;
+    }
+
+    // 9.a) Generate a random 8-byte salt → 16 hex chars
+    const saltBytes = window.crypto.getRandomValues(new Uint8Array(8));
+    const saltHex = Array.from(saltBytes)
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // 9.b) Compute SHA-256 of (phrase + saltHex)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(phrase + saltHex);
+    const hashBuf = await crypto.subtle.digest("SHA-256", data);
+    const hashArr = Array.from(new Uint8Array(hashBuf));
+    const hashHex = hashArr.map(b => b.toString(16).padStart(2, "0")).join("");
+
+    // 9.c) Build the JSON string
+    const outputObj = {
+      salt: saltHex,
+      adminHash: hashHex
+    };
+    const jsonString = JSON.stringify(outputObj, null, 4);
+
+    console.log("──── New secret.json contents ────");
+    console.log(jsonString);
+    console.log("──── Copy & paste the above into your secret.json ────");
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Attach showSecretKeyGeneratorPopup() to your admin button:
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("security-word-login-generator");
+  if (btn) {
+    btn.addEventListener("click", showSecretKeyGeneratorPopup);
+  }
+});
 
 
 
