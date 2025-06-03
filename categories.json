@@ -1,0 +1,116 @@
+{
+    "categories": [
+        {
+            "name": "Fashion",
+            "letter": "F",
+            "subCategories": [
+                {
+                    "name": "Men",
+                    "letter": "M",
+                    "thirdGroups": [
+                        {
+                            "name": "All Wear",
+                            "letter": "A"
+                        }
+                    ]
+                },
+                {
+                    "name": "Women",
+                    "letter": "F",
+                    "thirdGroups": [
+                        {
+                            "name": "A",
+                            "letter": "A"
+                        },
+                        {
+                            "name": "B",
+                            "letter": "B"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Electronics",
+            "letter": "E",
+            "subCategories": [
+                {
+                    "name": "Television",
+                    "letter": "T",
+                    "thirdGroups": [
+                        {
+                            "name": "24 inch",
+                            "letter": "A"
+                        },
+                        {
+                            "name": "43 inch",
+                            "letter": "C"
+                        }
+                    ]
+                },
+                {
+                    "name": "Remotes",
+                    "letter": "R",
+                    "thirdGroups": [
+                        {
+                            "name": "Vitron",
+                            "letter": "V"
+                        },
+                        {
+                            "name": "Sony",
+                            "letter": "S"
+                        }
+                    ]
+                }
+                ,
+                {
+                    "name": "Brackets",
+                    "letter": "B",
+                    "thirdGroups": [
+                        {
+                            "name": "A",
+                            "letter": "A"
+                        }
+                    ]
+                }
+                ,
+                {
+                    "name": "Adaptors",
+                    "letter": "A",
+                    "thirdGroups": [
+                        {
+                            "name": "A",
+                            "letter": "A"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Home Furniture",
+            "letter": "H",
+            "subCategories": [
+                {
+                    "name": "Chairs",
+                    "letter": "C",
+                    "thirdGroups": [
+                        {
+                            "name": "A",
+                            "letter": "A"
+                        }
+                    ]
+                },
+                {
+                    "name": "Tables",
+                    "letter": "T",
+                    "thirdGroups": [
+                        {
+                            "name": "A",
+                            "letter": "A"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

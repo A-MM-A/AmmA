@@ -1,6 +1,6 @@
 [
     {
-        "itemCategoryTitle": "Men's Jackets",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FMA001",
         "versions": [
             {
@@ -38,7 +38,7 @@
         ]
     },
     {
-        "itemCategoryTitle": "Jeans",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FMA002",
         "versions": [
             {
@@ -93,13 +93,13 @@
         ]
     },
     {
-        "itemCategoryTitle": "Jeans",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FMA003",
         "versions": [
             {
                 "img": "FMA00301.jpg",
                 "versionSerial": "01",
-                "title": "Blue Jeans (Light Wash)",
+                "title": "Jumper (Dark)",
                 "priceValue": 800,
                 "description": "Light‑wash straight‑leg jeans…",
                 "sizes": [
@@ -115,7 +115,7 @@
             {
                 "img": "FMA00302.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Jumper (Gray)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -132,7 +132,7 @@
             {
                 "img": "FMA00303.jpg",
                 "versionSerial": "03",
-                "title": "Black Jeans",
+                "title": "Jumper (Cream)",
                 "priceValue": 850,
                 "description": "Black slim‑fit jeans…",
                 "sizes": [
@@ -148,13 +148,13 @@
         ]
     },
     {
-        "itemCategoryTitle": "Jeans",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FMA004",
         "versions": [
             {
                 "img": "FMA00401.jpg",
                 "versionSerial": "01",
-                "title": "Blue Jeans (Light Wash)",
+                "title": "Full track suit (White)",
                 "priceValue": 800,
                 "description": "Light‑wash straight‑leg jeans…",
                 "sizes": [
@@ -170,7 +170,7 @@
             {
                 "img": "FMA00402.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Full track suit (Cream)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -187,7 +187,7 @@
             {
                 "img": "FMA00403.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Full track suit (Blue)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -204,7 +204,7 @@
             {
                 "img": "FMA00404.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Full track suit (Black)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -221,7 +221,7 @@
             {
                 "img": "FMA00405.jpg",
                 "versionSerial": "03",
-                "title": "Black Jeans",
+                "title": "Full track suit (Gray)",
                 "priceValue": 850,
                 "description": "Black slim‑fit jeans…",
                 "sizes": [
@@ -237,13 +237,13 @@
         ]
     },
     {
-        "itemCategoryTitle": "Jeans",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FMA005",
         "versions": [
             {
                 "img": "FMA00501.jpg",
                 "versionSerial": "01",
-                "title": "Blue Jeans (Light Wash)",
+                "title": "Oman kanzu (Light Wash)",
                 "priceValue": 3800,
                 "description": "Light‑wash straight‑leg jeans…",
                 "sizes": [
@@ -259,7 +259,7 @@
             {
                 "img": "FMA00502.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Oman kanzu (cream)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -276,7 +276,7 @@
             {
                 "img": "FMA00503.jpg",
                 "versionSerial": "03",
-                "title": "Black Jeans",
+                "title": "Oman kanzu",
                 "priceValue": 850,
                 "description": "Black slim‑fit jeans…",
                 "sizes": [
@@ -292,13 +292,13 @@
         ]
     },
     {
-        "itemCategoryTitle": "Jeans",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FMA006",
         "versions": [
             {
                 "img": "FMA00601.jpg",
                 "versionSerial": "01",
-                "title": "Blue Jeans (Light Wash)",
+                "title": "Mexican Kanzu (Light Blue)",
                 "priceValue": 800,
                 "description": "Light‑wash straight‑leg jeans…",
                 "sizes": [
@@ -314,7 +314,7 @@
             {
                 "img": "FMA00602.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Mexican Kanzu (Dark Blue)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -331,7 +331,7 @@
             {
                 "img": "FMA00603.jpg",
                 "versionSerial": "03",
-                "title": "Black Jeans",
+                "title": "Mexican Kanzu",
                 "priceValue": 850,
                 "description": "Black slim‑fit jeans…",
                 "sizes": [
@@ -347,13 +347,13 @@
         ]
     },
     {
-        "itemCategoryTitle": "Jeans",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FFA001",
         "versions": [
             {
                 "img": "FFA00101.jpg",
                 "versionSerial": "01",
-                "title": "Blue Jeans (Light Wash)",
+                "title": "Women Dress (yellow)",
                 "priceValue": 800,
                 "description": "Light‑wash straight‑leg jeans…",
                 "sizes": [
@@ -369,7 +369,7 @@
             {
                 "img": "FFA00102.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Women Dress (green)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -386,7 +386,7 @@
             {
                 "img": "FFA00103.jpg",
                 "versionSerial": "03",
-                "title": "Black Jeans",
+                "title": "Women Dress (orange)",
                 "priceValue": 850,
                 "description": "Black slim‑fit jeans…",
                 "sizes": [
@@ -402,13 +402,13 @@
         ]
     },
     {
-        "itemCategoryTitle": "Jeans",
+        "itemCategoryTitle": "Fashion",
         "baseSerial": "FFA002",
         "versions": [
             {
                 "img": "FFA00201.jpg",
                 "versionSerial": "01",
-                "title": "Blue Jeans (Light Wash)",
+                "title": "Female Designer (yellow)",
                 "priceValue": 800,
                 "description": "Light‑wash straight‑leg jeans…",
                 "sizes": [
@@ -424,7 +424,7 @@
             {
                 "img": "FFA00202.jpg",
                 "versionSerial": "02",
-                "title": "Blue Jeans (Dark Wash)",
+                "title": "Female Designer (blue)",
                 "priceValue": 900,
                 "description": "Dark‑wash straight‑leg jeans…",
                 "sizes": [
@@ -441,7 +441,7 @@
             {
                 "img": "FFA00203.jpg",
                 "versionSerial": "03",
-                "title": "Black Jeans",
+                "title": "Female Designer (orange)",
                 "priceValue": 850,
                 "description": "Black slim‑fit jeans…",
                 "sizes": [
@@ -453,6 +453,630 @@
                 "weight": "--",
                 "dateAdded": "15-03-2025",
                 "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Fashion",
+        "baseSerial": "FFB001",
+        "versions": [
+            {
+                "img": "FFB00101.jpg",
+                "versionSerial": "01",
+                "title": "Woman Designer (green)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FFB00102.jpg",
+                "versionSerial": "02",
+                "title": "Woman Designer (maroon)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FFB00103.jpg",
+                "versionSerial": "03",
+                "title": "Woman Designer (blue)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "FFB00104.jpg",
+                "versionSerial": "01",
+                "title": "Woman Designer (red)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "FFB00105.jpg",
+                "versionSerial": "02",
+                "title": "Woman Designer (orange)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "FFB00106.jpg",
+                "versionSerial": "03",
+                "title": "Woman Designer (light blue)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Electronics",
+        "baseSerial": "ETC001",
+        "versions": [
+            {
+                "img": "ETC00101.jpg",
+                "versionSerial": "01",
+                "title": "TV 43' (Vitron)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "ETC00102.jpg",
+                "versionSerial": "02",
+                "title": "TV 43' (Syinix)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Electronics",
+        "baseSerial": "ETA001",
+        "versions": [
+            {
+                "img": "ETA00101.jpg",
+                "versionSerial": "01",
+                "title": "TV 24' (Amtec)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "ETA00102.jpg",
+                "versionSerial": "02",
+                "title": "TV 24' (Glaze)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "ETA00103.jpg",
+                "versionSerial": "03",
+                "title": "TV 24' (Vitron)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Electronics",
+        "baseSerial": "ERV001",
+        "versions": [
+            {
+                "img": "ERV00101.jpg",
+                "versionSerial": "01",
+                "title": "Vitron Tv remote (Magic)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "ERV00102.jpg",
+                "versionSerial": "02",
+                "title": "Vitron Tv remote (Smart)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "ERV00103.jpg",
+                "versionSerial": "03",
+                "title": "Vitron Tv remote (Smart)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "ERV00104.jpg",
+                "versionSerial": "04",
+                "title": "Vitron Tv remote (Digital)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "ERV00105.jpg",
+                "versionSerial": "05",
+                "title": "Vitron Tv remote (Digital)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Electronics",
+        "baseSerial": "ERS001",
+        "versions": [
+            {
+                "img": "ERS00101.jpg",
+                "versionSerial": "01",
+                "title": "Sony TV remote (Magic)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "ERS00102.jpg",
+                "versionSerial": "02",
+                "title": "Sony TV remote (Smart)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "ERS00103.jpg",
+                "versionSerial": "03",
+                "title": "Sony TV remote (Long)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "ERS00104.jpg",
+                "versionSerial": "04",
+                "title": "Sony TV remote (Short)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "ERS00105.jpg",
+                "versionSerial": "05",
+                "title": "Sony TV remote (Old)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Electronics",
+        "baseSerial": "EBA001",
+        "versions": [
+            {
+                "img": "EBA00101.jpg",
+                "versionSerial": "01",
+                "title": "Wall Bracket Tv (14-42)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "EBA00102.jpg",
+                "versionSerial": "02",
+                "title": "Wall Bracket Tv (41-FB)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "EBA00103.jpg",
+                "versionSerial": "03",
+                "title": "Wall Bracket Tv (20T)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "EBA00104.jpg",
+                "versionSerial": "04",
+                "title": "Wall Bracket Tv (45F)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "EBA00105.jpg",
+                "versionSerial": "05",
+                "title": "Wall Bracket Tv (44T)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Electronics",
+        "baseSerial": "EAA001",
+        "versions": [
+            {
+                "img": "EAA00101.jpg",
+                "versionSerial": "01",
+                "title": "Power Adapter (9v 1A)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "EAA00102.jpg",
+                "versionSerial": "02",
+                "title": "Power Adapter (6v 2A)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            },
+            {
+                "img": "EAA00103.jpg",
+                "versionSerial": "03",
+                "title": "Power Adapter (9v 2A)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "EAA00104.jpg",
+                "versionSerial": "04",
+                "title": "Power Adapter (5v 2A)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            },
+            {
+                "img": "EAA00105.jpg",
+                "versionSerial": "05",
+                "title": "Power Adapter (12v 2A)",
+                "priceValue": 850,
+                "description": "Black slim‑fit jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "--",
+                "dateAdded": "15-03-2025",
+                "inStock": false
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Home",
+        "baseSerial": "HCA001",
+        "versions": [
+            {
+                "img": "HCA00101.jpg",
+                "versionSerial": "01",
+                "title": "Designer Home Chair (yellow)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "HCA00102.jpg",
+                "versionSerial": "02",
+                "title": "Designer Home Chair (blue)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
+            }
+        ]
+    },
+    {
+        "itemCategoryTitle": "Home",
+        "baseSerial": "HTA001",
+        "versions": [
+            {
+                "img": "HTA00101.jpg",
+                "versionSerial": "01",
+                "title": "Miniture Home Table (white)",
+                "priceValue": 800,
+                "description": "Light‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "01-04-2026",
+                "inStock": true
+            },
+            {
+                "img": "HTA00102.jpg",
+                "versionSerial": "02",
+                "title": "Miniture Home Table (black)",
+                "priceValue": 900,
+                "description": "Dark‑wash straight‑leg jeans…",
+                "sizes": [
+                    "30",
+                    "32",
+                    "34",
+                    "36"
+                ],
+                "material": "Denim (98% Cotton, 2% Spandex)",
+                "weight": "600g",
+                "dateAdded": "__-__-____",
+                "inStock": true
             }
         ]
     }

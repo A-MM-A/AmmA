@@ -91,7 +91,7 @@ function removeFromCartCount(amount) {
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------- 
-//                                                                 scrolling system
+//                                                     scrolling system + state management
 // ---------------------------------------------------------------------------------------------------------------------------------------------- 
 
 // Track which item panel & which version are centered
@@ -107,25 +107,155 @@ function shuffle(arr) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // —————————————————————————
-    //   Raw product data from data.json   
-    // —————————————————————————
+    // ─────────────────────────────────────────────────────────────────────────────
+    //   Step A: Fetch rawItems from data.json  
+    // ─────────────────────────────────────────────────────────────────────────────
     fetch("data.json")
         .then(response => response.json())
         .then(rawItems => {
-            // Once JSON is loaded, add per-version state:
-            // Serial: [Cat][Gender][XXX][VV], e.g. "FMA00101.jpg"
+
+            // categories.json importing
+
+            let categoryDefs = null;
+
+            fetch("categories.json")
+                .then(resp => {
+                    if (!resp.ok) throw new Error(`Failed to load categories.json (status ${resp.status})`);
+                    return resp.json();
+                })
+                .then(json => {
+                    categoryDefs = json;        // store globally
+                    initCategorySystem();       // now that categoryDefs is ready, wire everything
+                })
+                .catch(err => {
+                    console.error("Error loading categories.json:", err);
+                    // If you have a loadingStart(0.55) (or similar), call it here:
+                    if (typeof loadingStart === "function") {
+                        loadingStart(0.55);
+                    }
+                });
+
+            function initCategorySystem() {
+                // 1) Define our three "lookup" helpers (they reference categoryDefs)
+                function lookupCategoryLetter(catName) {
+                    if (!catName) return null;
+                    const lower = catName.toLowerCase();
+                    for (const cat of categoryDefs.categories) {
+                        if (cat.name.toLowerCase() === lower) {
+                            return cat.letter.toLowerCase();
+                        }
+                    }
+                    return null;
+                }
+
+                function lookupSubCategoryLetter(subName) {
+                    if (!subName) return null;
+                    const lower = subName.toLowerCase();
+                    for (const cat of categoryDefs.categories) {
+                        for (const sub of cat.subCategories) {
+                            if (sub.name.toLowerCase() === lower) {
+                                return sub.letter.toLowerCase();
+                            }
+                        }
+                    }
+                    return null;
+                }
+
+                function lookupThirdLetter(thirdName) {
+                    if (!thirdName) return null;
+                    const lower = thirdName.toLowerCase();
+                    for (const cat of categoryDefs.categories) {
+                        for (const sub of cat.subCategories) {
+                            for (const tg of sub.thirdGroups) {
+                                if (tg.name.toLowerCase() === lower) {
+                                    return tg.letter.toLowerCase();
+                                }
+                            }
+                        }
+                    }
+                    return null;
+                }
+
+                // 2) Expose them globally so other code can call them:
+                window.lookupCategoryLetter = lookupCategoryLetter;
+                window.lookupSubCategoryLetter = lookupSubCategoryLetter;
+                window.lookupThirdLetter = lookupThirdLetter;
+
+                // 3) Wire up the top-bar "category" pill to open the popup:
+                const catSpan = document.getElementById("category-name");
+                if (catSpan) {
+                    catSpan.style.cursor = "pointer";
+                    catSpan.addEventListener("click", () => {
+                        // If the pill currently shows a selection (arrow + text), reset home instead of opening:
+                        if (catSpan.dataset.selected === "true") {
+                            // Clear any category filter:
+                            itemsOrdered = recommend(rawItems); // or however you reset to home
+                            buildPanels();
+                            updateInfo();
+                            catSpan.innerText = "Category";
+                            catSpan.dataset.selected = "false";
+                            // Also remove any left-arrow icon inside the pill (we’ll handle that in showCategoryPopup)
+                        } else {
+                            // No selection yet → open the popup to choose
+                            showCategoryPopup();
+                        }
+                    });
+                }
+
+                // 4) You might also want to “highlight” or disable the Search button until categoryDefs is ready.
+                //    For example:
+                const searchBtn = document.getElementById("search-btn");
+                if (searchBtn) {
+                    searchBtn.disabled = false; // or leave enabled if you like
+                }
+
+                // 5) If you have any other one-time category-related wiring (e.g. pre-filling a menu), do it here.
+            }
+
+
+
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 1: Build flat versionStateByID map
+            // ─────────────────────────────────────────────────────────────────────────────
+            const versionStateByID = {};
             rawItems.forEach(item => {
-                item.versionsState = item.versions.map(() => ({
-                    liked: false,
-                    inCart: false
-                }));
+                item.versions.forEach(versionObj => {
+                    const serial = item.baseSerial + versionObj.versionSerial.padStart(2, "0");
+                    versionStateByID[serial] = {
+                        liked: false,
+                        inCart: false,
+                        chosenQuantity: 0,
+                        chosenSize: null
+                    };
+                });
+            });
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 2: Load any existing state from localStorage
+            // ─────────────────────────────────────────────────────────────────────────────            
+            Object.keys(versionStateByID).forEach(serial => {
+                const saved = localStorage.getItem(`versionState:${serial}`);
+                if (saved) {
+                    try {
+                        versionStateByID[serial] = JSON.parse(saved);
+                    } catch (e) {
+                        console.warn(`Could not parse saved state for ${serial}`, e);
+                    }
+                }
             });
 
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 3: Define helper to save a single version’s state into localStorage
+            // ─────────────────────────────────────────────────────────────────────────────
+            function saveVersionState(serial) {
+                localStorage.setItem(`versionState:${serial}`, JSON.stringify(versionStateByID[serial]));
+            }
 
-            // —————————————————————————
-            //   Recommendation algorithm
-            // —————————————————————————            
+
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 4: Recommendation algorithm (unchanged, still works on rawItems)
+            // ─────────────────────────────────────────────────────────────────────────────
             function computeScore(meta) {
                 const WEIGHTS = { browse: 1, like: 3, cart: 5 };
                 return (meta.browseCount || 0) * WEIGHTS.browse
@@ -142,16 +272,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 // Sort by score descending
                 items.sort((a, b) => b.score - a.score);
-
-                // Diversify: take top N-2, then 2 random from the rest
                 const N = items.length;
+                if (N <= 2) return items;
                 const main = items.slice(0, N - 2);
                 const other = items.slice(N - 2);
-                // shuffle 'other'
-                for (let i = other.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [other[i], other[j]] = [other[j], other[i]];
-                }
+                shuffle(other);
                 return main.concat(other.slice(0, 2));
             }
             let itemsOrdered = recommend(rawItems);
@@ -163,25 +288,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-            // —————————————————————————
-            //   Cache bottom‐info elements
-            // —————————————————————————
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 5: Cache container & helper references
+            // ─────────────────────────────────────────────────────────────────────────────
+
             const vContainer = document.getElementById("verticalScroll");
             if (!vContainer) return;
-            const hContainers = document.querySelectorAll(".horizontal-scroll");
-
-            // const titleEl = document.getElementById("item-title");
-            // const serialEl = document.getElementById("item-serial");
-            // const priceEl = document.getElementById("item-price");
+            // const hContainers = document.querySelectorAll(".horizontal-scroll");
 
 
 
+            const searchBtn = document.getElementById("search-btn");
+            if (!searchBtn) return;
+
+            let searchOverlay = null;
+
+            searchBtn.addEventListener("click", () => {
+                // If popup is already open, do nothing:
+                if (searchOverlay) return;
+                openSearchPopup();
+            });
 
 
 
-            // —————————————————————————
-            //     build panels
-            // —————————————————————————
+
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 6: buildPanels() – now using versionStateByID and dataset.id
+            // ─────────────────────────────────────────────────────────────────────────────
             function sideButtonsHTML() {
                 return `
                 <div class="side-buttons">
@@ -218,6 +352,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemsOrdered.forEach((item, pIdx) => {
                     const panel = document.createElement("div");
                     panel.className = "item-panel";
+                    panel.dataset.category = item.category || ""; // for future filtering
 
                     // Horizontal scroll
                     const hScroll = document.createElement("div");
@@ -239,9 +374,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         vp.className = "version-panel";
                         vp.dataset.panelIndex = pIdx;
                         vp.dataset.versionIndex = vIdx;
+
                         // Give each version‑panel a unique ID (its full serial):
-                        const SerialNo = `${item.baseSerial}${versionObj.versionSerial.padStart(2, "0")}`;
-                        vp.dataset.id = SerialNo;
+                        const serial = item.baseSerial + versionObj.versionSerial.padStart(2, "0");
+                        vp.dataset.id = serial;
 
 
                         // 1) blur background using versionObj.img
@@ -260,11 +396,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                         // 4) panel‑title: use versionObj.title, versionSerial, and formatted price
-                        const rawPrice = versionObj.priceValue; // e.g. 1500
-                        const formattedPrice = `KES ${rawPrice.toLocaleString()}`; //display "KES 3,000"
-                        const serialCode = versionObj.versionSerial.padStart(2, "0");
-                        const fullSerial = `${item.baseSerial}${serialCode}`; // e.g. "FMA00101"
-
+                        const formattedPrice = `KES ${versionObj.priceValue.toLocaleString()}`;
+                        const fullSerial = `${item.baseSerial}${versionObj.versionSerial.padStart(2, "0")}`;
                         vp.insertAdjacentHTML("beforeend", `
                           <div class="panel-title">
                             <div class="panel-title-text">${versionObj.title}</div>
@@ -272,6 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <div class="panel-price-text">${formattedPrice}</div>
                           </div>
                         `);
+
 
                         // 5) panel-extra: “date added” + “In Stock/Out of Stock” pill
                         const inStockSVG = versionObj.inStock
@@ -288,8 +422,9 @@ document.addEventListener("DOMContentLoaded", () => {
                           </div>
                         `);
 
+
                         // 6) Store raw priceValue in a data attribute for cart math later:
-                        vp.dataset.priceValue = rawPrice; // so later cart code can read `vp.dataset.priceValue`
+                        vp.dataset.priceValue = versionObj.priceValue;
 
                         hScroll.appendChild(vp);
 
@@ -314,20 +449,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.querySelectorAll(".horizontal-scroll").forEach(hs => {
                     hs.removeEventListener("scroll", updateInfo);
                     hs.addEventListener("scroll", updateInfo);
-                    makeDraggableScroll(hs, false, 3);
+                    makeDraggableScroll(hs, false, 3); // speed=3 by default
                 });
 
                 // Wire info and share buttons for each version-panel
                 document.querySelectorAll(".version-panel").forEach(vp => {
                     const pIdx = parseInt(vp.dataset.panelIndex, 10);
                     const vIdx = parseInt(vp.dataset.versionIndex, 10);
+                    const serial = vp.dataset.id;
+                    const versionObj = itemsOrdered[pIdx].versions[vIdx];
+                    const state = versionStateByID[serial];
 
                     // Info button
                     const infoBtn = vp.querySelector(".info-btn");
                     infoBtn.onclick = () => {
-                        // Populate popup fields from item data
-                        const item = itemsOrdered[pIdx];
-                        const versionObj = item.versions[vIdx];
+                        // // Populate popup fields from item data
+                        // const item = itemsOrdered[pIdx];
+                        // const versionObj = item.versions[vIdx];
 
                         document.getElementById("popup-title").innerText = versionObj.title;
                         document.getElementById("popup-description").innerText = versionObj.description;
@@ -338,147 +476,244 @@ document.addEventListener("DOMContentLoaded", () => {
                     };
 
                     // Share button
-                    const shareBtn = vp.querySelector(".share-btn");
-                    shareBtn.onclick = () => {
-                        const url = `${location.href}#item=${pIdx}&ver=${vIdx}`;
-                        navigator.clipboard.writeText(url);
-                        shareBtn.querySelector("img").src = "icons/share-forward-fill.svg";
-                        setTimeout(() => {
-                            shareBtn.querySelector("img").src = "icons/share-forward-line.svg";
-                        }, 800);
-                    };
+                    // const shareBtn = vp.querySelector(".share-btn");
+                    // shareBtn.onclick = () => {
+                    //     const url = `${location.href}#item=${pIdx}&ver=${vIdx}`;
+                    //     navigator.clipboard.writeText(url);
+                    //     shareBtn.querySelector("img").src = "icons/share-forward-fill.svg";
+                    //     setTimeout(() => {
+                    //         shareBtn.querySelector("img").src = "icons/share-forward-line.svg";
+                    //     }, 800);
+                    // };
 
                     // —————————————————————————
                     // Initialize Like/Cart button images based on state
                     // Cart button: custom logic
                     // —————————————————————————
 
+                    // const cartBtn = vp.querySelector(".cart-btn");
+                    // cartBtn.onclick = () => {
+                    //     // Grab the version‐object and its state flags:
+                    //     const item = itemsOrdered[pIdx];
+                    //     const versionObj = item.versions[vIdx];
+                    //     const state = item.versionsState[vIdx];
+                    //     // If this version is out of stock, do nothing but call OutOfStock():
+                    //     if (!versionObj.inStock) {
+                    //         OutOfStock();
+                    //         return;
+                    //     }
+                    //     const priceValue = versionObj.priceValue; // raw numeric
+
+                    //     if (!state.inCart) {
+                    //         // ─────────── Show the “Choose size + quantity” pop‐up ───────────
+                    //         showCartPopup(vp.dataset.id, versionObj.sizes, priceValue, chosenQty => {
+                    //             // Confirm button pressed inside popup:
+
+                    //             // 1) set state.inCart = true, save chosen quantity & size
+                    //             state.inCart = true;
+                    //             const chosenSize = document.getElementById("popup-select-size").value;
+                    //             versionObj.chosenSize = chosenSize;
+                    //             versionObj.chosenQuantity = chosenQty;
+
+                    //             // 2) compute total price
+                    //             const totalPrice = priceValue * chosenQty;
+
+                    //             // 3) Print all requested fields to the console for now:
+                    //             console.log("🛒 Added to cart:", {
+                    //                 title: versionObj.title,
+                    //                 serial: vp.dataset.id,
+                    //                 quantity: chosenQty,
+                    //                 size: chosenSize,
+                    //                 totalPrice: totalPrice,
+                    //                 basePrice: priceValue
+                    //             });
+
+                    //             // 4)code to send to checkout page
+                    //             // ... ... ... ... 
+
+                    //             // 5) Still update the badge total if you want:
+                    //             addToCartCount(totalPrice);
+
+                    //             // 6) change Cart icon to “filled” immediately:
+                    //             const img = cartBtn.querySelector("img");
+                    //             img.src = img.dataset.active;
+                    //             addToCart();
+                    //         });
+                    //     } else {
+                    //         // ─────────── Remove from cart, no popup ───────────
+                    //         // Deduct the amount we previously added
+                    //         const prevQty = versionObj.chosenQuantity || 1;
+                    //         removeFromCartCount(priceValue * prevQty);
+                    //         state.inCart = false;
+                    //         // Reset chosenQuantity
+                    //         versionObj.chosenQuantity = 0;
+                    //         // Toggle cart icon back to “line”
+                    //         const img = cartBtn.querySelector("img");
+                    //         img.src = img.dataset.default;
+                    //     }
+                    // };
+
+
+
+                    // Finally, update the Like/Cart button visuals per state:
+
+                    const shareBtn = vp.querySelector(".share-btn");
+                    shareBtn.onclick = () => {
+                        const serial = vp.dataset.id;
+                        const url = `${location.origin}${location.pathname}#item=${serial}`;
+                        navigator.clipboard.writeText(url);
+
+                        const img = shareBtn.querySelector("img");
+                        img.src = "icons/share-forward-fill.svg";
+                        setTimeout(() => {
+                            img.src = "icons/share-forward-line.svg";
+                        }, 800);
+                    };
+
+
                     const cartBtn = vp.querySelector(".cart-btn");
                     cartBtn.onclick = () => {
-                        // Grab the version‐object and its state flags:
-                        const item = itemsOrdered[pIdx];
-                        const versionObj = item.versions[vIdx];
-                        const state = item.versionsState[vIdx];
-                        // If this version is out of stock, do nothing but call OutOfStock():
+                        // const item = itemsOrdered[pIdx];
+                        // const versionObj = item.versions[vIdx];
+                        // const serial = vp.dataset.id;
+                        // const state = versionStateByID[serial];
+
+                        // 1) If out of stock, call OutOfStock() and bail:
                         if (!versionObj.inStock) {
                             OutOfStock();
                             return;
                         }
-                        const priceValue = versionObj.priceValue; // raw numeric
 
+                        // 2) If not yet inCart, show the pop-up; otherwise remove:
                         if (!state.inCart) {
-                            // ─────────── Show the “Choose size + quantity” pop‐up ───────────
-                            showCartPopup(vp.dataset.id, versionObj.sizes, priceValue, chosenQty => {
-                                // Confirm button pressed inside popup:
-
-                                // 1) set state.inCart = true, save chosen quantity & size
+                            showCartPopup(serial, versionObj.sizes, versionObj.priceValue, chosenQty => {
+                                // inside confirm callback:
                                 state.inCart = true;
                                 const chosenSize = document.getElementById("popup-select-size").value;
-                                versionObj.chosenSize = chosenSize;
-                                versionObj.chosenQuantity = chosenQty;
+                                state.chosenSize = chosenSize;
+                                state.chosenQuantity = chosenQty;
 
-                                // 2) compute total price
-                                const totalPrice = priceValue * chosenQty;
-
-                                // 3) Print all requested fields to the console for now:
+                                const totalPrice = versionObj.priceValue * chosenQty;
                                 console.log("🛒 Added to cart:", {
                                     title: versionObj.title,
-                                    serial: vp.dataset.id,
+                                    serial: serial,
                                     quantity: chosenQty,
                                     size: chosenSize,
                                     totalPrice: totalPrice,
-                                    basePrice: priceValue
+                                    basePrice: versionObj.priceValue
                                 });
 
-                                // 4)code to send to checkout page
-                                // ... ... ... ... 
-
-                                // 5) Still update the badge total if you want:
-                                addToCartCount(totalPrice);
-
-                                // 6) change Cart icon to “filled” immediately:
+                                addToCartCount(totalPrice); // your existing function
                                 const img = cartBtn.querySelector("img");
                                 img.src = img.dataset.active;
-                                addToCart();
+
+                                // Persist right away:
+                                saveVersionState(serial);
                             });
                         } else {
-                            // ─────────── Remove from cart, no popup ───────────
-                            // Deduct the amount we previously added
-                            const prevQty = versionObj.chosenQuantity || 1;
-                            removeFromCartCount(priceValue * prevQty);
+                            // Already in cart → remove:
+                            const prevQty = state.chosenQuantity || 1;
+                            removeFromCartCount(versionObj.priceValue * prevQty);
                             state.inCart = false;
-                            // Reset chosenQuantity
-                            versionObj.chosenQuantity = 0;
-                            // Toggle cart icon back to “line”
+                            state.chosenQuantity = 0;
+                            state.chosenSize = null;
                             const img = cartBtn.querySelector("img");
                             img.src = img.dataset.default;
+
+                            // Persist right away:
+                            saveVersionState(serial);
                         }
                     };
-                    // Finally, update the Like/Cart button visuals per state:
+
+
                     const sb = vp.querySelector(".side-buttons");
-                    updateSideButtons(sb, pIdx, vIdx);
+                    updateSideButtons(sb);
                 });
             }
 
 
 
 
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 7: updateSideButtons(sbContainer) uses versionStateByID instead of versionsState
+            // ─────────────────────────────────────────────────────────────────────────────
 
+            function updateSideButtons(sbContainer) {
+                // Find the version-panel’s serial:
+                const vp = sbContainer.closest(".version-panel");
+                const serial = vp.dataset.id;
+                const state = versionStateByID[serial];
 
-
-
-
-            // —————————————————————————
-            //     updateInfo()
-            // —————————————————————————
-
-            function updateSideButtons(sbContainer, pIdx, vIdx) {
-                const state = itemsOrdered[pIdx].versionsState[vIdx];
-
-                // Like button image
-                const likeImg = sbContainer.querySelector(".like-btn img");
+                // Like button:
+                const likeImg = sbContainer.querySelector("img[data-active*='heart']");
                 if (likeImg) {
                     likeImg.src = state.liked ? likeImg.dataset.active : likeImg.dataset.default;
                 }
 
-                // Cart button image
-                const cartImg = sbContainer.querySelector(".cart-btn img");
+                // Cart button:
+                const cartImg = sbContainer.querySelector("img[data-active*='shopping-cart']");
                 if (cartImg) {
                     cartImg.src = state.inCart ? cartImg.dataset.active : cartImg.dataset.default;
                 }
             }
 
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 8: toggleIcon(btn) now uses versionStateByID
+            // ─────────────────────────────────────────────────────────────────────────────
+
             window.toggleIcon = function (btn) {
+                // 1) Find which version-panel this button belongs to:
+                const vp = btn.closest(".version-panel");
+                const serial = vp.dataset.id;
+                const state = versionStateByID[serial];
+
+                // 2) Toggle either liked or inCart based on button’s data-default/file names:
                 const img = btn.querySelector("img");
                 const defaultSrc = img.dataset.default;
                 const activeSrc = img.dataset.active;
                 const currentSrc = img.getAttribute("src");
 
-                const vp = btn.closest(".version-panel");
-                const pIdx = parseInt(vp.dataset.panelIndex, 10);
-                const vIdx = parseInt(vp.dataset.versionIndex, 10);
-                const state = itemsOrdered[pIdx].versionsState[vIdx];
-
                 const isHeartIcon = defaultSrc.includes("heart");
                 const isCartIcon = defaultSrc.includes("shopping-cart");
 
-                const isActive = !currentSrc.endsWith(defaultSrc);
+                if (currentSrc.endsWith(defaultSrc)) {
+                    // went from “outline” → “filled”
+                    img.src = activeSrc;
 
-                img.src = isActive ? defaultSrc : activeSrc;
+                    if (isHeartIcon) {
+                        state.liked = true;
 
-                if (isHeartIcon) {
-                    state.liked = !isActive;
+                        // ✅ Heartbeat animation
+                        img.classList.add("heartbeat");
+                        img.addEventListener("animationend", function handler() {
+                            img.classList.remove("heartbeat");
+                            img.removeEventListener("animationend", handler);
+                        });
+                    } else if (isCartIcon) {
+                        state.inCart = true;
+                    }
 
-                    // Heartbeat animation
-                    img.classList.add("heartbeat");
-                    img.addEventListener("animationend", function handler() {
-                        img.classList.remove("heartbeat");
-                        img.removeEventListener("animationend", handler);
-                    });
-                } else if (isCartIcon) {
-                    state.inCart = !isActive;
+                } else {
+                    // went from “filled” → “outline”
+                    img.src = defaultSrc;
+
+                    if (isHeartIcon) {
+                        state.liked = false;
+                    } else if (isCartIcon) {
+                        state.inCart = false;
+                    }
                 }
+
+                // 3) Persist immediately:
+                saveVersionState(serial);
             };
+
+
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 9: updateInfo() – update dots, index display, side‑buttons 
+            // ─────────────────────────────────────────────────────────────────────────────
 
             function updateInfo() {
                 const panels = Array.from(document.querySelectorAll(".item-panel"));
@@ -524,8 +759,52 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 // Update side buttons for this version
                 const sb = vPanels[vIdx].querySelector(".side-buttons");
-                if (sb) updateSideButtons(sb, pIdx, vIdx);
+                if (sb) updateSideButtons(sb);
             }
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 10: Info popup close button (unchanged)
+            // ─────────────────────────────────────────────────────────────────────────────
+            const infoPopupBtn = document.querySelector("#info-popup .popup-content button");
+            if (infoPopupBtn) {
+                infoPopupBtn.onclick = () => {
+                    document.getElementById("info-popup").classList.add("hidden");
+                };
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 11: Optional recommendSearched(serial)
+            // ─────────────────────────────────────────────────────────────────────────────
+
+            function recommendSearched(serial) {
+                // 1) Find which item owns that serial:
+                let matchedIndex = -1;
+                itemsOrdered.forEach((itm, idx) => {
+                    const anyMatch = itm.versions.some(v => {
+                        const full = itm.baseSerial + v.versionSerial.padStart(2, "0");
+                        return full === serial;
+                    });
+                    if (anyMatch) matchedIndex = idx;
+                });
+                if (matchedIndex < 0) {
+                    loadingWait("Item not found", 1.0, false, 2);
+                    return; // serial not found
+                }
+                // 2) Move that one item to front of itemsOrdered array:
+                const [foundItem] = itemsOrdered.splice(matchedIndex, 1);
+                itemsOrdered.unshift(foundItem);
+
+                // Later you’ll want to scroll so that inside the first panel, the version matching "serial" is centered horizontally.
+                // For now, just rebuild and updateInfo:
+                buildPanels();
+                updateInfo();
+            }
+
+
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 11: Popups for cart, search, category
+            // ─────────────────────────────────────────────────────────────────────────────
 
             function showCartPopup(id, sizesArray, unitPrice, callback) {
                 /**
@@ -703,25 +982,939 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.body.appendChild(overlay);
             }
 
+            function openSearchPopup() {
+                // 1) create overlay
+                searchOverlay = document.createElement("div");
+                searchOverlay.id = "search-popup-overlay";
+                Object.assign(searchOverlay.style, {
+                    position: "fixed",
+                    top: "0",
+                    left: "0",
+                    width: "100vw",
+                    height: "100vh",
+                    background: "rgba(0,0,0,0.6)",
+                    zIndex: "200",
+                    display: "flex",
+                    alignItems: "flex-start",    // pin to top
+                    justifyContent: "center",
+                });
+
+                // 2) create popup box container
+                const box = document.createElement("div");
+                box.id = "search-popup-box";
+                Object.assign(box.style, {
+                    background: "var(--muted)",
+                    color: "var(--fg)",
+                    borderRadius: "12px",
+                    width: "90%",
+                    maxWidth: "360px",
+                    marginTop: "10vh",
+                    padding: "1rem",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem"
+                });
+
+                // 3) “X” close button
+                const closeBtn = document.createElement("button");
+                closeBtn.innerText = "✕";
+                Object.assign(closeBtn.style, {
+                    position: "absolute",
+                    top: "8px",
+                    right: "12px",
+                    background: "none",
+                    border: "none",
+                    color: "var(--fg)",
+                    fontSize: "1.2rem",
+                    cursor: "pointer"
+                });
+                closeBtn.onclick = closeSearchPopup;
+                box.appendChild(closeBtn);
+
+                // 4) Search‐input pill (type="text")
+                const input = document.createElement("input");
+                input.id = "search-popup-input";
+                input.type = "text";
+                input.placeholder = "Search for items...";
+                Object.assign(input.style, {
+                    width: "100%",
+                    padding: "0.6rem 1rem",
+                    borderRadius: "20px",
+                    border: "1px solid var(--gray)",
+                    background: "var(--muted)",
+                    color: "var(--fg)",
+                    fontSize: "1rem"
+                });
+                box.appendChild(input);
+
+                // 5) Suggestions container (empty for now)
+                const suggestions = document.createElement("div");
+                suggestions.id = "search-suggestions";
+                Object.assign(suggestions.style, {
+                    maxHeight: "40vh",
+                    overflowY: "auto",
+                    background: "var(--muted)",
+                    border: "1px solid var(--gray)",
+                    borderRadius: "8px",
+                    padding: "0.5rem"
+                });
+                box.appendChild(suggestions);
+
+                // 6) Confirm‐search button
+                const confirmBtn = document.createElement("button");
+                confirmBtn.id = "search-confirm-btn";
+                confirmBtn.innerText = "Search";
+                Object.assign(confirmBtn.style, {
+                    width: "100%",
+                    padding: "0.6rem",
+                    borderRadius: "20px",
+                    border: "none",
+                    background: "var(--accent)",
+                    color: "var(--bg)",
+                    fontSize: "1rem",
+                    cursor: "pointer"
+                });
+                box.appendChild(confirmBtn);
+
+                // 7) wire up event listeners:
+                input.addEventListener("input", handleSearchInput);
+                confirmBtn.addEventListener("click", () => {
+                    runSearch(input.value.trim());
+                    closeSearchPopup();
+                });
+
+                // Also submit search if the user presses Enter in the input:
+                input.addEventListener("keydown", (evt) => {
+                    if (evt.key === "Enter") {
+                        evt.preventDefault();
+                        runSearch(input.value.trim());
+                        closeSearchPopup();
+                    }
+                });
 
 
+                // 8) assemble
+                searchOverlay.appendChild(box);
+                document.body.appendChild(searchOverlay);
 
+                // 9) autofocus
+                input.focus();
+            }
 
+            function closeSearchPopup() {
+                if (!searchOverlay) return;
+                document.body.removeChild(searchOverlay);
+                searchOverlay = null;
+            }
 
-            // —————————————————————————
-            //    Info popup wiring
-            // —————————————————————————
-            const infoPopupBtn = document.querySelector("#info-popup .popup-content button");
-            if (infoPopupBtn) {
-                infoPopupBtn.onclick = () => {
-                    document.getElementById("info-popup").classList.add("hidden");
+            function showCategoryPopup() {
+                // ─────────────────────────────────────────────────────────────────────
+                //  showCategoryPopup(): Open a full‐screen overlay showing categories.
+                //    • 2× height of your showCartPopup
+                //    • three consecutive screens: categories → subcategories → third groups
+                //    • a white‐circle back‐arrow (icons/back.svg) to navigate backward
+                //    • a pill‐shaped Confirm button that’s enabled once at least one selection is made
+                // ─────────────────────────────────────────────────────────────────────
+                // 1) Create overlay container (full‐screen, dark)
+                const overlay = document.createElement("div");
+                overlay.id = "category-popup-overlay";
+                Object.assign(overlay.style, {
+                    position: "fixed",
+                    top: "0",
+                    left: "0",
+                    width: "100vw",
+                    height: "100vh",
+                    background: "rgba(0,0,0,0.6)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: "200"
+                });
+
+                // 2) Create the pop‑up box (double height vs. cart popup)
+                const box = document.createElement("div");
+                box.id = "category-popup-box";
+                Object.assign(box.style, {
+                    background: "#2c2c2c4e",   // dark overlay style
+                    color: "var(--fg)",
+                    borderRadius: "12px",
+                    width: "80%",
+                    maxWidth: "320px",
+                    height: "80%",              // 2× height of the ~40%-ish cart pop
+                    padding: "1rem",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                    position: "relative",
+                    backdropFilter: "blur(10px)",
+                    display: "flex",
+                    flexDirection: "column"
+                });
+
+                // Keep track of current “level”: 0=categories, 1=subcategories, 2=third
+                let level = 0;
+                let chosenCategory = null;     // string, ex: "Fashion"
+                let chosenSub = null;          // ex: "Men"
+                let chosenThird = null;        // ex: "Trousers"
+
+                // 3) Create back‐arrow button (white circle + icons/back.svg). Only shown if level>0.
+                const backBtn = document.createElement("button");
+                backBtn.id = "category-popup-back";
+                Object.assign(backBtn.style, {
+                    position: "absolute",
+                    top: "12px",
+                    left: "12px",
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "16px",
+                    background: "#ffffff",       // white circle
+                    border: "none",
+                    display: "none",            // start hidden
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer"
+                });
+                // Set the SVG icon inside:
+                const backImg = document.createElement("img");
+                backImg.src = "icons/back.svg";
+                backImg.alt = "Back";
+                Object.assign(backImg.style, {
+                    width: "16px",
+                    height: "16px"
+                });
+                backBtn.appendChild(backImg);
+                box.appendChild(backBtn);
+
+                // When clicked: go one level up (or close if already at top)
+                backBtn.onclick = () => {
+                    if (level === 0) {
+                        // Should not happen, because it's hidden at level 0
+                        document.body.removeChild(overlay);
+                    } else if (level === 1) {
+                        level = 0;
+                        renderCategories();
+                    } else if (level === 2) {
+                        level = 1;
+                        renderSubcategories();
+                    }
                 };
+
+                // 4) Create a heading area (above the list), showing current selection (e.g. “Fashion” at level 1)
+                const heading = document.createElement("h2");
+                heading.id = "category-popup-heading";
+                Object.assign(heading.style, {
+                    color: "var(--fg)",
+                    fontSize: "1.25rem",
+                    margin: "0 0 1rem 0",
+                    textAlign: "center"
+                });
+                heading.innerText = "Categories";
+                box.appendChild(heading);
+
+                // 5) Create a container for whichever list we’re on (categories/subcategories/third)
+                const listContainer = document.createElement("div");
+                listContainer.id = "category-popup-list";
+                Object.assign(listContainer.style, {
+                    flex: "1",
+                    overflowY: "auto",
+                    marginBottom: "1rem"
+                });
+                box.appendChild(listContainer);
+
+                // 6) Create a Confirm button at the bottom (pill‐shaped), disabled until at least level 1 is chosen
+                const confirmBtn = document.createElement("button");
+                confirmBtn.id = "category-popup-confirm";
+                confirmBtn.innerText = "Confirm";
+                Object.assign(confirmBtn.style, {
+                    width: "100%",
+                    padding: "0.6rem",
+                    borderRadius: "20px",
+                    border: "none",
+                    background: "var(--accent)",
+                    color: "var(--bg)",
+                    fontSize: "1rem",
+                    cursor: "pointer",
+                    opacity: "0.5"        // disabled look
+                });
+                confirmBtn.disabled = true;
+                box.appendChild(confirmBtn);
+
+                // Clicking Confirm: if on level 1 (category chosen, no sub), we runCategorySearch(catLetter)
+                // If on level 2 (sub chosen, no third), we runCategorySearch(catLetter, subLetter)
+                confirmBtn.onclick = () => {
+                    if (!chosenCategory) return;
+                    const catLetter = lookupCategoryLetter(chosenCategory);
+                    if (!chosenSub) {
+                        // Tier 1 only
+                        runCategorySearch(catLetter);
+                    } else if (!chosenThird) {
+                        const subLetter = lookupSubCategoryLetter(chosenSub);
+                        runCategorySearch(catLetter, subLetter);
+                    }
+                    closePopup();
+                };
+
+                // 7) Assemble overlay
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+
+                // Helper to remove overlay
+                function closePopup() {
+                    document.body.removeChild(overlay);
+                }
+
+                // 8) RENDER FUNCTIONS FOR EACH LEVEL:
+
+                // 8.a) Level 0: show all categories
+                function renderCategories() {
+                    level = 0;
+                    heading.innerText = "Categories";
+                    backBtn.style.display = "none";
+                    listContainer.innerHTML = "";
+                    confirmBtn.disabled = true;
+                    confirmBtn.style.opacity = "0.5";
+
+                    categoryDefs.categories.forEach(cat => {
+                        const row = document.createElement("div");
+                        row.className = "cat-row";
+                        Object.assign(row.style, {
+                            padding: "0.6rem",
+                            margin: "0.3rem 0",
+                            background: "var(--muted)",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            color: "var(--fg)",
+                            textAlign: "center"
+                        });
+                        row.innerText = cat.name; // e.g. "Fashion"
+                        row.addEventListener("click", () => {
+                            chosenCategory = cat.name;
+                            level = 1;
+                            renderSubcategories();
+                        });
+                        listContainer.appendChild(row);
+                    });
+                }
+
+                // 8.b) Level 1: show subcategories of chosenCategory
+                function renderSubcategories() {
+                    level = 1;
+                    heading.innerText = chosenCategory;
+                    backBtn.style.display = "flex";
+                    listContainer.innerHTML = "";
+                    confirmBtn.disabled = false;      // at least one category chosen → Confirm now enabled
+                    confirmBtn.style.opacity = "1";
+
+                    // Find the category object:
+                    const catObj = categoryDefs.categories.find(c => c.name === chosenCategory);
+                    if (!catObj) return;
+
+                    catObj.subCategories.forEach(sub => {
+                        const row = document.createElement("div");
+                        row.className = "sub-row";
+                        Object.assign(row.style, {
+                            padding: "0.6rem",
+                            margin: "0.3rem 0",
+                            background: "var(--muted)",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            color: "var(--fg)",
+                            textAlign: "center"
+                        });
+                        row.innerText = sub.name; // e.g. "Men"
+                        row.addEventListener("click", () => {
+                            chosenSub = sub.name;
+                            level = 2;
+                            renderThirdGroups();
+                        });
+                        listContainer.appendChild(row);
+                    });
+                }
+
+                // 8.c) Level 2: show third‑level groups of chosenCategory → chosenSub
+                function renderThirdGroups() {
+                    level = 2;
+                    heading.innerText = `${chosenCategory}  >  ${chosenSub}`;
+                    backBtn.style.display = "flex";
+                    listContainer.innerHTML = "";
+                    confirmBtn.disabled = false;
+                    confirmBtn.style.opacity = "1";
+
+                    // Find the sub-object:
+                    const catObj = categoryDefs.categories.find(c => c.name === chosenCategory);
+                    if (!catObj) return;
+                    const subObj = catObj.subCategories.find(s => s.name === chosenSub);
+                    if (!subObj) return;
+
+                    subObj.thirdGroups.forEach(tg => {
+                        const row = document.createElement("div");
+                        row.className = "third-row";
+                        Object.assign(row.style, {
+                            padding: "0.6rem",
+                            margin: "0.3rem 0",
+                            background: "var(--muted)",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            color: "var(--fg)",
+                            textAlign: "center"
+                        });
+                        row.innerText = tg.name; // e.g. "Trousers" or "A"
+                        row.addEventListener("click", () => {
+                            chosenThird = tg.name;
+                            // Immediately run the search with category+sub+third and close:
+                            const catLetter = lookupCategoryLetter(chosenCategory);
+                            const subLetter = lookupSubCategoryLetter(chosenSub);
+                            const thirdLetter = lookupThirdLetter(chosenThird);
+                            runCategorySearch(catLetter, subLetter, thirdLetter);
+                            closePopup();
+                        });
+                        listContainer.appendChild(row);
+                    });
+                }
+
+                // 9) INITIAL CALL → show categories
+                renderCategories();
+            }
+
+
+
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 11: Search system
+            // ─────────────────────────────────────────────────────────────────────────────
+            // const categoryDefs = /* paste that JSON here */;
+
+            // function lookupCategoryLetter(catName) {
+            //     // ───────────────────────────────────────────────────────
+            //     //  (A) lookupCategoryLetter(categoryName):
+            //     //     returns the first‐letter string (e.g. "F") for that categoryName.
+            //     // ───────────────────────────────────────────────────────
+            //     if (!catName) return null;
+            //     // Make everything lowercase to match your JSON's "name" field.
+            //     const lower = catName.toLowerCase();
+            //     for (const cat of categoryDefs.categories) {
+            //         if (cat.name.toLowerCase() === lower) {
+            //             return cat.letter.toLowerCase();  // always use lowercase internally
+            //         }
+            //     }
+            //     return null;
+            // }
+
+            // function lookupSubCategoryLetter(subName) {
+            //     // ───────────────────────────────────────────────────────
+            //     //  (B) lookupSubCategoryLetter(subName):
+            //     //     Given a subCategoryName (e.g. "Men"), find its second‐letter under whichever
+            //     //     category it belongs to. If two categories have a sub called "Men," this returns
+            //     //     for the first matching category it finds. You can adjust if you want unique names.
+            //     // ───────────────────────────────────────────────────────
+            //     if (!subName) return null;
+            //     const lower = subName.toLowerCase();
+            //     for (const cat of categoryDefs.categories) {
+            //         for (const sub of cat.subCategories) {
+            //             if (sub.name.toLowerCase() === lower) {
+            //                 return sub.letter.toLowerCase();
+            //             }
+            //         }
+            //     }
+            //     return null;
+            // }
+
+            // function lookupThirdLetter(thirdName) {
+
+            //     // ───────────────────────────────────────────────────────
+            //     //  (C) lookupThirdLetter(thirdName):
+            //     //     Finds the third‐letter for a given “third‐level” name (e.g. "Trousers").
+            //     //     We search through all categories → subCategories → thirdGroups.
+            //     // ───────────────────────────────────────────────────────
+            //     if (!thirdName) return null;
+            //     const lower = thirdName.toLowerCase();
+            //     for (const cat of categoryDefs.categories) {
+            //         for (const sub of cat.subCategories) {
+            //             for (const tg of sub.thirdGroups) {
+            //                 if (tg.name.toLowerCase() === lower) {
+            //                     return tg.letter.toLowerCase();
+            //                 }
+            //             }
+            //         }
+            //     }
+            //     return null;
+            // }
+
+            function normalizeQuery(raw) {
+                if (!raw || typeof raw !== "string") return "";
+                // Replace any non‐letter/non‐number with a space, then collapse spaces, then trim
+                const cleaned = raw
+                    .toLowerCase()
+                    .replace(/[^a-z0-9:]+/g, " ")   // preserve colon if category syntax, but remove everything else
+                    .trim()
+                    .replace(/\s+/g, " ");          // collapse multiple spaces into one
+                return cleaned;
+            }
+
+            function handleSearchInput(e) {
+                const raw = e.target.value;
+                // Normalize: strip punctuation, collapse spaces, lowercase
+                const q = normalizeQuery(raw);
+                const suggestionsContainer = document.getElementById("search-suggestions");
+                suggestionsContainer.innerHTML = "";
+
+                if (!q) return;
+
+                // 1) If query looks like "<CATEGORY>:<SUB>" or "<CATEGORY>:<SUB>:<THIRD>"
+                let categoryPart = null, subPart = null, thirdPart = null;
+
+                if (q.includes(":")) {
+                    const parts = q.split(":").map(s => s.trim());
+                    if (parts.length === 2 && parts[0] && parts[1]) {
+                        categoryPart = parts[0];
+                        subPart = parts[1];
+                        if (parts.length === 3 && parts[2]) thirdPart = parts[2];
+                    }
+                }
+
+                const suggestions = []; // will collect up to 10 items
+
+                // 2) Loop over each item in itemsOrdered
+                for (const item of itemsOrdered) {
+                    // item.baseSerial, item.versions[] contain versionObj.title, versionSerial, etc.
+                    const base = item.baseSerial.toLowerCase();
+                    const third = base.charAt(2).toLowerCase();
+                    let matchedItem = false;
+
+                    // If categoryPart/subPart defined → match base[1] and base[2]
+                    if (categoryPart && subPart) {
+                        const catLetter = lookupCategoryLetter(categoryPart);
+                        const subLetter = lookupSubCategoryLetter(subPart);
+
+                        if (catLetter && subLetter && base.charAt(0) === catLetter && base.charAt(1) === subLetter) {
+                            matchedItem = true;
+                        }
+
+                        // If you want to also consider “CATEGORY:SUB:THIRD” in suggestions:
+                        if (!matchedItem && thirdPart) {
+                            const thirdLetter = lookupThirdLetter(thirdPart);
+                            if (catLetter && subLetter && thirdLetter &&
+                                base.charAt(0) === catLetter &&
+                                base.charAt(1) === subLetter &&
+                                base.charAt(2) === thirdLetter
+                            ) {
+                                matchedItem = true;
+                            }
+                        }
+
+                    }
+
+
+                    // Otherwise, if not a category query, do partial “word‐boundary” matching
+                    if (!categoryPart && !matchedItem) {
+                        // Check each version’s title or fullSerial for a “whole‐word” match
+                        for (const versionObj of item.versions) {
+                            // e.g. versionObj.title = "Elegant Top – Black"
+                            const titleLower = versionObj.title.toLowerCase();
+                            const fullSerial = (item.baseSerial + versionObj.versionSerial).toLowerCase();
+                            // (i) full serial EXACT?
+                            if (fullSerial === q) {
+                                matchedItem = true;
+                                break;
+                            }
+                            // (ii) whole-word match in title?
+                            const wordMatches = titleLower.match(new RegExp(`\\b${q}\\b`));
+                            if (wordMatches) {
+                                matchedItem = true;
+                                break;
+                            }
+                            // (iii) partial substring anywhere:
+                            if (titleLower.includes(q) || fullSerial.includes(q)) {
+                                matchedItem = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (matchedItem) {
+                        suggestions.push(item);
+                        if (suggestions.length >= 10) break;
+                    }
+                }
+
+                // 3) Render up to 10 suggestions (item‐level):
+                suggestions.forEach(item => {
+                    // Show displayText = first version’s title + " (#SERIAL)"
+                    const firstVer = item.versions[0];
+                    const fullSerial = item.baseSerial + firstVer.versionSerial.padStart(2, "0");
+                    const displayText = `${firstVer.title}  (#${fullSerial})`;
+
+                    const row = document.createElement("div");
+                    row.className = "suggestion-row";
+                    Object.assign(row.style, {
+                        padding: "0.4rem",
+                        cursor: "pointer",
+                        borderBottom: "1px solid rgba(255,255,255,0.1)"
+                    });
+                    row.innerText = displayText;
+                    // store item’s baseSerial so clicking uses runSearch on that item
+                    row.dataset.baseSerial = item.baseSerial.toLowerCase();
+                    row.addEventListener("click", () => {
+                        const input = document.getElementById("search-popup-input");
+                        input.value = displayText;
+                        // If user clicks, you can optionally run search immediately:
+                        runSearch(item.baseSerial);
+                    });
+                    suggestionsContainer.appendChild(row);
+                });
+            }
+
+            function runSearch(rawQuery) {
+                // 0) Normalize query:
+                const norm = normalizeQuery(rawQuery);
+                if (!norm) {
+                    // Empty → revert to original recommended order:
+                    itemsOrdered = recommend(itemsOrdered);
+                    buildPanels();
+                    updateInfo();
+                    return;
+                }
+
+                // 1) Category syntax?
+                let categoryPart = null, subPart = null, thirdPart = null;
+                if (norm.includes(":")) {
+                    const parts = norm.split(":").map(s => s.trim());
+                    if (parts.length === 2 && parts[0] && parts[1]) {
+                        categoryPart = parts[0];
+                        subPart = parts[1];
+                        if (parts.length === 3 && parts[2]) {
+                            thirdPart = parts[2];
+                        }
+                    }
+                }
+
+                // 2) Partition items into exactList vs remainder
+
+                const exactList = [];
+                const remainder = [];
+
+                itemsOrdered.forEach(item => {
+                    const base = item.baseSerial.toLowerCase(); // e.g. "fma001"
+                    let isExact = false;
+
+
+                    if (categoryPart) {
+                        // → We expect the user typed something like "Fashion:Men" (but normalized).
+                        //    First, dynamically fetch letters:
+                        const catLetter = lookupCategoryLetter(categoryPart);
+                        const subLetter = lookupSubCategoryLetter(subPart);
+                        let desiredThird = null;
+
+                        if (thirdPart) {
+                            desiredThird = lookupThirdLetter(thirdPart);
+                        }
+
+                        if (catLetter && subLetter) {
+                            if (base.charAt(0) === catLetter && base.charAt(1) === subLetter) {
+                                if (desiredThird) {
+                                    // user explicitly gave a third name, so also require base[2]===desiredThird
+                                    if (base.charAt(2) === desiredThird) {
+                                        isExact = true;
+                                    }
+                                } else {
+                                    // user only typed “category:sub” without third—this is enough to match
+                                    isExact = true;
+                                }
+                            }
+                        }
+                    } else {
+                        // → No categoryPart syntax: apply your existing fullSerial/title‐word search
+                        for (const versionObj of item.versions) {
+                            const versionSerial = versionObj.versionSerial.toLowerCase();
+                            const fullSerial = (base + versionSerial).toLowerCase();
+                            const titleLower = versionObj.title.toLowerCase();
+
+                            // (i) fullSerial EXACT match?
+                            if (fullSerial === norm) {
+                                isExact = true;
+                                break;
+                            }
+                            // (ii) whole‐word match in title?
+                            const words = titleLower.split(/\W+/);
+                            if (words.includes(norm)) {
+                                isExact = true;
+                                break;
+                            }
+                        }
+                    }
+
+
+
+
+                    if (isExact) {
+                        exactList.push(item);
+                    } else {
+                        remainder.push(item);
+                    }
+                });
+
+
+
+                // 3) If no exactList, we also consider partial substring as exact
+
+                if (exactList.length === 0 && !categoryPart) {
+                    const newRem = [];
+
+                    remainder.forEach(item => {
+                        let matched = false;
+                        const baseTwo = item.baseSerial.substr(0, 2).toLowerCase(); // e.g. "fm"
+                        const normTwo = norm.substr(0, 2); // if norm="man", normTwo="ma"
+
+                        // Only consider substring matches if first two letters match:
+                        if (normTwo === baseTwo) {
+                            for (const versionObj of item.versions) {
+                                const titleLower = versionObj.title.toLowerCase();
+                                const fullSerial = (item.baseSerial + versionObj.versionSerial).toLowerCase();
+                                if (
+                                    titleLower.includes(norm) || // anywhere in title
+                                    fullSerial.includes(norm)   // anywhere in serial
+                                ) {
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (matched) {
+                            exactList.push(item);
+                        } else {
+                            newRem.push(item);
+                        }
+                    });
+
+                    // Now “remainder” shrinks to only those truly not matched:
+                    remainder.splice(0, remainder.length, ...newRem);
+                }
+
+                if (exactList.length === 0 && !categoryPart) {
+                    loadingWait("Item Not Found", 0.8, false, 1.7);
+                }
+
+                // 4) Now remainder = items not in exactList. Group remainder by third‑letter,
+                //    then second‑letter, then random:
+
+                const groupByThird = {};
+                remainder.forEach(item => {
+                    const letter3 = item.baseSerial.charAt(2).toLowerCase(); // third letter
+                    if (!groupByThird[letter3]) groupByThird[letter3] = [];
+                    groupByThird[letter3].push(item);
+                });
+
+
+                // 5) We now need a “mainThird” value to order the “same‐third” tier. Use:
+
+                let mainThird = null;
+                if (categoryPart) {
+                    // In a category:sub search, the "third letter" is dynamic: e.g. if user typed "Fashion:Men",
+                    // maybe they also typed a third‐level (rare in runSearch). For now, we’ll just find the third letter
+                    // that these matched items share. If you let the user type "Fashion:Men:Trousers", normalize that
+                    // and split on ":" into [cat, sub, thirdName], then you could:
+                    const parts = norm.split(":").map(s => s.trim());
+                    if (parts.length === 3) {
+                        // user actually typed category:sub:thirdName
+                        const thirdLetter = lookupThirdLetter(parts[2]);
+                        if (thirdLetter) mainThird = thirdLetter;
+                    } else if (exactList.length) {
+                        // fallback: look at the first matched item’s third char
+                        mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
+                    }
+                } else if (exactList.length) {
+                    // free‐text exact match: keep same behavior you had before
+                    mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
+                }
+
+                if (categoryPart && thirdPart) {
+                    // user explicitly typed a third name, so we can trust lookupThirdLetter(thirdPart)
+                    const thirdLetter = lookupThirdLetter(thirdPart);
+                    if (thirdLetter) mainThird = thirdLetter;
+                } else if (exactList.length) {
+                    // fallback: look at the first exact‐matched item’s 3rd char
+                    mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
+                }
+
+
+                // 6) Assemble finalOrder in 5 tiers:
+                const finalOrder = [];
+
+
+                // 6.a) Tier 1: push all exactList (in the order they were found)
+                exactList.forEach(it => finalOrder.push(it));
+
+
+                // 6.b) Tier 2: same third group (if mainThird exists)
+                if (mainThird && groupByThird[mainThird]) {
+                    const arrSameThird = groupByThird[mainThird];
+                    // Dynamically group by second letters inside this third‐bucket
+                    const secondsInBucket = Array.from(
+                        new Set(arrSameThird.map(it => it.baseSerial.charAt(1).toLowerCase()))
+                    );
+                    secondsInBucket.forEach(sec => {
+                        const subBucket = arrSameThird.filter(
+                            it => it.baseSerial.charAt(1).toLowerCase() === sec
+                        );
+                        shuffle(subBucket);
+                        subBucket.forEach(it => finalOrder.push(it));
+                    });
+                    delete groupByThird[mainThird];
+                }
+
+
+                // 6.c) Tier 3: for each remaining third‐letter group, group by second letter dynamically
+                Object.keys(groupByThird).forEach(letter3 => {
+                    const bucket = groupByThird[letter3];
+                    // Collect the unique second letters in this bucket:
+                    const seconds = Array.from(new Set(bucket.map(it => it.baseSerial.charAt(1).toLowerCase())));
+                    seconds.forEach(sec => {
+                        const subBucket = bucket.filter(it => it.baseSerial.charAt(1).toLowerCase() === sec);
+                        shuffle(subBucket);
+                        subBucket.forEach(it => finalOrder.push(it));
+                    });
+                    // Remove after processing
+                    delete groupByThird[letter3];
+                });
+
+
+                // 6.d) Tier 4: leftover random (any item not yet in finalOrder)
+                // (At this point, groupByThird is empty because we deleted each key above.)
+                // If you wanted to consider “same first letter but different third” as its own tier,
+                // you could do so. But the above “6.b + 6.c” cover same third and same second. 
+                // Next you might want “same first letter across all items.” If so, you can:
+                //   1) Partition leftover (none at this point; all groupByThird entries were consumed).
+                //   2) If you truly want a separate “same first letter” tier, re-group leftover by first letter here.
+                // However, since groupByThird is now empty, we move directly to “random leftover across all categories.”
+                // Gather any items not in finalOrder:
+                const seen = new Set(finalOrder.map(it => it.baseSerial));
+                const trulyLeftover = itemsOrdered.filter(it => !seen.has(it.baseSerial));
+                shuffle(trulyLeftover);
+                trulyLeftover.forEach(it => finalOrder.push(it));
+
+
+                // 7) Overwrite itemsOrdered & rebuild panels (each item will show all its versions horizontally)
+                itemsOrdered = finalOrder;
+                buildPanels();
+                vContainer.scrollTop = 0;// Reset scroll to top:
+                updateInfo();
+            }
+
+            function runCategorySearch(catLetter, subLetter = null, thirdLetter = null) {
+                // 0) Normalize to lowercase
+                const c = catLetter ? catLetter.toLowerCase() : null;
+                const s = subLetter ? subLetter.toLowerCase() : null;
+                const t = thirdLetter ? thirdLetter.toLowerCase() : null;
+
+                const exactList = [];
+                const remainder = [];
+
+                // 1) Partition itemsOrdered into exactList vs remainder
+                itemsOrdered.forEach(item => {
+                    const base = item.baseSerial.toLowerCase();
+
+                    let isExact = false;
+                    if (t) {
+                        // user clicked category+sub+third: require base[0]===c && base[1]===s && base[2]===t
+                        if (base.charAt(0) === c && base.charAt(1) === s && base.charAt(2) === t) {
+                            isExact = true;
+                        }
+                    } else if (s) {
+                        // user clicked category+sub (no third): require base[0]===c && base[1]===s
+                        if (base.charAt(0) === c && base.charAt(1) === s) {
+                            isExact = true;
+                        }
+                    } else {
+                        // user clicked only category: require base[0]===c
+                        if (base.charAt(0) === c) {
+                            isExact = true;
+                        }
+                    }
+
+                    if (isExact) {
+                        exactList.push(item);
+                    } else {
+                        remainder.push(item);
+                    }
+                });
+
+                // 2) If nothing matched exactly, show “No items found” and return (optional):
+                if (exactList.length === 0) {
+                    loadingWait("No items found in this category", 0.8, false, 1.7);
+                    return;
+                }
+
+                // 3) Group the “remainder” by third letter. Each key is baseSerial.charAt(2).
+                const groupByThird = {};
+                remainder.forEach(item => {
+                    const letter3 = item.baseSerial.charAt(2).toLowerCase();
+                    if (!groupByThird[letter3]) groupByThird[letter3] = [];
+                    groupByThird[letter3].push(item);
+                });
+
+                // 4) Determine “mainThird” if the user clicked a thirdLetter explicitly.
+                //    Otherwise, if they only clicked cat+sub, we pick the third char from the first exactList item.
+                let mainThird = null;
+                if (t) {
+                    mainThird = t; // because they explicitly asked for it
+                } else if (exactList.length) {
+                    mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
+                }
+
+                // 5) Build the final ordered array in 4 steps:
+                const finalOrder = [];
+
+                // 5.a) Tier 1: push all exactList items in the order they were matched
+                exactList.forEach(it => finalOrder.push(it));
+
+                // 5.b) Tier 2: same third (if mainThird exists)
+                if (mainThird && groupByThird[mainThird]) {
+                    const arrSameThird = groupByThird[mainThird];
+                    const secondsInBucket = Array.from(
+                        new Set(arrSameThird.map(it => it.baseSerial.charAt(1).toLowerCase()))
+                    );
+                    secondsInBucket.forEach(sec => {
+                        const subBucket = arrSameThird.filter(it => it.baseSerial.charAt(1).toLowerCase() === sec);
+                        shuffle(subBucket);
+                        subBucket.forEach(it => finalOrder.push(it));
+                    });
+                    delete groupByThird[mainThird];
+                }
+
+                // 5.c) Tier 3: for each remaining third letter, group dynamically by second letter
+                Object.keys(groupByThird).forEach(letter3 => {
+                    const bucket = groupByThird[letter3];
+                    const seconds = Array.from(new Set(bucket.map(it => it.baseSerial.charAt(1).toLowerCase())));
+                    seconds.forEach(sec => {
+                        const subBucket = bucket.filter(it => it.baseSerial.charAt(1).toLowerCase() === sec);
+                        shuffle(subBucket);
+                        subBucket.forEach(it => finalOrder.push(it));
+                    });
+                    delete groupByThird[letter3];
+                });
+
+                // 5.d) Tier 4: leftover random (none left in groupByThird at this point)
+                // But to be safe, gather any item not yet in finalOrder:
+                const seen = new Set(finalOrder.map(it => it.baseSerial));
+                const trulyLeftover = itemsOrdered.filter(it => !seen.has(it.baseSerial));
+                shuffle(trulyLeftover);
+                trulyLeftover.forEach(it => finalOrder.push(it));
+
+                // 6) Overwrite itemsOrdered & rebuild panels
+                itemsOrdered = finalOrder;
+                buildPanels();
+                vContainer.scrollTop = 0;  // reset scroll to top
+                updateInfo();
             }
 
 
 
 
 
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 12: Touch / Mouse “dragging” helpers (unchanged from before)
+            // ─────────────────────────────────────────────────────────────────────────────
             function makeDraggableScroll(container, isVertical, speed = 2) {
                 let down = false, startX, startY, sL, sT;
                 container.addEventListener("mousedown", e => {
@@ -747,6 +1940,10 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll(".horizontal-scroll")
                 .forEach(hs => makeDraggableScroll(hs, false, 3));
 
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 13: Scroll listener to call updateInfo() after user scrolls
+            // ─────────────────────────────────────────────────────────────────────────────
             let to;
             vContainer.addEventListener("scroll", () => {
                 clearTimeout(to);
@@ -754,26 +1951,37 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
 
-            // —————————————————————————
-            // 9) Initial render & random
-            // —————————————————————————
+
+
+            function recommendSearched(serialString) {
+                runSearch(serialString);
+            }
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // Step 14: Initial render
+            // ─────────────────────────────────────────────────────────────────────────────
             shuffle(itemsOrdered);
             buildPanels();
+
+            // After buildPanels, immediately traverse all version panels and update icons:
+            document.querySelectorAll(".version-panel").forEach(vp => {
+                const sb = vp.querySelector(".side-buttons");
+                if (sb) updateSideButtons(sb);
+            });
+
             updateInfo();
 
-
+// runCategorySearch("e","r","s");
 
 
         })
         .catch(err => {
-            // loadingStart(0.55);
+            loadingStart(0.55);
             // loadingWait('Loading',1);
             console.error("Failed to load data.json:", err);
         });
 
 });
-
-
 
 
 
@@ -1286,3 +2494,20 @@ function addToCart() {
         removeOverlay();
     };
 })();
+
+
+// // Examples (wired up from your HTML buttons):
+// // User clicked “Fashion” button:
+// const catLetter = lookupCategoryLetter("Fashion");             // → "F"
+// runCategorySearch(catLetter);
+
+// // User clicked “Electronics” then “Television”:
+// const catLetter = lookupCategoryLetter("Electronics");         // → "E"
+// const subLetter = lookupSubCategoryLetter("Television");       // → "T"
+// runCategorySearch(catLetter, subLetter);
+
+// // User clicked “Fashion” → “Men” → “Trousers”:
+// const catLetter = lookupCategoryLetter("Fashion");             // → "F"
+// const subLetter = lookupSubCategoryLetter("Men");              // → "M"
+// const thirdLet  = lookupThirdLetter("Trousers");               // → "T"
+// runCategorySearch(catLetter, subLetter, thirdLet);
