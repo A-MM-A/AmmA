@@ -117,10 +117,11 @@ body {
 
 .logo {
     position: absolute;
-    width: 64px;
+    width: 61px;
     height: 55px;
-    left: 45%;
-    right: 50%;
+    left: 43%;
+    /* right: 50%; */
+    z-index: 10;
 
 }
 
@@ -144,7 +145,6 @@ body {
 .suggestion-row:hover {
   background: rgba(255, 255, 255, 0.1);
 }
-
 
 
 

@@ -17,9 +17,20 @@
     <div class="phone-frame">
         <!-- Top bar -->
 
-        <div class="top-bar">
+        <a href="index.html">
             <img class="logo" src="logo/logo.svg" alt="">
-            <span id="category-name">Fashion</span>
+        </a>
+        
+        <div class="top-bar">
+
+            <span id="category-name" data-selected="false">
+                <button id="category-back-btn"
+                    style="display: none; background: none; border: none; cursor: pointer; vertical-align: middle; margin-right: 0.5rem;">
+                    <img src="icons/back-white.svg" alt="Back" style="width: 20px; height: 20px;">
+                </button>
+                <spa class="category-button" n id="category-name-text">Category
+            </span>
+            </span>
             <button id="search-btn">
                 <img class="svg" src="icons/search-line.svg" alt="Search">
             </button>

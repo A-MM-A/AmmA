@@ -183,21 +183,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // 3) Wire up the top-bar "category" pill to open the popup:
                 const catSpan = document.getElementById("category-name");
-                if (catSpan) {
-                    catSpan.style.cursor = "pointer";
-                    catSpan.addEventListener("click", () => {
-                        // If the pill currently shows a selection (arrow + text), reset home instead of opening:
+                const catText = document.getElementById("category-name-text");
+                const catBackBtn = document.getElementById("category-back-btn");
+
+                if (catSpan && catText && catBackBtn) {
+                    // 1) Initially: no category selected
+                    catText.innerText = "Category";
+                    catSpan.dataset.selected = "false"; // string "false"
+                    catBackBtn.style.display = "none";
+
+                    // 2) Clicking anywhere on the text (not the back arrow):
+                    catText.style.cursor = "pointer";
+                    catText.addEventListener("click", () => {
                         if (catSpan.dataset.selected === "true") {
-                            // Clear any category filter:
-                            itemsOrdered = recommend(rawItems); // or however you reset to home
+                        
+                        }
+                        showCategoryPopup();
+                    });
+
+                    // 3) Clicking the back arrow inside the pill:
+                    catBackBtn.addEventListener("click", () => {
+                        // Only acts if a selection exists
+                        if (catSpan.dataset.selected === "true") {
+                            // Clear selection → go home
+                            itemsOrdered = recommend(rawItems);
                             buildPanels();
                             updateInfo();
-                            catSpan.innerText = "Category";
+                            catText.innerText = "Category";
                             catSpan.dataset.selected = "false";
-                            // Also remove any left-arrow icon inside the pill (we’ll handle that in showCategoryPopup)
-                        } else {
-                            // No selection yet → open the popup to choose
-                            showCategoryPopup();
+                            catBackBtn.style.display = "none";
                         }
                     });
                 }
@@ -328,8 +342,8 @@ document.addEventListener("DOMContentLoaded", () => {
                   </button>
                   <button class="cart-btn">
                     <img class="svg"
-                         src="icons/shopping-cart-line.svg"
-                         data-default="icons/shopping-cart-line.svg"
+                         src="icons/shopping-cart-add.svg"
+                         data-default="icons/shopping-cart-add.svg"
                          data-active="icons/shopping-cart-fill.svg"
                          alt="Add to Cart">
                   </button>
@@ -606,6 +620,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 addToCartCount(totalPrice); // your existing function
                                 const img = cartBtn.querySelector("img");
                                 img.src = img.dataset.active;
+                                addToCart();
 
                                 // Persist right away:
                                 saveVersionState(serial);
@@ -982,8 +997,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.body.appendChild(overlay);
             }
 
+            function getCartPopupHeight() {
+                const cartBox = document.getElementById("cart-popup-box");
+                if (cartBox) {
+                    return cartBox.offsetHeight;
+                }
+                // Fallback: default pixel value if cart-popup-box not yet in DOM
+                return window.innerHeight * 0.4; // e.g. 40% of viewport
+            }
+
             function openSearchPopup() {
-                // 1) create overlay
+                // 1) Create overlay
                 searchOverlay = document.createElement("div");
                 searchOverlay.id = "search-popup-overlay";
                 Object.assign(searchOverlay.style, {
@@ -995,65 +1019,88 @@ document.addEventListener("DOMContentLoaded", () => {
                     background: "rgba(0,0,0,0.6)",
                     zIndex: "200",
                     display: "flex",
-                    alignItems: "flex-start",    // pin to top
-                    justifyContent: "center",
+                    alignItems: "flex-start",
+                    justifyContent: "center"
                 });
 
-                // 2) create popup box container
+                // 2) Determine dynamic box height = cart popup height
+                const cartHeight = getCartPopupHeight();
+                const boxHeight = cartHeight * 1.3; // exactly equal
+
+                // 3) Create popup box container
                 const box = document.createElement("div");
                 box.id = "search-popup-box";
                 Object.assign(box.style, {
-                    background: "var(--muted)",
+                    background: "#2c2c2c4e",   // semi-transparent like category/cart
                     color: "var(--fg)",
+                    backdropFilter: "blur(10px)",
                     borderRadius: "12px",
                     width: "90%",
                     maxWidth: "360px",
+                    height: `${boxHeight}px`,
                     marginTop: "10vh",
                     padding: "1rem",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
                     position: "relative",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "0.75rem"
+                    gap: "0.5rem"
                 });
 
-                // 3) “X” close button
-                const closeBtn = document.createElement("button");
-                closeBtn.innerText = "✕";
-                Object.assign(closeBtn.style, {
+                // 4) Back arrow (top-left)
+                const backBtn = document.createElement("button");
+                backBtn.id = "search-popup-back";
+                Object.assign(backBtn.style, {
                     position: "absolute",
-                    top: "8px",
-                    right: "12px",
-                    background: "none",
+                    top: "34px",
+                    left: "18px",
+                    width: "35px",
+                    height: "35px",
+                    borderRadius: "16px",
+                    background: "#ffffff",
                     border: "none",
-                    color: "var(--fg)",
-                    fontSize: "1.2rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     cursor: "pointer"
                 });
-                closeBtn.onclick = closeSearchPopup;
-                box.appendChild(closeBtn);
+                const backImg2 = document.createElement("img");
+                backImg2.src = "icons/back.svg";
+                backImg2.alt = "Back";
+                Object.assign(backImg2.style, {
+                    width: "25px",
+                    height: "25px"
+                });
+                backBtn.appendChild(backImg2);
+                box.appendChild(backBtn);
 
-                // 4) Search‐input pill (type="text")
+                backBtn.onclick = () => {
+                    closeSearchPopup();
+                };
+
+                // 5) Search‐input pill (slightly shorter for room)
                 const input = document.createElement("input");
                 input.id = "search-popup-input";
                 input.type = "text";
                 input.placeholder = "Search for items...";
                 Object.assign(input.style, {
-                    width: "100%",
-                    padding: "0.6rem 1rem",
+                    width: "82%",
+                    marginLeft: "50px",
+                    padding: "0.4rem 0.8rem", // slightly smaller
                     borderRadius: "20px",
                     border: "1px solid var(--gray)",
-                    background: "var(--muted)",
+                    background: "#1e1e1e",  // darker inside
                     color: "var(--fg)",
-                    fontSize: "1rem"
+                    fontSize: "1rem",
+                    marginTop: "1.2rem"      // push below back arrow
                 });
                 box.appendChild(input);
 
-                // 5) Suggestions container (empty for now)
+                // 6) Suggestions container (fills remaining space, scrollable)
                 const suggestions = document.createElement("div");
                 suggestions.id = "search-suggestions";
                 Object.assign(suggestions.style, {
-                    maxHeight: "40vh",
+                    flex: "1",
                     overflowY: "auto",
                     background: "var(--muted)",
                     border: "1px solid var(--gray)",
@@ -1062,7 +1109,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 box.appendChild(suggestions);
 
-                // 6) Confirm‐search button
+                // 7) Confirm‐search button at bottom
                 const confirmBtn = document.createElement("button");
                 confirmBtn.id = "search-confirm-btn";
                 confirmBtn.innerText = "Search";
@@ -1074,50 +1121,105 @@ document.addEventListener("DOMContentLoaded", () => {
                     background: "var(--accent)",
                     color: "var(--bg)",
                     fontSize: "1rem",
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    marginTop: "0.5rem"
                 });
                 box.appendChild(confirmBtn);
 
-                // 7) wire up event listeners:
-                input.addEventListener("input", handleSearchInput);
-                confirmBtn.addEventListener("click", () => {
-                    runSearch(input.value.trim());
-                    closeSearchPopup();
+                // 8) Wire up events:
+                let isTyping = false;
+
+                // On focus (initially) show history
+                renderSearchHistory();
+
+                input.addEventListener("input", (evt) => {
+                    const raw = evt.target.value;
+                    if (raw.trim() === "") {
+                        // Show history again if field emptied
+                        isTyping = false;
+                        renderSearchHistory();
+                    } else {
+                        // Switch to predictive suggestions
+                        isTyping = true;
+                        suggestions.innerHTML = "";
+                        handleSearchInput(evt);
+                    }
                 });
 
-                // Also submit search if the user presses Enter in the input:
-                input.addEventListener("keydown", (evt) => {
-                    if (evt.key === "Enter") {
-                        evt.preventDefault();
-                        runSearch(input.value.trim());
+                confirmBtn.addEventListener("click", () => {
+                    const val = input.value.trim();
+                    if (val) {
+                        saveSearchHistory(val);
+                        runSearch(val);
                         closeSearchPopup();
                     }
                 });
 
+                input.addEventListener("keydown", (evt) => {
+                    if (evt.key === "Enter") {
+                        evt.preventDefault();
+                        const val = input.value.trim();
+                        if (val) {
+                            saveSearchHistory(val);
+                            runSearch(val);
+                            closeSearchPopup();
+                        }
+                    }
+                });
 
-                // 8) assemble
+                // 9) Assemble & focus
                 searchOverlay.appendChild(box);
                 document.body.appendChild(searchOverlay);
-
-                // 9) autofocus
                 input.focus();
-            }
 
-            function closeSearchPopup() {
-                if (!searchOverlay) return;
-                document.body.removeChild(searchOverlay);
-                searchOverlay = null;
+                // 10) Render search history when input is empty
+                function renderSearchHistory() {
+                    suggestions.innerHTML = "";
+                    const history = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+                    if (history.length === 0) {
+                        return;
+                    }
+                    history.forEach(q => {
+                        const row = document.createElement("div");
+                        row.className = "history-row";
+                        Object.assign(row.style, {
+                            padding: "0.4rem",
+                            cursor: "pointer",
+                            borderBottom: "1px solid rgba(255,255,255,0.1)"
+                        });
+                        row.innerText = q;
+                        row.addEventListener("click", () => {
+                            // Auto-search this history entry
+                            input.value = q;
+                            saveSearchHistory(q);
+                            runSearch(q);
+                            closeSearchPopup();
+                        });
+                        suggestions.appendChild(row);
+                    });
+                }
+
+                // 11) Save new search to localStorage
+                function saveSearchHistory(query) {
+                    if (!query) return;
+                    let history = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+                    // Remove if existing
+                    history = history.filter(item => item !== query);
+                    // Prepend
+                    history.unshift(query);
+                    if (history.length > 10) history.pop();
+                    localStorage.setItem("searchHistory", JSON.stringify(history));
+                }
+
+                function closeSearchPopup() {
+                    if (!searchOverlay) return;
+                    document.body.removeChild(searchOverlay);
+                    searchOverlay = null;
+                }
             }
 
             function showCategoryPopup() {
-                // ─────────────────────────────────────────────────────────────────────
-                //  showCategoryPopup(): Open a full‐screen overlay showing categories.
-                //    • 2× height of your showCartPopup
-                //    • three consecutive screens: categories → subcategories → third groups
-                //    • a white‐circle back‐arrow (icons/back.svg) to navigate backward
-                //    • a pill‐shaped Confirm button that’s enabled once at least one selection is made
-                // ─────────────────────────────────────────────────────────────────────
-                // 1) Create overlay container (full‐screen, dark)
+                // 1) Create overlay
                 const overlay = document.createElement("div");
                 overlay.id = "category-popup-overlay";
                 Object.assign(overlay.style, {
@@ -1133,31 +1235,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     zIndex: "200"
                 });
 
-                // 2) Create the pop‑up box (double height vs. cart popup)
+                // 2) Compute dynamic max‐height (1.5 × cart popup)
+                const cartHeight = getCartPopupHeight();
+                const maxBoxHeight = cartHeight * 2;
+
+                // 3) Create the pop-up box
                 const box = document.createElement("div");
                 box.id = "category-popup-box";
                 Object.assign(box.style, {
-                    background: "#2c2c2c4e",   // dark overlay style
+                    background: "#2c2c2c4e",
                     color: "var(--fg)",
                     borderRadius: "12px",
                     width: "80%",
                     maxWidth: "320px",
-                    height: "80%",              // 2× height of the ~40%-ish cart pop
+                    height: "auto",               // auto to fit content
+                    maxHeight: `${maxBoxHeight}px`,
                     padding: "1rem",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                    boxShadow: "0 4px 12px rgba(255, 255, 255, 0.36)",
                     position: "relative",
                     backdropFilter: "blur(10px)",
                     display: "flex",
                     flexDirection: "column"
                 });
 
-                // Keep track of current “level”: 0=categories, 1=subcategories, 2=third
                 let level = 0;
-                let chosenCategory = null;     // string, ex: "Fashion"
-                let chosenSub = null;          // ex: "Men"
-                let chosenThird = null;        // ex: "Trousers"
+                let chosenCategory = null;
+                let chosenSub = null;
+                let chosenThird = null;
 
-                // 3) Create back‐arrow button (white circle + icons/back.svg). Only shown if level>0.
+                // 4) Create BACK arrow button (always visible, even at level 0)
                 const backBtn = document.createElement("button");
                 backBtn.id = "category-popup-back";
                 Object.assign(backBtn.style, {
@@ -1167,28 +1273,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     width: "32px",
                     height: "32px",
                     borderRadius: "16px",
-                    background: "#ffffff",       // white circle
+                    background: "#ffffff",
                     border: "none",
-                    display: "none",            // start hidden
+                    display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer"
                 });
-                // Set the SVG icon inside:
                 const backImg = document.createElement("img");
                 backImg.src = "icons/back.svg";
                 backImg.alt = "Back";
                 Object.assign(backImg.style, {
-                    width: "16px",
-                    height: "16px"
+                    width: "25px",
+                    height: "25px"
                 });
                 backBtn.appendChild(backImg);
                 box.appendChild(backBtn);
 
-                // When clicked: go one level up (or close if already at top)
                 backBtn.onclick = () => {
                     if (level === 0) {
-                        // Should not happen, because it's hidden at level 0
                         document.body.removeChild(overlay);
                     } else if (level === 1) {
                         level = 0;
@@ -1199,7 +1302,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 };
 
-                // 4) Create a heading area (above the list), showing current selection (e.g. “Fashion” at level 1)
+                // 5) Heading
                 const heading = document.createElement("h2");
                 heading.id = "category-popup-heading";
                 Object.assign(heading.style, {
@@ -1211,7 +1314,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 heading.innerText = "Categories";
                 box.appendChild(heading);
 
-                // 5) Create a container for whichever list we’re on (categories/subcategories/third)
+                // 6) List container (scrolls if needed)
                 const listContainer = document.createElement("div");
                 listContainer.id = "category-popup-list";
                 Object.assign(listContainer.style, {
@@ -1221,7 +1324,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 box.appendChild(listContainer);
 
-                // 6) Create a Confirm button at the bottom (pill‐shaped), disabled until at least level 1 is chosen
+                // 7) Confirm button (disabled until level ≥1)
                 const confirmBtn = document.createElement("button");
                 confirmBtn.id = "category-popup-confirm";
                 confirmBtn.innerText = "Confirm";
@@ -1234,45 +1337,56 @@ document.addEventListener("DOMContentLoaded", () => {
                     color: "var(--bg)",
                     fontSize: "1rem",
                     cursor: "pointer",
-                    opacity: "0.5"        // disabled look
+                    opacity: "0.5"
                 });
                 confirmBtn.disabled = true;
                 box.appendChild(confirmBtn);
 
-                // Clicking Confirm: if on level 1 (category chosen, no sub), we runCategorySearch(catLetter)
-                // If on level 2 (sub chosen, no third), we runCategorySearch(catLetter, subLetter)
                 confirmBtn.onclick = () => {
                     if (!chosenCategory) return;
                     const catLetter = lookupCategoryLetter(chosenCategory);
+
                     if (!chosenSub) {
-                        // Tier 1 only
                         runCategorySearch(catLetter);
-                    } else if (!chosenThird) {
+                        // Update top-bar pill:
+                        const catSpan = document.getElementById("category-name");
+                        const catText = document.getElementById("category-name-text");
+                        const catBackBtn = document.getElementById("category-back-btn");
+                        catText.innerText = chosenCategory;
+                        catSpan.dataset.selected = "true";
+                        catBackBtn.style.display = "inline-flex";
+                        document.body.removeChild(overlay);
+                        return;
+                    }
+
+                    if (!chosenThird) {
                         const subLetter = lookupSubCategoryLetter(chosenSub);
                         runCategorySearch(catLetter, subLetter);
+                        const catSpan = document.getElementById("category-name");
+                        const catText = document.getElementById("category-name-text");
+                        const catBackBtn = document.getElementById("category-back-btn");
+                        catText.innerText = `${chosenSub}`;
+                        catSpan.dataset.selected = "true";
+                        catBackBtn.style.display = "inline-flex";
+                        document.body.removeChild(overlay);
+                        return;
                     }
-                    closePopup();
                 };
 
-                // 7) Assemble overlay
+                // 8) Assemble overlay
                 overlay.appendChild(box);
                 document.body.appendChild(overlay);
 
-                // Helper to remove overlay
-                function closePopup() {
-                    document.body.removeChild(overlay);
-                }
+                // 9) Render functions
 
-                // 8) RENDER FUNCTIONS FOR EACH LEVEL:
-
-                // 8.a) Level 0: show all categories
                 function renderCategories() {
                     level = 0;
+                    chosenCategory = chosenSub = chosenThird = null;
+
                     heading.innerText = "Categories";
-                    backBtn.style.display = "none";
-                    listContainer.innerHTML = "";
                     confirmBtn.disabled = true;
                     confirmBtn.style.opacity = "0.5";
+                    listContainer.innerHTML = "";
 
                     categoryDefs.categories.forEach(cat => {
                         const row = document.createElement("div");
@@ -1280,13 +1394,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         Object.assign(row.style, {
                             padding: "0.6rem",
                             margin: "0.3rem 0",
-                            background: "var(--muted)",
-                            borderRadius: "8px",
+                            background: "rgba(109, 105, 105, 0.56)",
+                            borderRadius: "15px",
                             cursor: "pointer",
                             color: "var(--fg)",
                             textAlign: "center"
                         });
-                        row.innerText = cat.name; // e.g. "Fashion"
+                        row.innerText = cat.name;
                         row.addEventListener("click", () => {
                             chosenCategory = cat.name;
                             level = 1;
@@ -1296,16 +1410,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                 }
 
-                // 8.b) Level 1: show subcategories of chosenCategory
                 function renderSubcategories() {
                     level = 1;
-                    heading.innerText = chosenCategory;
-                    backBtn.style.display = "flex";
-                    listContainer.innerHTML = "";
-                    confirmBtn.disabled = false;      // at least one category chosen → Confirm now enabled
-                    confirmBtn.style.opacity = "1";
+                    chosenSub = chosenThird = null;
 
-                    // Find the category object:
+                    heading.innerText = chosenCategory;
+                    confirmBtn.disabled = false;
+                    confirmBtn.style.opacity = "1";
+                    listContainer.innerHTML = "";
+
                     const catObj = categoryDefs.categories.find(c => c.name === chosenCategory);
                     if (!catObj) return;
 
@@ -1315,13 +1428,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         Object.assign(row.style, {
                             padding: "0.6rem",
                             margin: "0.3rem 0",
-                            background: "var(--muted)",
-                            borderRadius: "8px",
+                            background: "rgba(109, 105, 105, 0.56)",
+                            borderRadius: "15px",
                             cursor: "pointer",
                             color: "var(--fg)",
                             textAlign: "center"
                         });
-                        row.innerText = sub.name; // e.g. "Men"
+                        row.innerText = sub.name;
                         row.addEventListener("click", () => {
                             chosenSub = sub.name;
                             level = 2;
@@ -1331,16 +1444,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                 }
 
-                // 8.c) Level 2: show third‑level groups of chosenCategory → chosenSub
                 function renderThirdGroups() {
                     level = 2;
-                    heading.innerText = `${chosenCategory}  >  ${chosenSub}`;
-                    backBtn.style.display = "flex";
-                    listContainer.innerHTML = "";
+                    chosenThird = null;
+
+                    heading.innerText = `${chosenCategory} > ${chosenSub}`;
                     confirmBtn.disabled = false;
                     confirmBtn.style.opacity = "1";
+                    listContainer.innerHTML = "";
 
-                    // Find the sub-object:
                     const catObj = categoryDefs.categories.find(c => c.name === chosenCategory);
                     if (!catObj) return;
                     const subObj = catObj.subCategories.find(s => s.name === chosenSub);
@@ -1352,29 +1464,36 @@ document.addEventListener("DOMContentLoaded", () => {
                         Object.assign(row.style, {
                             padding: "0.6rem",
                             margin: "0.3rem 0",
-                            background: "var(--muted)",
-                            borderRadius: "8px",
+                            background: "rgba(109, 105, 105, 0.56)",
+                            borderRadius: "15px",
                             cursor: "pointer",
                             color: "var(--fg)",
                             textAlign: "center"
                         });
-                        row.innerText = tg.name; // e.g. "Trousers" or "A"
+                        row.innerText = tg.name;
                         row.addEventListener("click", () => {
                             chosenThird = tg.name;
-                            // Immediately run the search with category+sub+third and close:
                             const catLetter = lookupCategoryLetter(chosenCategory);
                             const subLetter = lookupSubCategoryLetter(chosenSub);
                             const thirdLetter = lookupThirdLetter(chosenThird);
                             runCategorySearch(catLetter, subLetter, thirdLetter);
-                            closePopup();
+
+                            const catSpan = document.getElementById("category-name");
+                            const catText = document.getElementById("category-name-text");
+                            const catBackBtn = document.getElementById("category-back-btn");
+                            catText.innerText = `${chosenThird}`;
+                            catSpan.dataset.selected = "true";
+                            catBackBtn.style.display = "inline-flex";
+                            document.body.removeChild(overlay);
                         });
                         listContainer.appendChild(row);
                     });
                 }
 
-                // 9) INITIAL CALL → show categories
+                // 10) Initial render
                 renderCategories();
             }
+
 
 
 
@@ -1445,7 +1564,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Replace any non‐letter/non‐number with a space, then collapse spaces, then trim
                 const cleaned = raw
                     .toLowerCase()
-                    .replace(/[^a-z0-9:]+/g, " ")   // preserve colon if category syntax, but remove everything else
+                    .replace(/[^a-z0-9]+/g, "")   // preserve colon if category syntax, but remove everything else
                     .trim()
                     .replace(/\s+/g, " ");          // collapse multiple spaces into one
                 return cleaned;
@@ -1457,6 +1576,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const q = normalizeQuery(raw);
                 const suggestionsContainer = document.getElementById("search-suggestions");
                 suggestionsContainer.innerHTML = "";
+
+                if (!raw.trim()) return;
 
                 if (!q) return;
 
@@ -1564,22 +1685,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
+
             function runSearch(rawQuery) {
-                // 0) Normalize query:
                 const norm = normalizeQuery(rawQuery);
                 if (!norm) {
-                    // Empty → revert to original recommended order:
                     itemsOrdered = recommend(itemsOrdered);
                     buildPanels();
                     updateInfo();
                     return;
                 }
 
-                // 1) Category syntax?
+                // 1) If no colon but norm is exactly a valid category name:
+                let categoryOnlyPart = null;
+                if (!norm.includes(":")) {
+                    const catLetter = lookupCategoryLetter(norm);
+                    if (catLetter) {
+                        categoryOnlyPart = norm;
+                    }
+                }
+
+                // 2) Detect "category:sub[:third]" if present
                 let categoryPart = null, subPart = null, thirdPart = null;
-                if (norm.includes(":")) {
+                if (categoryOnlyPart) {
+                    categoryPart = categoryOnlyPart;
+                } else if (norm.includes(":")) {
                     const parts = norm.split(":").map(s => s.trim());
-                    if (parts.length === 2 && parts[0] && parts[1]) {
+                    if (parts.length >= 2 && parts[0] && parts[1]) {
                         categoryPart = parts[0];
                         subPart = parts[1];
                         if (parts.length === 3 && parts[2]) {
@@ -1588,53 +1719,57 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // 2) Partition items into exactList vs remainder
-
+                // 3) Tier 1: EXACT match logic
                 const exactList = [];
                 const remainder = [];
 
                 itemsOrdered.forEach(item => {
-                    const base = item.baseSerial.toLowerCase(); // e.g. "fma001"
+                    const base = item.baseSerial.toLowerCase();
                     let isExact = false;
 
-
                     if (categoryPart) {
-                        // → We expect the user typed something like "Fashion:Men" (but normalized).
-                        //    First, dynamically fetch letters:
+                        // DYNAMIC lookups
                         const catLetter = lookupCategoryLetter(categoryPart);
-                        const subLetter = lookupSubCategoryLetter(subPart);
-                        let desiredThird = null;
+                        const subLetter = subPart ? lookupSubCategoryLetter(subPart) : null;
+                        const thirdLetter = thirdPart ? lookupThirdLetter(thirdPart) : null;
 
-                        if (thirdPart) {
-                            desiredThird = lookupThirdLetter(thirdPart);
-                        }
-
-                        if (catLetter && subLetter) {
+                        if (catLetter && (!subLetter)) {
+                            // Category-only: match base[0] === catLetter
+                            if (base.charAt(0) === catLetter) isExact = true;
+                        } else if (catLetter && subLetter && (!thirdLetter)) {
+                            // Category + Sub: match base[0]==cat && base[1]==sub
                             if (base.charAt(0) === catLetter && base.charAt(1) === subLetter) {
-                                if (desiredThird) {
-                                    // user explicitly gave a third name, so also require base[2]===desiredThird
-                                    if (base.charAt(2) === desiredThird) {
-                                        isExact = true;
-                                    }
-                                } else {
-                                    // user only typed “category:sub” without third—this is enough to match
-                                    isExact = true;
-                                }
+                                isExact = true;
+                            }
+                        } else if (catLetter && subLetter && thirdLetter) {
+                            // Category + Sub + Third: match base[0..2] exactly
+                            if (
+                                base.charAt(0) === catLetter &&
+                                base.charAt(1) === subLetter &&
+                                base.charAt(2) === thirdLetter
+                            ) {
+                                isExact = true;
                             }
                         }
                     } else {
-                        // → No categoryPart syntax: apply your existing fullSerial/title‐word search
+                        // No category syntax: check fullSerial exact or whole-word title exact
                         for (const versionObj of item.versions) {
                             const versionSerial = versionObj.versionSerial.toLowerCase();
                             const fullSerial = (base + versionSerial).toLowerCase();
                             const titleLower = versionObj.title.toLowerCase();
 
-                            // (i) fullSerial EXACT match?
+                            // (i) If user typed substring that matches a title prefix EXACT
+                            //     E.g. if they typed "tanned", match "tanned table"
+                            //     so we treat that as exact tier 1.
+                            if (titleLower.startsWith(norm + " ")) {
+                                isExact = true;
+                                break;
+                            }
+
                             if (fullSerial === norm) {
                                 isExact = true;
                                 break;
                             }
-                            // (ii) whole‐word match in title?
                             const words = titleLower.split(/\W+/);
                             if (words.includes(norm)) {
                                 isExact = true;
@@ -1643,9 +1778,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     }
 
-
-
-
                     if (isExact) {
                         exactList.push(item);
                     } else {
@@ -1653,156 +1785,118 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
 
-
-
-                // 3) If no exactList, we also consider partial substring as exact
-
+                // 4) If Tier 1 is still empty (no exactList) AND no category syntax,
+                //    attempt substring fallback by matching title or serial, picking one random seed:
                 if (exactList.length === 0 && !categoryPart) {
-                    const newRem = [];
-
-                    remainder.forEach(item => {
-                        let matched = false;
-                        const baseTwo = item.baseSerial.substr(0, 2).toLowerCase(); // e.g. "fm"
-                        const normTwo = norm.substr(0, 2); // if norm="man", normTwo="ma"
-
-                        // Only consider substring matches if first two letters match:
-                        if (normTwo === baseTwo) {
-                            for (const versionObj of item.versions) {
-                                const titleLower = versionObj.title.toLowerCase();
-                                const fullSerial = (item.baseSerial + versionObj.versionSerial).toLowerCase();
-                                if (
-                                    titleLower.includes(norm) || // anywhere in title
-                                    fullSerial.includes(norm)   // anywhere in serial
-                                ) {
-                                    matched = true;
-                                    break;
-                                }
+                    // Find all items whose title or fullSerial contains norm
+                    const substringMatches = [];
+                    itemsOrdered.forEach(item => {
+                        for (const versionObj of item.versions) {
+                            const titleLower = versionObj.title.toLowerCase();
+                            const fullSerial = (item.baseSerial + versionObj.versionSerial).toLowerCase();
+                            if (titleLower.includes(norm) || fullSerial.includes(norm)) {
+                                substringMatches.push(item);
+                                break;
                             }
                         }
-
-                        if (matched) {
-                            exactList.push(item);
-                        } else {
-                            newRem.push(item);
-                        }
                     });
-
-                    // Now “remainder” shrinks to only those truly not matched:
-                    remainder.splice(0, remainder.length, ...newRem);
-                }
-
-                if (exactList.length === 0 && !categoryPart) {
-                    loadingWait("Item Not Found", 0.8, false, 1.7);
-                }
-
-                // 4) Now remainder = items not in exactList. Group remainder by third‑letter,
-                //    then second‑letter, then random:
-
-                const groupByThird = {};
-                remainder.forEach(item => {
-                    const letter3 = item.baseSerial.charAt(2).toLowerCase(); // third letter
-                    if (!groupByThird[letter3]) groupByThird[letter3] = [];
-                    groupByThird[letter3].push(item);
-                });
-
-
-                // 5) We now need a “mainThird” value to order the “same‐third” tier. Use:
-
-                let mainThird = null;
-                if (categoryPart) {
-                    // In a category:sub search, the "third letter" is dynamic: e.g. if user typed "Fashion:Men",
-                    // maybe they also typed a third‐level (rare in runSearch). For now, we’ll just find the third letter
-                    // that these matched items share. If you let the user type "Fashion:Men:Trousers", normalize that
-                    // and split on ":" into [cat, sub, thirdName], then you could:
-                    const parts = norm.split(":").map(s => s.trim());
-                    if (parts.length === 3) {
-                        // user actually typed category:sub:thirdName
-                        const thirdLetter = lookupThirdLetter(parts[2]);
-                        if (thirdLetter) mainThird = thirdLetter;
-                    } else if (exactList.length) {
-                        // fallback: look at the first matched item’s third char
-                        mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
-                    }
-                } else if (exactList.length) {
-                    // free‐text exact match: keep same behavior you had before
-                    mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
-                }
-
-                if (categoryPart && thirdPart) {
-                    // user explicitly typed a third name, so we can trust lookupThirdLetter(thirdPart)
-                    const thirdLetter = lookupThirdLetter(thirdPart);
-                    if (thirdLetter) mainThird = thirdLetter;
-                } else if (exactList.length) {
-                    // fallback: look at the first exact‐matched item’s 3rd char
-                    mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
-                }
-
-
-                // 6) Assemble finalOrder in 5 tiers:
-                const finalOrder = [];
-
-
-                // 6.a) Tier 1: push all exactList (in the order they were found)
-                exactList.forEach(it => finalOrder.push(it));
-
-
-                // 6.b) Tier 2: same third group (if mainThird exists)
-                if (mainThird && groupByThird[mainThird]) {
-                    const arrSameThird = groupByThird[mainThird];
-                    // Dynamically group by second letters inside this third‐bucket
-                    const secondsInBucket = Array.from(
-                        new Set(arrSameThird.map(it => it.baseSerial.charAt(1).toLowerCase()))
-                    );
-                    secondsInBucket.forEach(sec => {
-                        const subBucket = arrSameThird.filter(
-                            it => it.baseSerial.charAt(1).toLowerCase() === sec
+                    if (substringMatches.length > 0) {
+                        // Pick one at random as the Tier 1 seed
+                        const seedIndex = Math.floor(Math.random() * substringMatches.length);
+                        exactList.push(substringMatches[seedIndex]);
+                        // Remove it from remainder
+                        const seedBase = substringMatches[seedIndex].baseSerial;
+                        remainder.splice(
+                            remainder.findIndex(it => it.baseSerial === seedBase),
+                            1
                         );
-                        shuffle(subBucket);
-                        subBucket.forEach(it => finalOrder.push(it));
-                    });
-                    delete groupByThird[mainThird];
+                    }
                 }
 
+                // 4.a) If still no exactList and not category-based, show Item Not Found
+                if (exactList.length === 0 && !categoryPart) {
+                    loadingWait("Item Not Found", 0.8, false, 1.7);
+                }
 
-                // 6.c) Tier 3: for each remaining third‐letter group, group by second letter dynamically
-                Object.keys(groupByThird).forEach(letter3 => {
-                    const bucket = groupByThird[letter3];
-                    // Collect the unique second letters in this bucket:
-                    const seconds = Array.from(new Set(bucket.map(it => it.baseSerial.charAt(1).toLowerCase())));
-                    seconds.forEach(sec => {
-                        const subBucket = bucket.filter(it => it.baseSerial.charAt(1).toLowerCase() === sec);
-                        shuffle(subBucket);
-                        subBucket.forEach(it => finalOrder.push(it));
-                    });
-                    // Remove after processing
-                    delete groupByThird[letter3];
+                // 5) Now build Tier 2, 3, 4, 5 with strict prefix logic
+
+                // Determine the prefix letters from Tier 1:
+                //   firstLetter = base[0], secondLetter = base[1], thirdLetter = base[2]
+                let firstPrefix = null, secondPrefix = null, thirdPrefix = null;
+                if (exactList.length) {
+                    const seedBase = exactList[0].baseSerial.toLowerCase();
+                    firstPrefix = seedBase.charAt(0);
+                    secondPrefix = seedBase.charAt(1);
+                    thirdPrefix = seedBase.charAt(2);
+                } else if (categoryPart) {
+                    // If category syntax (but no exactList?), use those parts:
+                    firstPrefix = lookupCategoryLetter(categoryPart);
+                    if (subPart) secondPrefix = lookupSubCategoryLetter(subPart);
+                    if (thirdPart) thirdPrefix = lookupThirdLetter(thirdPart);
+                }
+
+                // Group the remainder for Tier 2–4
+                const tier2 = []; // same third, with prefix dependency
+                const tier3 = []; // same second, with prefix dependency
+                const tier4 = []; // same first, with prefix dependency
+                const tier5 = []; // everything else
+
+                remainder.forEach(item => {
+                    const base = item.baseSerial.toLowerCase();
+                    if (thirdPrefix && base.charAt(2) === thirdPrefix && base.charAt(0) === firstPrefix && base.charAt(1) === secondPrefix) {
+                        // Tier 2 candidate
+                        tier2.push(item);
+                    } else if (secondPrefix && base.charAt(1) === secondPrefix && base.charAt(0) === firstPrefix) {
+                        // Tier 3 candidate
+                        tier3.push(item);
+                    } else if (firstPrefix && base.charAt(0) === firstPrefix) {
+                        // Tier 4 candidate
+                        tier4.push(item);
+                    } else {
+                        // Tier 5 candidate
+                        tier5.push(item);
+                    }
                 });
 
+                // Shuffle within each tier (except exactList)
+                shuffle(tier2);
+                shuffle(tier3);
+                shuffle(tier4);
+                shuffle(tier5);
 
-                // 6.d) Tier 4: leftover random (any item not yet in finalOrder)
-                // (At this point, groupByThird is empty because we deleted each key above.)
-                // If you wanted to consider “same first letter but different third” as its own tier,
-                // you could do so. But the above “6.b + 6.c” cover same third and same second. 
-                // Next you might want “same first letter across all items.” If so, you can:
-                //   1) Partition leftover (none at this point; all groupByThird entries were consumed).
-                //   2) If you truly want a separate “same first letter” tier, re-group leftover by first letter here.
-                // However, since groupByThird is now empty, we move directly to “random leftover across all categories.”
-                // Gather any items not in finalOrder:
-                const seen = new Set(finalOrder.map(it => it.baseSerial));
-                const trulyLeftover = itemsOrdered.filter(it => !seen.has(it.baseSerial));
-                shuffle(trulyLeftover);
-                trulyLeftover.forEach(it => finalOrder.push(it));
+                // Build finalOrder
+                const finalOrder = [];
+                exactList.forEach(it => finalOrder.push(it));
+                tier2.forEach(it => finalOrder.push(it));
+                tier3.forEach(it => finalOrder.push(it));
+                tier4.forEach(it => finalOrder.push(it));
+                tier5.forEach(it => finalOrder.push(it));
 
+                // Sanity check: if we lost any items, append them to the end
+                const seenBases = new Set(finalOrder.map(it => it.baseSerial));
+                itemsOrdered.forEach(item => {
+                    if (!seenBases.has(item.baseSerial)) {
+                        finalOrder.push(item);
+                    }
+                });
 
-                // 7) Overwrite itemsOrdered & rebuild panels (each item will show all its versions horizontally)
+                // After building finalOrder but before setting itemsOrdered = finalOrder
+                if (finalOrder.length < itemsOrdered.length) {
+                    console.warn("runSearch/runCategorySearch: finalOrder length < original itemsOrdered length. Missing items:",
+                        itemsOrdered.filter(it => !finalOrder.find(f => f.baseSerial === it.baseSerial)).map(it => it.baseSerial)
+                    );
+                    // Append any truly missing items at the end in random order:
+                    const missing = itemsOrdered.filter(it => !finalOrder.find(f => f.baseSerial === it.baseSerial));
+                    shuffle(missing);
+                    missing.forEach(it => finalOrder.push(it));
+                }
                 itemsOrdered = finalOrder;
                 buildPanels();
-                vContainer.scrollTop = 0;// Reset scroll to top:
+                vContainer.scrollTop = 0;
                 updateInfo();
             }
 
             function runCategorySearch(catLetter, subLetter = null, thirdLetter = null) {
-                // 0) Normalize to lowercase
                 const c = catLetter ? catLetter.toLowerCase() : null;
                 const s = subLetter ? subLetter.toLowerCase() : null;
                 const t = thirdLetter ? thirdLetter.toLowerCase() : null;
@@ -1810,103 +1904,98 @@ document.addEventListener("DOMContentLoaded", () => {
                 const exactList = [];
                 const remainder = [];
 
-                // 1) Partition itemsOrdered into exactList vs remainder
                 itemsOrdered.forEach(item => {
                     const base = item.baseSerial.toLowerCase();
-
                     let isExact = false;
+
                     if (t) {
-                        // user clicked category+sub+third: require base[0]===c && base[1]===s && base[2]===t
                         if (base.charAt(0) === c && base.charAt(1) === s && base.charAt(2) === t) {
                             isExact = true;
                         }
                     } else if (s) {
-                        // user clicked category+sub (no third): require base[0]===c && base[1]===s
                         if (base.charAt(0) === c && base.charAt(1) === s) {
                             isExact = true;
                         }
                     } else {
-                        // user clicked only category: require base[0]===c
                         if (base.charAt(0) === c) {
                             isExact = true;
                         }
                     }
 
-                    if (isExact) {
-                        exactList.push(item);
-                    } else {
-                        remainder.push(item);
-                    }
+                    if (isExact) exactList.push(item);
+                    else remainder.push(item);
                 });
 
-                // 2) If nothing matched exactly, show “No items found” and return (optional):
                 if (exactList.length === 0) {
                     loadingWait("No items found in this category", 0.8, false, 1.7);
                     return;
                 }
 
-                // 3) Group the “remainder” by third letter. Each key is baseSerial.charAt(2).
-                const groupByThird = {};
+                // Tier 2–5: same prefix logic as runSearch
+                let firstPrefix = c;
+                let secondPrefix = s;
+                let thirdPrefix = t;
+                if (!t && exactList.length) {
+                    // If only category or category+sub, derive missing prefix from the first exactList item
+                    const seedBase = exactList[0].baseSerial.toLowerCase();
+                    if (!s) secondPrefix = seedBase.charAt(1);
+                    if (!t) thirdPrefix = seedBase.charAt(2);
+                }
+
+                const tier2 = [];
+                const tier3 = [];
+                const tier4 = [];
+                const tier5 = [];
+
                 remainder.forEach(item => {
-                    const letter3 = item.baseSerial.charAt(2).toLowerCase();
-                    if (!groupByThird[letter3]) groupByThird[letter3] = [];
-                    groupByThird[letter3].push(item);
+                    const base = item.baseSerial.toLowerCase();
+                    if (thirdPrefix && base.charAt(2) === thirdPrefix && base.charAt(0) === firstPrefix && base.charAt(1) === secondPrefix) {
+                        tier2.push(item);
+                    } else if (secondPrefix && base.charAt(1) === secondPrefix && base.charAt(0) === firstPrefix) {
+                        tier3.push(item);
+                    } else if (firstPrefix && base.charAt(0) === firstPrefix) {
+                        tier4.push(item);
+                    } else {
+                        tier5.push(item);
+                    }
                 });
 
-                // 4) Determine “mainThird” if the user clicked a thirdLetter explicitly.
-                //    Otherwise, if they only clicked cat+sub, we pick the third char from the first exactList item.
-                let mainThird = null;
-                if (t) {
-                    mainThird = t; // because they explicitly asked for it
-                } else if (exactList.length) {
-                    mainThird = exactList[0].baseSerial.charAt(2).toLowerCase();
-                }
+                shuffle(tier2);
+                shuffle(tier3);
+                shuffle(tier4);
+                shuffle(tier5);
 
-                // 5) Build the final ordered array in 4 steps:
                 const finalOrder = [];
-
-                // 5.a) Tier 1: push all exactList items in the order they were matched
                 exactList.forEach(it => finalOrder.push(it));
+                tier2.forEach(it => finalOrder.push(it));
+                tier3.forEach(it => finalOrder.push(it));
+                tier4.forEach(it => finalOrder.push(it));
+                tier5.forEach(it => finalOrder.push(it));
 
-                // 5.b) Tier 2: same third (if mainThird exists)
-                if (mainThird && groupByThird[mainThird]) {
-                    const arrSameThird = groupByThird[mainThird];
-                    const secondsInBucket = Array.from(
-                        new Set(arrSameThird.map(it => it.baseSerial.charAt(1).toLowerCase()))
-                    );
-                    secondsInBucket.forEach(sec => {
-                        const subBucket = arrSameThird.filter(it => it.baseSerial.charAt(1).toLowerCase() === sec);
-                        shuffle(subBucket);
-                        subBucket.forEach(it => finalOrder.push(it));
-                    });
-                    delete groupByThird[mainThird];
-                }
-
-                // 5.c) Tier 3: for each remaining third letter, group dynamically by second letter
-                Object.keys(groupByThird).forEach(letter3 => {
-                    const bucket = groupByThird[letter3];
-                    const seconds = Array.from(new Set(bucket.map(it => it.baseSerial.charAt(1).toLowerCase())));
-                    seconds.forEach(sec => {
-                        const subBucket = bucket.filter(it => it.baseSerial.charAt(1).toLowerCase() === sec);
-                        shuffle(subBucket);
-                        subBucket.forEach(it => finalOrder.push(it));
-                    });
-                    delete groupByThird[letter3];
+                // Sanity check
+                const seenBases = new Set(finalOrder.map(it => it.baseSerial));
+                itemsOrdered.forEach(item => {
+                    if (!seenBases.has(item.baseSerial)) {
+                        finalOrder.push(item);
+                    }
                 });
 
-                // 5.d) Tier 4: leftover random (none left in groupByThird at this point)
-                // But to be safe, gather any item not yet in finalOrder:
-                const seen = new Set(finalOrder.map(it => it.baseSerial));
-                const trulyLeftover = itemsOrdered.filter(it => !seen.has(it.baseSerial));
-                shuffle(trulyLeftover);
-                trulyLeftover.forEach(it => finalOrder.push(it));
-
-                // 6) Overwrite itemsOrdered & rebuild panels
+                // After building finalOrder but before setting itemsOrdered = finalOrder
+                if (finalOrder.length < itemsOrdered.length) {
+                    console.warn("runSearch/runCategorySearch: finalOrder length < original itemsOrdered length. Missing items:",
+                        itemsOrdered.filter(it => !finalOrder.find(f => f.baseSerial === it.baseSerial)).map(it => it.baseSerial)
+                    );
+                    // Append any truly missing items at the end in random order:
+                    const missing = itemsOrdered.filter(it => !finalOrder.find(f => f.baseSerial === it.baseSerial));
+                    shuffle(missing);
+                    missing.forEach(it => finalOrder.push(it));
+                }
                 itemsOrdered = finalOrder;
                 buildPanels();
-                vContainer.scrollTop = 0;  // reset scroll to top
+                vContainer.scrollTop = 0;
                 updateInfo();
             }
+
 
 
 
@@ -1971,7 +2060,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             updateInfo();
 
-// runCategorySearch("e","r","s");
+            // runCategorySearch("e","r","s");
 
 
         })
