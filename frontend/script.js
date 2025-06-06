@@ -110,9 +110,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // ─────────────────────────────────────────────────────────────────────────────
     //   Step A: Fetch rawItems from data.json  
     // ─────────────────────────────────────────────────────────────────────────────
-    fetch("data.json")
-        .then(response => response.json())
-        .then(rawItems => {
+    fetch(`${CONFIG.API_BASE_URL}/products`)
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to fetch products from backend");
+            return response.json();
+        })
+        .then(json => {
+            const rawItems = json.data || [];
+            
 
             // categories.json importing
 

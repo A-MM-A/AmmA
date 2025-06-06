@@ -27,18 +27,61 @@
       <input type="text" id="newVariants" placeholder="Variants (comma separated)" />
       <button id="addItemBtn">Add Item</button>
     </div>
-    
+
     <button onclick="loadingStart(0.5)">Start Loading</button>
     <button onclick="loadingStop()">Stop Loading</button>
-    <button onclick="loadingWait('Waiting for confirmation...\n • Enter your Mpesa - PIN\n • You can retry after 30 seconds')">Wait with Message</button>
+    <button
+      onclick="loadingWait('Waiting for confirmation...\n • Enter your Mpesa - PIN\n • You can retry after 30 seconds')">Wait
+      with Message</button>
     <button onclick="loadingWait('Hi how are you Dev',1.1)">Wait with Message</button>
     <button onclick="loadingWaitStop()">Stop Wait</button>
     <!-- <img src="logo/logo.svg" alt=""> -->
 
     <button id="security-word-login-generator">Make new Key</button>
-    
+
+
+    <br>
+    <br>
+    <br>
+
+    <section id="login-section">
+      <input type="email" id="admin-email" placeholder="Email" />
+      <input type="password" id="admin-password" placeholder="Password" />
+      <button id="admin-login-btn">Log In</button>
+      <p id="login-msg"></p>
+    </section>
+
+    <section id="admin-actions" style="display:none;">
+      <h2>Items CRUD</h2>
+      <!-- 1) Add item -->
+      <button id="create-item-btn">Create New Item</button>
+      <!-- 2) List items -->
+      <button id="list-items-btn">List All Items</button>
+      <!-- 3) Update item -->
+      <button id="update-item-btn">Update Item</button>
+      <!-- 4) Delete item -->
+      <button id="delete-item-btn">Delete Item</button>
+
+      <h2>Versions CRUD</h2>
+      <button id="create-version-btn">Create New Version</button>
+      <button id="list-versions-btn">List Versions for Item</button>
+      <button id="update-version-btn">Update Version</button>
+      <button id="delete-version-btn">Delete Version</button>
+
+      <h2>Category CRUD</h2>
+      <button id="create-category-btn">Create Category</button>
+      <button id="list-categories-btn">List Categories</button>
+      <button id="update-category-btn">Update Category</button>
+      <button id="delete-category-btn">Delete Category</button>
+    </section>
+
+
   </div>
 
+
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/index.min.js"></script>
   <script src="admin.js"></script>
   <script src="script.js"></script>
 </body>

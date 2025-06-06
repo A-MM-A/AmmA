@@ -1,27 +1,327 @@
-const pass = 'yourStrongPassword';
-const loginBtn = document.getElementById('loginBtn');
-loginBtn.onclick = () => {
-  if (document.getElementById('adminPass').value === pass) {
-    document.getElementById('loginDiv').classList.add('hidden');
-    document.getElementById('panelDiv').classList.remove('hidden');
-  } else {
-    document.getElementById('loginMsg').textContent = 'Wrong password';
-  }
-};
+// frontend/admin.js
 
-document.getElementById('addItemBtn').onclick = () => {
-  const catName = document.getElementById('newCategory').value;
-  const category = data.categories.find(c => c.name === catName) || { name: catName, items: [] };
-  if (!data.categories.includes(category)) data.categories.push(category);
-  category.items.push({
-    name: document.getElementById('newName').value,
-    serial: document.getElementById('newSerial').value,
-    price: +document.getElementById('newPrice').value,
-    variants: document.getElementById('newVariants').value.split(',').map(v => v.trim()),
-    currentVar: 0
+// 1) Initialize Supabase client (so we can log in admin)
+const SUPABASE_URL = "https://woqqydmwfkkrbplxdenr.supabase.co";  
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcXF5ZG13ZmtrcmJwbHhkZW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDgyMDksImV4cCI6MjA2NDYyNDIwOX0.YRWVv9VH9WJzXdQQzQTnwDDdp02vsSnMaKL8Nd4ubPU";
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 2) Grab DOM elements
+const loginSection = document.getElementById("login-section");
+const adminActions = document.getElementById("admin-actions");
+
+const loginBtn = document.getElementById("admin-login-btn");
+const loginMsg = document.getElementById("login-msg");
+
+const createItemBtn = document.getElementById("create-item-btn");
+const listItemsBtn = document.getElementById("list-items-btn");
+const updateItemBtn = document.getElementById("update-item-btn");
+const deleteItemBtn = document.getElementById("delete-item-btn");
+
+const createVersionBtn = document.getElementById("create-version-btn");
+const listVersionsBtn = document.getElementById("list-versions-btn");
+const updateVersionBtn = document.getElementById("update-version-btn");
+const deleteVersionBtn = document.getElementById("delete-version-btn");
+
+const createCategoryBtn = document.getElementById("create-category-btn");
+const listCategoriesBtn = document.getElementById("list-categories-btn");
+const updateCategoryBtn = document.getElementById("update-category-btn");
+const deleteCategoryBtn = document.getElementById("delete-category-btn");
+
+let currentSession = null;
+
+// 3) Check if already logged in
+(async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session) {
+    currentSession = session;
+    showAdminActions();
+  }
+})();
+
+// 4) Handle admin login
+loginBtn.addEventListener("click", async () => {
+  const email = document.getElementById("admin-email").value.trim();
+  const password = document.getElementById("admin-password").value.trim();
+  if (!email || !password) {
+    loginMsg.textContent = "Email & password required.";
+    return;
+  }
+  loginMsg.textContent = "Logging in…";
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
   });
-  alert('Item added');
-};
+  if (error) {
+    loginMsg.textContent = `Login failed: ${error.message}`;
+    return;
+  }
+  currentSession = data.session;
+  loginMsg.textContent = "";
+  showAdminActions();
+});
+
+// 5) Show CRUD buttons once logged in
+function showAdminActions() {
+  loginSection.style.display = "none";
+  adminActions.style.display = "block";
+}
+
+// 6) Helper: call backend with admin JWT
+async function apiRequest(path, method = "GET", body = null) {
+  const url = `${CONFIG.API_BASE_URL}${path}`;
+  const opts = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${currentSession.access_token}`,
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  const res = await fetch(url, opts);
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "API request failed");
+  }
+  return res.json();
+}
+
+// 7) Item CRUD
+
+// 7a) Create new item
+createItemBtn.addEventListener("click", async () => {
+  const baseSerial = prompt("Enter baseSerial (e.g. FMA001):").trim();
+  const category = prompt("Enter category (e.g. Fashion):").trim();
+  const subCategory = prompt("Enter subCategory (e.g. Men):").trim();
+  if (!baseSerial || !category || !subCategory) {
+    alert("All fields are required.");
+    return;
+  }
+  try {
+    await apiRequest("/admin/items", "POST", {
+      baseSerial,
+      category,
+      subCategory,
+    });
+    alert("Item created successfully.");
+  } catch (err) {
+    alert("Error creating item: " + err.message);
+  }
+});
+
+// 7b) List all items
+listItemsBtn.addEventListener("click", async () => {
+  try {
+    const { data } = await apiRequest("/admin/items", "GET");
+    console.table(data); // opens a console table of items
+    alert("Check console for item list (or modify this to display in the DOM)");
+  } catch (err) {
+    alert("Error listing items: " + err.message);
+  }
+});
+
+// 7c) Update an item
+updateItemBtn.addEventListener("click", async () => {
+  const id = prompt("Enter item ID to update (numeric):").trim();
+  if (!id) return alert("ID is required.");
+  const updates = {};
+  const newBase = prompt("New baseSerial (leave blank to skip):").trim();
+  if (newBase) updates.baseSerial = newBase;
+  const newCat = prompt("New category (leave blank to skip):").trim();
+  if (newCat) updates.category = newCat;
+  const newSub = prompt("New subCategory (leave blank to skip):").trim();
+  if (newSub) updates.subCategory = newSub;
+  if (Object.keys(updates).length === 0) {
+    return alert("No fields to update.");
+  }
+  try {
+    await apiRequest(`/admin/items/${id}`, "PUT", updates);
+    alert("Item updated successfully.");
+  } catch (err) {
+    alert("Error updating item: " + err.message);
+  }
+});
+
+// 7d) Delete an item
+deleteItemBtn.addEventListener("click", async () => {
+  const id = prompt("Enter item ID to delete:").trim();
+  if (!id) return alert("ID is required.");
+  if (!confirm("Really delete item ID " + id + "?")) return;
+  try {
+    await apiRequest(`/admin/items/${id}`, "DELETE");
+    alert("Item deleted successfully.");
+  } catch (err) {
+    alert("Error deleting item: " + err.message);
+  }
+});
+
+// 8) Version CRUD
+
+// 8a) Create new version
+createVersionBtn.addEventListener("click", async () => {
+  const product_id = prompt("Enter parent item ID:").trim();
+  if (!product_id) return alert("Item ID is required.");
+  // Prompt for version fields:
+  const versionSerial = prompt("versionSerial (e.g. 01):").trim();
+  const title = prompt("Title:").trim();
+  const priceValue = parseInt(prompt("Price (integer):").trim());
+  const sizesRaw = prompt("Sizes (comma-separated, e.g. S,M,L):").trim();
+  const sizes = sizesRaw.split(",").map((s) => s.trim());
+  const imageKey = prompt(
+    "Image key (R2 filename, e.g. FMA00101.jpg):"
+  ).trim();
+  const description = prompt("Description (optional):").trim();
+  const inStock = confirm("In stock? OK = yes, Cancel = no");
+  if (!versionSerial || !title || isNaN(priceValue) || sizes.length === 0 || !imageKey) {
+    return alert("Missing required version fields.");
+  }
+
+  try {
+    await apiRequest("/admin/versions", "POST", {
+      product_id: parseInt(product_id),
+      versionSerial,
+      title,
+      priceValue,
+      sizes,
+      imageKey,
+      description,
+      inStock,
+    });
+    alert("Version created successfully.");
+  } catch (err) {
+    alert("Error creating version: " + err.message);
+  }
+});
+
+// 8b) List versions for a product
+listVersionsBtn.addEventListener("click", async () => {
+  const product_id = prompt("Enter item ID to list versions:").trim();
+  if (!product_id) return alert("Item ID is required.");
+  try {
+    const { data } = await apiRequest(`/admin/items/${product_id}/versions`, "GET");
+    console.table(data);
+    alert("Check console for version list (or modify this to display in DOM).");
+  } catch (err) {
+    alert("Error listing versions: " + err.message);
+  }
+});
+
+// 8c) Update a version
+updateVersionBtn.addEventListener("click", async () => {
+  const id = prompt("Enter version ID to update:").trim();
+  if (!id) return alert("Version ID is required.");
+  const updates = {};
+  const newTitle = prompt("New title (leave blank to skip):").trim();
+  if (newTitle) updates.title = newTitle;
+  const newPrice = prompt("New price (integer, leave blank to skip):").trim();
+  if (newPrice) updates.priceValue = parseInt(newPrice);
+  const newSizesRaw = prompt(
+    "New sizes (comma-separated, leave blank to skip):"
+  ).trim();
+  if (newSizesRaw) updates.sizes = newSizesRaw.split(",").map((s) => s.trim());
+  const newImageKey = prompt(
+    "New imageKey (R2 key, leave blank to skip):"
+  ).trim();
+  if (newImageKey) updates.imageKey = newImageKey;
+  const newInStock = prompt(
+    "Set inStock? (yes/no/leave blank to skip):"
+  ).trim().toLowerCase();
+  if (newInStock === "yes") updates.inStock = true;
+  else if (newInStock === "no") updates.inStock = false;
+
+  if (Object.keys(updates).length === 0) {
+    return alert("No fields to update.");
+  }
+  try {
+    await apiRequest(`/admin/versions/${id}`, "PUT", updates);
+    alert("Version updated successfully.");
+  } catch (err) {
+    alert("Error updating version: " + err.message);
+  }
+});
+
+// 8d) Delete a version
+deleteVersionBtn.addEventListener("click", async () => {
+  const id = prompt("Enter version ID to delete:").trim();
+  if (!id) return alert("Version ID is required.");
+  if (!confirm("Really delete version ID " + id + "?")) return;
+  try {
+    await apiRequest(`/admin/versions/${id}`, "DELETE");
+    alert("Version deleted successfully.");
+  } catch (err) {
+    alert("Error deleting version: " + err.message);
+  }
+});
+
+// 9) Category CRUD
+
+// 9a) Create new category
+createCategoryBtn.addEventListener("click", async () => {
+  const name = prompt("Enter category name (e.g. Fashion):").trim();
+  const letter = prompt("Enter category letter (e.g. F):").trim();
+  if (!name || !letter) return alert("Both fields are required.");
+  try {
+    await apiRequest("/admin/categories", "POST", { name, letter });
+    alert("Category created.");
+  } catch (err) {
+    alert("Error creating category: " + err.message);
+  }
+});
+
+// 9b) List categories
+listCategoriesBtn.addEventListener("click", async () => {
+  try {
+    const { data } = await apiRequest("/admin/categories", "GET");
+    console.table(data);
+    alert("Check console for category list.");
+  } catch (err) {
+    alert("Error listing categories: " + err.message);
+  }
+});
+
+// 9c) Update category
+updateCategoryBtn.addEventListener("click", async () => {
+  const id = prompt("Enter category ID to update:").trim();
+  if (!id) return alert("ID is required.");
+  const updates = {};
+  const newName = prompt("New name (leave blank to skip):").trim();
+  if (newName) updates.name = newName;
+  const newLetter = prompt("New letter (leave blank to skip):").trim();
+  if (newLetter) updates.letter = newLetter;
+  if (Object.keys(updates).length === 0) {
+    return alert("No fields to update.");
+  }
+  try {
+    await apiRequest(`/admin/categories/${id}`, "PUT", updates);
+    alert("Category updated.");
+  } catch (err) {
+    alert("Error updating category: " + err.message);
+  }
+});
+
+// 9d) Delete category
+deleteCategoryBtn.addEventListener("click", async () => {
+  const id = prompt("Enter category ID to delete:").trim();
+  if (!id) return alert("ID is required.");
+  if (!confirm("Delete category ID " + id + "?")) return;
+  try {
+    await apiRequest(`/admin/categories/${id}`, "DELETE");
+    alert("Category deleted.");
+  } catch (err) {
+    alert("Error deleting category: " + err.message);
+  }
+});
+
+
+
+
+
+
+
+
 
 
 
@@ -187,508 +487,4 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-
-
-
-
-
-
-
-
-
-// script.js
-// (function() {
-//   // -------------------------------
-//   // Debug helper (prints to console)
-//   // -------------------------------
-//   function printline(msg) {
-//     // console.log("[Loader Debug] " + msg);
-//   }
-
-//   // -----------------------------------
-//   // The order of your shapes (top→bottom)
-//   // -----------------------------------
-//   const shapeOrder = [
-//     "shape_8", "shape_9", "shape_10", "shape_11", "shape_12", // top wedges
-//     "shape_7", "shape_6", "shape_5",                           // green arcs
-//     "shape_4", "shape_3", "shape_2", "shape_1"                  // letters
-//   ];
-
-//   let overlay = null;
-//   let animationInterval = null;
-
-//   // Prevent background scroll/touch
-//   function disableScroll() {
-//     document.documentElement.style.overflow = 'hidden';
-//     document.body.style.overflow = 'hidden';
-//   }
-//   function enableScroll() {
-//     document.documentElement.style.overflow = '';
-//     document.body.style.overflow = '';
-//   }
-//   function preventTouch(e) {
-//     e.preventDefault();
-//   }
-
-//   // ----------------------------------------------------
-//   // Create a full‐screen overlay, fetch & insert the SVG
-//   // ----------------------------------------------------
-//   function createOverlay(withText, message) {
-//     if (overlay) {
-//       printline("Overlay already exists; skipping creation.");
-//       return;
-//     }
-//     printline("Creating overlay...");
-
-//     // 1) Create overlay container
-//     overlay = document.createElement('div');
-//     Object.assign(overlay.style, {
-//       position: 'fixed',
-//       top: '0',
-//       left: '0',
-//       width: '100vw',
-//       height: '100vh',
-//       background: 'rgba(0,0,0,0.2)',
-//       display: 'flex',
-//       justifyContent: 'center',
-//       alignItems: 'center',
-//       zIndex: '9999'
-//     });
-//     overlay.addEventListener('wheel', preventTouch, { passive: false });
-//     overlay.addEventListener('touchmove', preventTouch, { passive: false });
-//     document.body.appendChild(overlay);
-//     disableScroll();
-
-//     // 2) Create inner box (rounded, light background)
-//     const box = document.createElement('div');
-//     Object.assign(box.style, {
-//       background: '#DCD9D7',
-//       borderRadius: '20px',
-//       padding: '20px',
-//       display: 'flex',
-//       flexDirection: 'column',
-//       alignItems: 'center',
-//       boxShadow: '0 0 20px rgba(0,0,0,0.1)'
-//     });
-//     overlay.appendChild(box);
-
-//     // 3) Fetch the SVG file and insert it
-//     printline("Fetching SVG from logo/logo.svg …");
-//     fetch('logo/logo.svg')
-//       .then(response => {
-//         if (!response.ok) throw new Error("SVG fetch failed with status " + response.status);
-//         return response.text();
-//       })
-//       .then(svgText => {
-//         printline("SVG fetched successfully.");
-
-//         // Parse the SVG string into DOM nodes
-//         const wrapper = document.createElement('div');
-//         wrapper.innerHTML = svgText.trim();
-//         const svgElement = wrapper.querySelector('svg');
-
-//         if (!svgElement) {
-//           printline("ERROR: <svg> not found in fetched text.");
-//           return;
-//         }
-
-//         // Add a viewBox so the entire 1080×959 canvas scales down
-//         svgElement.setAttribute('viewBox', '0 0 1080 959');
-//         // Then set a small display size (200×200)
-//         svgElement.setAttribute('width', '200');
-//         svgElement.setAttribute('height', '200');
-//         // Ensure CSS transform origin is center (for smooth animations)
-//         svgElement.style.transformOrigin = '50% 50%';
-
-//         box.appendChild(wrapper);
-
-//         // Validate that all shape IDs are present
-//         let allFound = true;
-//         shapeOrder.forEach(id => {
-//           const el = document.getElementById(id);
-//           if (!el) {
-//             printline(`WARNING: Element with ID "${id}" not found.`);
-//             allFound = false;
-//           }
-//         });
-//         if (allFound) {
-//           printline("All shape IDs detected—starting animation.");
-//         } else {
-//           printline("Some shape IDs are missing; animation may be incomplete.");
-//         }
-
-//         // Start the disassemble/reassemble loop
-//         startAnimation();
-//       })
-//       .catch(err => {
-//         printline("ERROR loading SVG: " + err);
-//       });
-
-//     // 4) If withText = true, add a message panel below the SVG
-//     if (withText) {
-//       const msgDiv = document.createElement('div');
-//       Object.assign(msgDiv.style, {
-//         background: '#BFBAB6',
-//         color: '#3C3835',
-//         marginTop: '10px',
-//         padding: '10px',
-//         borderRadius: '10px',
-//         fontSize: '14px',
-//         textAlign: 'center',
-//         whiteSpace: 'pre-wrap',
-//         maxWidth: '240px'
-//       });
-//       msgDiv.textContent = message;
-//       box.appendChild(msgDiv);
-//     }
-//   }
-
-//   // --------------------------------------------------------
-//   // Animate: disassemble (top→bottom) then reassemble (reverse)
-//   // --------------------------------------------------------
-//   function startAnimation() {
-//     const duration = 500;    // each shape’s animation duration (ms)
-//     const delayStep = 100;   // delay between shapes (ms)
-//     const moveDist = 50;     // pixels downward/upward
-
-//     function disassemble() {
-//       shapeOrder.forEach((id, idx) => {
-//         const el = document.getElementById(id);
-//         if (!el) return;
-//         el.animate([
-//           { transform: 'translateY(0px)', opacity: 1 },
-//           { transform: `translateY(${moveDist}px)`, opacity: 0 }
-//         ], {
-//           duration: duration,
-//           delay: idx * delayStep,
-//           easing: 'ease-in-out',
-//           fill: 'forwards'
-//         });
-//       });
-//     }
-
-//     function reassemble() {
-//       shapeOrder.slice().reverse().forEach((id, idx) => {
-//         const el = document.getElementById(id);
-//         if (!el) return;
-//         el.animate([
-//           { transform: `translateY(${moveDist}px)`, opacity: 0 },
-//           { transform: 'translateY(0px)', opacity: 1 }
-//         ], {
-//           duration: duration,
-//           delay: idx * delayStep,
-//           easing: 'ease-in-out',
-//           fill: 'forwards'
-//         });
-//       });
-//     }
-
-//     function cycle() {
-//       printline("Animation cycle: disassemble → reassemble");
-//       disassemble();
-//       setTimeout(() => {
-//         reassemble();
-//       }, shapeOrder.length * delayStep + duration);
-//     }
-
-//     cycle();
-//     animationInterval = setInterval(cycle, (shapeOrder.length * delayStep + duration) * 2);
-//   }
-
-//   function stopAnimation() {
-//     if (animationInterval) {
-//       clearInterval(animationInterval);
-//       animationInterval = null;
-//       printline("Animation interval cleared.");
-//     }
-//   }
-
-//   // Remove overlay, stop animation, re‐enable scroll
-//   function removeOverlay() {
-//     if (!overlay) {
-//       printline("Overlay does not exist; nothing to remove.");
-//       return;
-//     }
-//     printline("Removing overlay and stopping animation.");
-//     stopAnimation();
-//     overlay.removeEventListener('wheel', preventTouch);
-//     overlay.removeEventListener('touchmove', preventTouch);
-//     document.body.removeChild(overlay);
-//     overlay = null;
-//     enableScroll();
-//   }
-
-//   // ---------------------------------
-//   // Expose global functions to window
-//   // ---------------------------------
-//   window.loadingStart = function() {
-//     printline("loadingStart() called.");
-//     createOverlay(false, "");
-//   };
-//   window.loadingStop = function() {
-//     printline("loadingStop() called.");
-//     removeOverlay();
-//   };
-//   window.loadingWait = function(message) {
-//     printline("loadingWait() called with message:\n" + message);
-//     createOverlay(true, message);
-//   };
-//   window.loadingWaitStop = function() {
-//     printline("loadingWaitStop() called.");
-//     removeOverlay();
-//   };
-// })();
-
-
-// script.js
-// (function() {
-//   // -------------------------------
-//   // Debug helper (prints to console)
-//   // -------------------------------
-//   function printline(msg) {
-//     // console.log("[Loader Debug] " + msg);
-//   }
-
-//   // -------------------------------
-//   // Tweakable scale factor (default = 1.0)
-//   // -------------------------------
-//   const loaderScale = 0.5; // change this to resize the entire loader box
-
-//   // -----------------------------------
-//   // The order of your shapes (top→bottom)
-//   // -----------------------------------
-//   const shapeOrder = [
-//     "shape_8", "shape_9", "shape_10", "shape_11", "shape_12", // top wedges
-//     "shape_7", "shape_6", "shape_5",                           // green arcs
-//     "shape_4", "shape_3", "shape_2", "shape_1"                  // letters
-//   ];
-
-//   let overlay = null;
-//   let animationInterval = null;
-
-//   // Prevent background scroll/touch
-//   function disableScroll() {
-//     document.documentElement.style.overflow = 'hidden';
-//     document.body.style.overflow = 'hidden';
-//   }
-//   function enableScroll() {
-//     document.documentElement.style.overflow = '';
-//     document.body.style.overflow = '';
-//   }
-//   function preventTouch(e) {
-//     e.preventDefault();
-//   }
-
-//   // ----------------------------------------------------
-//   // Create a full‐screen overlay, fetch & insert the SVG
-//   // ----------------------------------------------------
-//   function createOverlay(withText, message) {
-//     if (overlay) {
-//       printline("Overlay already exists; skipping creation.");
-//       return;
-//     }
-//     printline("Creating overlay...");
-
-//     // 1) Create overlay container
-//     overlay = document.createElement('div');
-//     Object.assign(overlay.style, {
-//       position: 'fixed',
-//       top: '0',
-//       left: '0',
-//       width: '100vw',
-//       height: '100vh',
-//       background: 'rgba(0,0,0,0.2)',
-//       display: 'flex',
-//       justifyContent: 'center',
-//       alignItems: 'center',
-//       zIndex: '9999'
-//     });
-//     overlay.addEventListener('wheel', preventTouch, { passive: false });
-//     overlay.addEventListener('touchmove', preventTouch, { passive: false });
-//     document.body.appendChild(overlay);
-//     disableScroll();
-
-//     // 2) Create inner box (rounded, light background)
-//     const box = document.createElement('div');
-//     Object.assign(box.style, {
-//       background: '#DCD9D7',
-//       borderRadius: '20px',
-//       padding: '20px',
-//       display: 'flex',
-//       flexDirection: 'column',
-//       alignItems: 'center',
-//       boxShadow: '0 0 20px rgba(0,0,0,0.1)',
-//       transformOrigin: 'center',
-//       transform: `scale(${loaderScale})`
-//     });
-//     overlay.appendChild(box);
-
-//     // 3) Fetch the SVG file and insert it
-//     printline("Fetching SVG from logo/logo.svg …");
-//     fetch('logo/logo.svg')
-//       .then(response => {
-//         if (!response.ok) throw new Error("SVG fetch failed with status " + response.status);
-//         return response.text();
-//       })
-//       .then(svgText => {
-//         printline("SVG fetched successfully.");
-
-//         // Parse the SVG string into DOM nodes
-//         const wrapper = document.createElement('div');
-//         wrapper.innerHTML = svgText.trim();
-//         const svgElement = wrapper.querySelector('svg');
-
-//         if (!svgElement) {
-//           printline("ERROR: <svg> not found in fetched text.");
-//           return;
-//         }
-
-//         // Add a viewBox so the entire 1080×959 canvas scales down
-//         svgElement.setAttribute('viewBox', '0 0 1080 959');
-//         // Then set a small display size (200×200)
-//         svgElement.setAttribute('width', '200');
-//         svgElement.setAttribute('height', '200');
-//         // Ensure CSS transform origin is center (for smooth animations)
-//         svgElement.style.transformOrigin = '50% 50%';
-
-//         box.appendChild(wrapper);
-
-//         // Validate that all shape IDs are present
-//         let allFound = true;
-//         shapeOrder.forEach(id => {
-//           const el = document.getElementById(id);
-//           if (!el) {
-//             printline(`WARNING: Element with ID "${id}" not found.`);
-//             allFound = false;
-//           }
-//         });
-//         if (allFound) {
-//           printline("All shape IDs detected—starting animation.");
-//         } else {
-//           printline("Some shape IDs are missing; animation may be incomplete.");
-//         }
-
-//         // Start the disassemble/reassemble loop
-//         startAnimation();
-//       })
-//       .catch(err => {
-//         printline("ERROR loading SVG: " + err);
-//       });
-
-//     // 4) If withText = true, add a message panel below the SVG
-//     if (withText) {
-//       const msgDiv = document.createElement('div');
-//       Object.assign(msgDiv.style, {
-//         background: '#BFBAB6',
-//         color: '#3C3835',
-//         marginTop: '10px',
-//         padding: '10px',
-//         borderRadius: '10px',
-//         fontSize: '14px',
-//         textAlign: 'center',
-//         whiteSpace: 'pre-wrap',
-//         maxWidth: '240px'
-//       });
-//       msgDiv.textContent = message;
-//       box.appendChild(msgDiv);
-//     }
-//   }
-
-//   // --------------------------------------------------------
-//   // Animate: disassemble (top→bottom) then reassemble (reverse)
-//   // --------------------------------------------------------
-//   function startAnimation() {
-//     const duration = 500;    // each shape’s animation duration (ms)
-//     const delayStep = 100;   // delay between shapes (ms)
-//     const moveDist = 50;     // pixels downward/upward
-
-//     function disassemble() {
-//       shapeOrder.forEach((id, idx) => {
-//         const el = document.getElementById(id);
-//         if (!el) return;
-//         el.animate([
-//           { transform: 'translateY(0px)', opacity: 1 },
-//           { transform: `translateY(${moveDist}px)`, opacity: 0 }
-//         ], {
-//           duration: duration,
-//           delay: idx * delayStep,
-//           easing: 'ease-in-out',
-//           fill: 'forwards'
-//         });
-//       });
-//     }
-
-//     function reassemble() {
-//       shapeOrder.slice().reverse().forEach((id, idx) => {
-//         const el = document.getElementById(id);
-//         if (!el) return;
-//         el.animate([
-//           { transform: `translateY(${moveDist}px)`, opacity: 0 },
-//           { transform: 'translateY(0px)', opacity: 1 }
-//         ], {
-//           duration: duration,
-//           delay: idx * delayStep,
-//           easing: 'ease-in-out',
-//           fill: 'forwards'
-//         });
-//       });
-//     }
-
-//     function cycle() {
-//       printline("Animation cycle: disassemble → reassemble");
-//       disassemble();
-//       setTimeout(() => {
-//         reassemble();
-//       }, shapeOrder.length * delayStep + duration);
-//     }
-
-//     cycle();
-//     animationInterval = setInterval(cycle, (shapeOrder.length * delayStep + duration) * 2);
-//   }
-
-//   function stopAnimation() {
-//     if (animationInterval) {
-//       clearInterval(animationInterval);
-//       animationInterval = null;
-//       printline("Animation interval cleared.");
-//     }
-//   }
-
-//   // Remove overlay, stop animation, re‐enable scroll
-//   function removeOverlay() {
-//     if (!overlay) {
-//       printline("Overlay does not exist; nothing to remove.");
-//       return;
-//     }
-//     printline("Removing overlay and stopping animation.");
-//     stopAnimation();
-//     overlay.removeEventListener('wheel', preventTouch);
-//     overlay.removeEventListener('touchmove', preventTouch);
-//     document.body.removeChild(overlay);
-//     overlay = null;
-//     enableScroll();
-//   }
-
-//   // ---------------------------------
-//   // Expose global functions to window
-//   // ---------------------------------
-//   window.loadingStart = function() {
-//     printline("loadingStart() called.");
-//     createOverlay(false, "");
-//   };
-//   window.loadingStop = function() {
-//     printline("loadingStop() called.");
-//     removeOverlay();
-//   };
-//   window.loadingWait = function(message) {
-//     printline("loadingWait() called with message:\n" + message);
-//     createOverlay(true, message);
-//   };
-//   window.loadingWaitStop = function() {
-//     printline("loadingWaitStop() called.");
-//     removeOverlay();
-//   };
-// })();
-
-// script.js
 

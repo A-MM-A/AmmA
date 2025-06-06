@@ -562,3 +562,55 @@ background: none;
     font-size: var(--font-md);
     cursor: pointer;
 }
+
+
+
+
+
+
+
+
+
+
+
+/* Cart page styles */
+.cart-item-card {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+}
+.cart-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 1rem;
+}
+.cart-item-card h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+.cart-item-card p {
+  margin-bottom: 0.25rem;
+}
+.cart-item-card input[type="number"] {
+  width: 4rem;
+  margin-left: 0.25rem;
+}
+.cart-item-card button {
+  margin-left: auto;
+  background-color: #e00;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.cart-item-card button:hover {
+  background-color: #c00;
+}
+

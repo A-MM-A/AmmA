@@ -1,0 +1,76 @@
+-- PRODUCTS: Public can SELECT
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+CREATE POLICY public_read_products
+  ON products
+  FOR SELECT
+  USING (true);
+
+
+
+
+-- PRODUCT_VERSIONS: Public can SELECT
+ALTER TABLE product_versions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY public_read_versions
+  ON product_versions
+  FOR SELECT
+  USING (true);
+
+
+
+--  only the owner can read/insert/delete
+ALTER TABLE carts ENABLE ROW LEVEL SECURITY;
+-- Allow users to SELECT only their own carts:
+CREATE POLICY select_own_cart
+  ON carts
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Allow users to INSERT only for themselves:
+CREATE POLICY insert_own_cart
+  ON carts
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Allow users to DELETE only their own cart items:
+CREATE POLICY delete_own_cart
+  ON carts
+  FOR DELETE
+  USING (auth.uid() = user_id);
+
+
+
+
+--  only the owner can read/insert/delete
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY select_own_likes
+  ON likes
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY insert_own_likes
+  ON likes
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY delete_own_likes
+  ON likes
+  FOR DELETE
+  USING (auth.uid() = user_id);
+
+
+
+--  public can read/insert/delete
+
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+-- Any visitor (even unauthenticated) can read reviews:
+CREATE POLICY select_public_reviews
+  ON reviews
+  FOR SELECT
+  USING (true);
+
+-- Only a logged-in user can insert their own review:
+CREATE POLICY insert_own_reviews
+  ON reviews
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
