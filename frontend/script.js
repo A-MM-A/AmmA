@@ -1,4 +1,365 @@
 // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+//                                                                 database
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
+const SUPABASE_URL = "https://woqqydmwfkkrbplxdenr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcXF5ZG13ZmtrcmJwbHhkZW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDgyMDksImV4cCI6MjA2NDYyNDIwOX0.YRWVv9VH9WJzXdQQzQTnwDDdp02vsSnMaKL8Nd4ubPU";
+const supa = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+        auth: {
+            // auto‐read the tokens from the URL after OAuth redirects
+            detectSessionInUrl: true,
+            // keep session in localStorage
+            persistSession: true
+        }
+    }
+);
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
+//                                                                 loading popup
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
+
+(function () {
+    // -------------------------------
+    // Debug helper (prints to console)
+    // -------------------------------
+    function printline(msg) {
+        // console.log("[Loader Debug] " + msg);
+    }
+
+    // -----------------------------------
+    // The order of your shapes (top→bottom)
+    // -----------------------------------
+    const shapeOrder = [
+        "shape_8", "shape_9", "shape_10", "shape_11", "shape_12", // top wedges
+        "shape_7", "shape_6", "shape_5",                           // green arcs
+        "shape_4", "shape_3", "shape_2", "shape_1"                  // letters
+    ];
+
+    let overlay = null;
+    let animationInterval = null;
+    let autoCloseTimer = null;
+
+    // Prevent background scroll/touch
+    function disableScroll() {
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+    }
+    function enableScroll() {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+    }
+    function preventTouch(e) {
+        e.preventDefault();
+    }
+
+    // ----------------------------------------------------
+    // Create a full‐screen overlay, fetch & insert the SVG
+    // ----------------------------------------------------
+    function createOverlay(withText, message, scale, isBlocking, timeoutSec) {
+        if (overlay) {
+            printline("Overlay already exists; skipping creation.");
+            return;
+        }
+        printline("Creating overlay...");
+
+        // 1) Create overlay container
+        overlay = document.createElement('div');
+        Object.assign(overlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.2)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '9999'
+        });
+        // If not blocking, allow clicks through and remove dimming
+        if (!isBlocking) {
+            overlay.style.pointerEvents = 'none';
+            overlay.style.background = 'transparent';
+        }
+
+        overlay.addEventListener('wheel', preventTouch, { passive: false });
+        overlay.addEventListener('touchmove', preventTouch, { passive: false });
+        document.body.appendChild(overlay);
+
+        if (isBlocking) {
+            disableScroll();
+        }
+
+        // 2) Create inner box (rounded, light background)
+        const box = document.createElement('div');
+        Object.assign(box.style, {
+            background: 'rgba(255, 255, 255, 0.93)',
+            borderRadius: '20px',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+            transformOrigin: 'center',
+            transform: `scale(${scale})`
+        });
+        overlay.appendChild(box);
+
+        // 3) Fetch the SVG file and insert it first
+        printline("Fetching SVG from logo/logo.svg …");
+        fetch('logo/logo.svg')
+            .then(response => {
+                if (!response.ok) throw new Error("SVG fetch failed with status " + response.status);
+                return response.text();
+            })
+            .then(svgText => {
+                printline("SVG fetched successfully.");
+
+                // Parse the SVG string into DOM nodes
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = svgText.trim();
+                const svgElement = wrapper.querySelector('svg');
+
+                if (!svgElement) {
+                    printline("ERROR: <svg> not found in fetched text.");
+                    return;
+                }
+
+                // Add a viewBox so the entire 1080×959 canvas scales down
+                svgElement.setAttribute('viewBox', '0 0 1080 959');
+                // Then set a small display size (200×200)
+                svgElement.setAttribute('width', '200');
+                svgElement.setAttribute('height', '200');
+                // Ensure CSS transform origin is center (for smooth animations)
+                svgElement.style.transformOrigin = '50% 50%';
+
+                // Append SVG (animation) at the top
+                box.appendChild(wrapper);
+                // 4) If withText = true, add a message panel below the SVG
+                if (withText) {
+                    const msgDiv = document.createElement('div');
+                    Object.assign(msgDiv.style, {
+                        background: 'rgba(138, 134, 134, 0.35)',
+                        color: '#3C3835',
+                        marginTop: '10px',
+                        padding: '10px',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        textAlign: 'center',
+                        whiteSpace: 'pre-wrap',
+                        maxWidth: '240px'
+                    });
+                    // Split the incoming message by “\n”
+                    const lines = message.split('\n');
+                    if (lines.length > 0) {
+                        // First line in bold:
+                        const firstLine = document.createElement('div');
+                        firstLine.style.fontWeight = 'bold';
+                        firstLine.style.fontWeight = 'bold';
+                        firstLine.style.fontSize = '20px';
+                        firstLine.style.lineHeight = '30px';
+                        firstLine.textContent = lines[0];
+                        msgDiv.appendChild(firstLine);
+
+                        // Remaining lines normal:
+                        for (let i = 1; i < lines.length; i++) {
+                            const normalLine = document.createElement('div');
+                            normalLine.textContent = lines[i];
+                            msgDiv.appendChild(normalLine);
+                        }
+                    }
+
+                    box.appendChild(msgDiv);
+                }
+
+                // After SVG is in DOM, validate IDs and start animation
+                let allFound = true;
+                shapeOrder.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) {
+                        printline(`WARNING: Element with ID "${id}" not found.`);
+                        allFound = false;
+                    }
+                });
+                if (allFound) {
+                    printline("All shape IDs detected—starting animation.");
+                } else {
+                    printline("Some shape IDs are missing; animation may be incomplete.");
+                }
+                startAnimation();
+
+                if (typeof timeoutSec === 'number' && timeoutSec > 0) {
+                    printline("Will auto‐close in " + timeoutSec + "s");
+                    setTimeout(() => {
+                        printline("Auto‐closing loader after " + timeoutSec + "s");
+                        removeOverlay();
+                    }, timeoutSec * 1000);
+                }
+            })
+            .catch(err => {
+                printline("ERROR loading SVG: " + err);
+            });
+
+
+    }
+
+    // --------------------------------------------------------
+    // Animate: disassemble (top→bottom) then reassemble (reverse)
+    // --------------------------------------------------------
+    function startAnimation() {
+        const duration = 500;    // each shape’s animation duration (ms)
+        const delayStep = 100;   // delay between shapes (ms)
+        const moveDist = 50;     // pixels downward/upward
+
+        function disassemble() {
+            shapeOrder.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.animate([
+                    { transform: 'translateY(0px)', opacity: 1 },
+                    { transform: `translateY(${moveDist}px)`, opacity: 0 }
+                ], {
+                    duration: duration,
+                    delay: idx * delayStep,
+                    easing: 'ease-in-out',
+                    fill: 'forwards'
+                });
+            });
+        }
+
+        function reassemble() {
+            shapeOrder.slice().reverse().forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.animate([
+                    { transform: `translateY(${moveDist}px)`, opacity: 0 },
+                    { transform: 'translateY(0px)', opacity: 1 }
+                ], {
+                    duration: duration,
+                    delay: idx * delayStep,
+                    easing: 'ease-in-out',
+                    fill: 'forwards'
+                });
+            });
+        }
+
+        function cycle() {
+            printline("Animation cycle: disassemble → reassemble");
+            disassemble();
+            setTimeout(() => {
+                reassemble();
+            }, shapeOrder.length * delayStep + duration);
+        }
+
+        cycle();
+        animationInterval = setInterval(cycle, (shapeOrder.length * delayStep + duration) * 2);
+    }
+
+    function stopAnimation() {
+        if (animationInterval) {
+            clearInterval(animationInterval);
+            animationInterval = null;
+            printline("Animation interval cleared.");
+        }
+    }
+
+    // Remove overlay, stop animation, re‐enable scroll
+    function removeOverlay() {
+        if (autoCloseTimer !== null) {
+            clearTimeout(autoCloseTimer);
+            autoCloseTimer = null;
+        }
+        if (!overlay) {
+            printline("Overlay does not exist; nothing to remove.");
+            return;
+        }
+        printline("Removing overlay and stopping animation.");
+        stopAnimation();
+        overlay.removeEventListener('wheel', preventTouch);
+        overlay.removeEventListener('touchmove', preventTouch);
+        document.body.removeChild(overlay);
+        overlay = null;
+        enableScroll();
+    }
+
+    // ---------------------------------
+    // Expose global functions to window
+    // ---------------------------------
+    window.loadingStart = function (scale = 1.0, isBlocking = true) {
+        printline("loadingStart() called with scale: " + scale, "blocking:", isBlocking);
+        createOverlay(false, "", scale, isBlocking);
+    };
+    window.loadingWait = function (message, scale = 1.0, isBlocking = true, timeoutSec) {
+        printline("loadingWait() called with scale:", scale, "blocking:", isBlocking, "timeoutSec:", timeoutSec);
+        createOverlay(true, message, scale, isBlocking, timeoutSec);
+    };
+
+    window.loadingStop = function () {
+        printline("loadingStop() called.");
+        removeOverlay();
+    };
+    window.loadingWaitStop = function () {
+        printline("loadingWaitStop() called.");
+        removeOverlay();
+    };
+})();
+
+
+// loading when dat not loaded
+window.addEventListener('DOMContentLoaded', () => {
+    //   console.log('✅ DOMContentLoaded — attaching loader hooks');
+
+    // 1. Link clicks & form submissions
+    document.addEventListener('click', e => {
+        const a = e.target.closest('a[href]');
+        if (a && a.hostname === location.hostname) {
+            //   console.log('➡️ link click, starting loader');
+            loadingStart(0.5);
+        }
+    });
+    document.addEventListener('submit', () => {
+        // console.log('➡️ form submit, starting loader');
+        loadingStart(0.5);
+    });
+
+    // 2. Full page load / pageshow stop
+    window.addEventListener('load', () => {
+        // console.log('🏁 window.load, stopping loader');
+        loadingStart(0.5);
+    });
+    window.addEventListener('pageshow', () => {
+        // console.log('🏁 window.pageshow, stopping loader');
+        loadingStop();
+    });
+
+    // 3. Wrap fetch to auto show/stop loader
+    const _fetch = window.fetch;
+    window.fetch = (...args) => {
+        // console.log('🕸️ fetch start', args);
+        loadingStart(0.5);
+        return _fetch(...args).finally(() => {
+            //   console.log('🕸️ fetch end', args);
+            loadingStop();
+        });
+    };
+
+    // 4. Wrap XHR too
+    (function (open) {
+        XMLHttpRequest.prototype.open = function (...args) {
+            this.addEventListener('loadstart', () => { console.log('XHR loadstart'); loadingStart(); });
+            this.addEventListener('loadend', () => { console.log('XHR loadend'); loadingStop(); });
+            open.apply(this, args);
+        };
+    })(XMLHttpRequest.prototype.open);
+});
+
+
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------- 
 //                                                                 cart system
 // ---------------------------------------------------------------------------------------------------------------------------------------------- 
 // Automatically adds commas like 1,000
@@ -9,6 +370,7 @@ function formatNumberWithCommas(number) {
 function formatKESAmount(number) {
     return `${number.toLocaleString()} /=`;
 }
+
 // update any changes
 function updateCartCount(count) {
     const badge = document.querySelector('.cart-badge');
@@ -34,6 +396,7 @@ function updateCartCount(count) {
     }
 
 }
+
 // adds value to cart
 function addToCartCount(amount) {
     const badge = document.querySelector('.cart-badge');
@@ -44,6 +407,7 @@ function addToCartCount(amount) {
 
     updateCartCount(newCount);
 }
+
 // removes value from cart
 function removeFromCartCount(amount) {
     const badge = document.querySelector('.cart-badge');
@@ -63,6 +427,52 @@ function removeFromCartCount(amount) {
 
 
 
+
+
+
+// check online status
+document.addEventListener('DOMContentLoaded', function () {
+    // find the user icon by its alt text
+    var userImg = document.querySelector('img[alt="Account"]');
+    if (!userImg) return; // bail if not on this page
+
+    // make the button container a positioning context
+    var btn = userImg.parentElement;
+    btn.style.position = 'relative';
+
+    // create the 5px circle
+    var statusDot = document.createElement('div');
+    Object.assign(statusDot.style, {
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',   // default offline
+        position: 'absolute',
+        top: '3px',                // tweak as needed
+        right: '5px'               // tweak as needed
+    });
+    btn.appendChild(statusDot);
+
+    // expose global functions to toggle status
+    window.LoggedInstatus = function () {
+        statusDot.style.backgroundColor = 'green';
+    };
+    window.Loggedoffstatus = function () {
+        statusDot.style.backgroundColor = 'red';
+    };
+
+    async function checkSession() {
+        const { data: { session } } = await supa.auth.getSession();
+        if (session) {
+            LoggedInstatus()
+        }
+        else {
+            Loggedoffstatus()
+        }
+    }
+    checkSession()
+
+});
 
 
 
@@ -117,7 +527,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .then(json => {
             const rawItems = json.data || [];
-            
+
 
             // categories.json importing
 
@@ -240,17 +650,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const versionStateByID = {};
             rawItems.forEach(item => {
                 item.versions.forEach(versionObj => {
-                    const serial = item.baseSerial + versionObj.versionSerial.padStart(2, "0");
+                    const serial = item.baseserial
+                        + String(versionObj.versionserial).padStart(2, "0");
                     versionStateByID[serial] = {
                         liked: false,
                         inCart: false,
                         chosenQuantity: 0,
-                        chosenSize: null
+                        chosenSize: null,
+                        cartRowId: null    // will hold the `carts.id` once fetched
                     };
                 });
             });
+
             // ─────────────────────────────────────────────────────────────────────────────
-            // Step 2: Load any existing state from localStorage
+            // Step 2: Load any existing state from localStorage or database
             // ─────────────────────────────────────────────────────────────────────────────            
             Object.keys(versionStateByID).forEach(serial => {
                 const saved = localStorage.getItem(`versionState:${serial}`);
@@ -263,12 +676,51 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
+            // // — Hydrate from Supabase if signed in —
+            // const { data: { session } } = await supaClient.auth.getSession();
+            // if (session) {
+            //     const token = session.access_token;
+            //     const uId = session.user.id;
+
+            //     // 1) Fetch liked version IDs
+            //     const likesRes = await fetch(`${CONFIG.API_BASE_URL}/like/${uId}`, {
+            //         headers: { Authorization: `Bearer ${token}` }
+            //     });
+            //     const { data: likedIds } = await likesRes.json();
+
+            //     // 2) Fetch cart rows
+            //     const cartRes = await fetch(`${CONFIG.API_BASE_URL}/cart`, {
+            //         headers: { Authorization: `Bearer ${token}` }
+            //     });
+            //     const { data: cartRows } = await cartRes.json();
+
+            //     // 3) Apply to versionStateByID
+            //     likedIds.forEach(vId => {
+            //         for (const [serial, st] of Object.entries(versionStateByID)) {
+            //             if (st.versionId === vId) st.liked = true;
+            //         }
+            //     });
+            //     cartRows.forEach(row => {
+            //         for (const [serial, st] of Object.entries(versionStateByID)) {
+            //             if (st.versionId === row.product_version_id) {
+            //                 st.inCart = true;
+            //                 st.chosenQuantity = row.quantity;
+            //                 st.chosenSize = row.size;
+            //                 st.cartRowId = row.id;
+            //             }
+            //         }
+            //     });
+            // }
+
+
+
+
             // ─────────────────────────────────────────────────────────────────────────────
             // Step 3: Define helper to save a single version’s state into localStorage
             // ─────────────────────────────────────────────────────────────────────────────
-            function saveVersionState(serial) {
-                localStorage.setItem(`versionState:${serial}`, JSON.stringify(versionStateByID[serial]));
-            }
+            // function saveVersionState(serial) {
+            //     localStorage.setItem(`versionState:${serial}`, JSON.stringify(versionStateByID[serial]));
+            // }
 
 
 
@@ -338,7 +790,7 @@ document.addEventListener("DOMContentLoaded", () => {
             function sideButtonsHTML() {
                 return `
                 <div class="side-buttons">
-                  <button onclick="toggleIcon(this)">
+                  <button onclick="toggleIcon(this)" class="like-btn">
                     <img class="svg"
                          src="icons/heart-line.svg"
                          data-default="icons/heart-line.svg"
@@ -365,8 +817,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>`;
             }
 
+
             function buildPanels() {
+                const vContainer = document.getElementById("verticalScroll");
+                if (!vContainer) {
+                    console.log("v container not found")
+                    return;
+                }
+
                 vContainer.innerHTML = "";
+
 
                 itemsOrdered.forEach((item, pIdx) => {
                     const panel = document.createElement("div");
@@ -394,19 +854,33 @@ document.addEventListener("DOMContentLoaded", () => {
                         vp.dataset.panelIndex = pIdx;
                         vp.dataset.versionIndex = vIdx;
 
+                        // console.log("Building version", versionObj);
+
+
                         // Give each version‑panel a unique ID (its full serial):
-                        const serial = item.baseSerial + versionObj.versionSerial.padStart(2, "0");
+                        const serial = item.baseserial
+                            + String(versionObj.versionserial).padStart(2, "0");
                         vp.dataset.id = serial;
 
+                        let imgSuffix;
+                        if (versionObj.imagekey === 1) {
+                            imgSuffix = ".jpg";
+                        } else if (versionObj.imagekey === 2) {
+                            imgSuffix = ".png";
+                        }
 
                         // 1) blur background using versionObj.img
-                        vp.style.setProperty("--bgUrl", `url("assets/${versionObj.img}")`);
+                        const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}${imgSuffix}`;
+                        vp.style.setProperty("--bgUrl", `url("${imageUrl}")`);
 
 
                         // 2) image insertion
                         const imgEl = document.createElement("img");
-                        imgEl.src = `assets/${versionObj.img}`;
-                        imgEl.onerror = () => imgEl.src = "assets/placeholder.png";
+                        imgEl.src = imageUrl;
+                        imgEl.onerror = () => {
+                            console.warn("Image failed to load:", imageUrl);
+                            imgEl.src = "assets/!fallback.jpg"; // optional fallback
+                        };
                         vp.appendChild(imgEl);
 
 
@@ -415,25 +889,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                         // 4) panel‑title: use versionObj.title, versionSerial, and formatted price
-                        const formattedPrice = `KES ${versionObj.priceValue.toLocaleString()}`;
-                        const fullSerial = `${item.baseSerial}${versionObj.versionSerial.padStart(2, "0")}`;
+                        // const formattedPrice = `KES ${versionObj.priceValue.toLocaleString()}`;
+                        const formattedPrice = `KES ${(versionObj.pricevalue ?? 0).toLocaleString()}`;
+                        // const fullSerial = `${item.baseSerial}${versionObj.versionSerial.padStart(2, "0")}`;
+                        const fullSerial = serial;
                         vp.insertAdjacentHTML("beforeend", `
                           <div class="panel-title">
                             <div class="panel-title-text">${versionObj.title}</div>
-                            <div class="panel-serial-text">#${fullSerial}</div>
+                            <div class="panel-serial-text">#${serial}</div>
                             <div class="panel-price-text">${formattedPrice}</div>
                           </div>
                         `);
 
 
                         // 5) panel-extra: “date added” + “In Stock/Out of Stock” pill
-                        const inStockSVG = versionObj.inStock
+                        const inStockSVG = versionObj.instock
                             ? 'icons/In-Stock-fill.svg'
                             : 'icons/In-Stock-line.svg';
-                        const stockText = versionObj.inStock ? 'In Stock' : 'Out of Stock';
+                        const stockText = versionObj.instock ? 'In Stock' : 'Out of Stock';
+                        const formattedDate = versionObj.dateadded
+                            ? new Date(versionObj.dateadded).toLocaleDateString() : "DD-MM-YYYY";
                         vp.insertAdjacentHTML("beforeend", `
                           <div class="panel-extra">
-                            <div class="date-text">${versionObj.dateAdded}</div>
+                            <div class="date-text">${formattedDate}</div>
                             <div class="stock-row">
                               <img src="${inStockSVG}" class="stock-icon" alt="${stockText}">
                               <span class="stock-text">${stockText}</span>
@@ -443,7 +921,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                         // 6) Store raw priceValue in a data attribute for cart math later:
-                        vp.dataset.priceValue = versionObj.priceValue;
+                        vp.dataset.pricevalue = versionObj.pricevalue;
 
                         hScroll.appendChild(vp);
 
@@ -479,102 +957,275 @@ document.addEventListener("DOMContentLoaded", () => {
                     const versionObj = itemsOrdered[pIdx].versions[vIdx];
                     const state = versionStateByID[serial];
 
-                    // Info button
-                    const infoBtn = vp.querySelector(".info-btn");
-                    infoBtn.onclick = () => {
-                        // // Populate popup fields from item data
+
+                    // side buttons
+
+                    const likeBtn = vp.querySelector(".like-btn");
+                    // likeBtn.onclick = () => {
+                    //     const serial = vp.dataset.id;
+                    //     const state = versionStateByID[serial];
+
+                    //     // Toggle the liked state
+                    //     state.liked = !state.liked;
+
+                    //     // Swap the icon
+                    //     const img = likeBtn.querySelector("img");
+                    //     const defaultSrc = img.dataset.default;
+                    //     const activeSrc = img.dataset.active;
+
+                    //     if (state.liked) {
+                    //         img.src = activeSrc;
+
+                    //         // If it's a heart icon, apply heartbeat animation
+                    //         if (defaultSrc.includes("heart")) {
+                    //             img.classList.add("heartbeat");
+                    //             img.addEventListener("animationend", function handler() {
+                    //                 img.classList.remove("heartbeat");
+                    //                 img.removeEventListener("animationend", handler);
+                    //             });
+                    //         }
+                    //     } else {
+                    //         img.src = defaultSrc;
+                    //     }
+
+                    //     // Optional: Save state immediately if needed
+                    //     saveVersionState(serial);
+                    // };
+
+                    likeBtn.onclick = async () => {
+                        console.log("liked");
+
+                        // 🔍 Debug: did we even hit the handler?
+                        console.log("LIKE CLICKED for serial", vp.dataset.id, "versionObj.id=", versionObj.id);
+
+
+                        const { data: { session } } = await supa.auth.getSession();
+                        if (!session) {
+                            console.log("not logged in");
+                            return
+                        };
+
+                        const serial = vp.dataset.id;
+                        const state = versionStateByID[serial];
+
+                        // 🔍 Debug: payload we'll send
+                        console.log("versionObj :", versionObj);
+
+                        console.log("POST /api/like payload:", { product_version_id: versionObj.id });
+
+                        const payload = {
+
+                            product_version_id: versionObj.id,
+                            products: versionObj.product_id,
+                            serial: vp.dataset.id
+                        };
+                        console.log("payload data is: ",payload);
+                        
+
+
+                        // Persist toggle to Supabase
+                        const res = await fetch(`${CONFIG.API_BASE_URL}/like`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${session.access_token}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        // 🔍 Debug: server response
+                        console.log("=> /api/like response:", res.status, await res.text());
+
+
+
+                        if (res.ok) {
+                            // Only update UI on success
+                            state.liked = !state.liked;
+                            const img = likeBtn.querySelector("img");
+                            img.src = state.liked ? img.dataset.active : img.dataset.default;
+                        } else {
+                            console.error("Failed to toggle like:", await res.text());
+                        }
+
+
+
+
+                        // Heartbeat animation if desired
+                        const img = likeBtn.querySelector("img");
+                        if (state.liked && img.dataset.default.includes("heart")) {
+                            img.classList.add("heartbeat");
+                            img.addEventListener("animationend", function h() {
+                                img.classList.remove("heartbeat");
+                                img.removeEventListener("animationend", h);
+                            });
+                        }
+                    };
+
+
+
+                    const cartBtn = vp.querySelector(".cart-btn");
+                    cartBtn.onclick = async () => {
                         // const item = itemsOrdered[pIdx];
                         // const versionObj = item.versions[vIdx];
+                        const serial = vp.dataset.id;
+                        const state = versionStateByID[serial];
+
+                        // 1) If out of stock, call OutOfStock() and bail:
+                        if (!versionObj.instock) {
+                            OutOfStock();
+                            return;
+                        }
+
+                        // 2) If not yet inCart, show the pop-up; otherwise remove:
+                        if (!state.inCart) {
+                            console.log("cart button clicked, it was not in cart before");
+
+                            showCartPopup(serial,
+                                Array.isArray(versionObj.sizes)
+                                    ? versionObj.sizes
+                                    : [versionObj.sizes],
+                                versionObj.pricevalue,
+                                // chosenQty => {
+                                async (chosenQty, chosenSize) => {
+                                    console.log("CART CLICKED for serial", vp.dataset.id, "versionObj.id=", versionObj.id);
+                                    console.log("Called showcartpopup with :", { serial: serial }, { sizes: versionObj.sizes }, { price: versionObj.pricevalue }, { quantity: chosenQty });
+
+                                    const { data: { session } } = await supa.auth.getSession();
+                                    if (!session) return showLoginPopup();
+
+                                    // 🔍 Debug: ensure the <select> exists
+                                    // const selectEl = document.getElementById("popup-select-size");
+                                    // console.log("popup-select-size element:", selectEl);
+                                    // if (!selectEl) { console.error("❌ popup-select-size not found!"); }
+
+                                    // const chosenSize = selectEl?.value;
+                                    console.log("Selected size:", chosenSize);
+
+
+                                    // Update UI & state
+                                    // const chosenSize = document.getElementById("popup-select-size").value;
+
+
+                                    // const totalPrice = versionObj.pricevalue * chosenQty;
+                                    // console.log("🛒 Added to cart:", {
+                                    //     title: versionObj.title,
+                                    //     serial: serial,
+                                    //     size: chosenSize,
+                                    //     totalQuantity: chosenQty,
+                                    //     totalPrice: totalPrice,
+                                    //     basePrice: versionObj.pricevalue
+                                    // });
+
+                                    console.log("now starting fetch and post");
+
+                                    // 🔍 Debug: payload for cart POST
+                                    const totalPrice = versionObj.pricevalue * chosenQty;
+                                    const payload = {
+                                        product_version_id: versionObj.id,
+                                        products: versionObj.product_id,
+                                        serial: serial,
+                                        title: versionObj.title,
+                                        base_price: versionObj.pricevalue,
+                                        total_price: totalPrice,
+                                        size: chosenSize,
+                                        quantity: chosenQty
+                                    };
+                                    console.log("POST /api/cart payload:", payload);
+
+
+                                    // Create cart row on server
+                                    const resp = await fetch(`${CONFIG.API_BASE_URL}/cart`, {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json",
+                                            Authorization: `Bearer ${session.access_token}`
+                                        },
+                                        body: JSON.stringify(payload)
+                                    });
+
+                                    if (resp.ok) {
+                                        const { data: newRow } = await resp.json();
+                                        state.cartRowId = newRow.id;
+                                    } else {
+                                        console.error("Cart POST failed:", await resp.text());
+                                    }
+                                    
+                                    // UI updates 
+                                    state.inCart = true;
+                                    state.chosenSize = chosenSize;
+                                    state.chosenQuantity = chosenQty;
+
+
+
+                                    // … existing add‐to‐cart UI update …
+                                    addToCartCount(versionObj.pricevalue * chosenQty);
+                                    const img = cartBtn.querySelector("img");
+                                    img.src = img.dataset.active;
+                                    addToCart();
+
+
+                                });
+                        } else {
+                            console.log("cart button clicked, it was in cart before");
+
+                            // Already in cart → remove (persist to DB):
+                            const { data: { session } } = await supa.auth.getSession();
+                            if (!session) return showLoginPopup();
+
+                            // Delete on server
+                            await fetch(`${CONFIG.API_BASE_URL}/cart/${state.cartRowId}`, {
+                                method: "DELETE",
+                                headers: { Authorization: `Bearer ${session.access_token}` }
+                            });
+
+                            // Update UI & state
+                            const prevQty = state.chosenQuantity || 1;
+                            removeFromCartCount(versionObj.pricevalue * prevQty);
+                            state.inCart = false;
+                            state.chosenQuantity = 0;
+                            state.chosenSize = null;
+                            state.cartRowId = null;
+                            const img = cartBtn.querySelector("img");
+                            img.src = img.dataset.default;
+
+
+                            // updateSideButtons(sb);
+                            // updateCartCount();
+
+                            // updateSideButtons(sb);
+                            // removeFromCartCount(versionObj.pricevalue);
+                            // console.log("removed", versionObj.pricevalue);
+                            updateSideButtons(sb);
+                            // recalc total from versionStateByID
+                            const newCount = Object.values(versionStateByID)
+                                .filter(s => s.inCart)
+                                .reduce((sum, s) => sum + (s.chosenQuantity * s.base_price), 0);
+                            updateCartCount(newCount);
+                        }
+                    };
+
+
+
+                    const infoBtn = vp.querySelector(".info-btn");
+                    infoBtn.onclick = () => {
+                        const serial = vp.dataset.id;
+                        const item = itemsOrdered[pIdx];
+                        const [base, ver] = [item.baseserial, versionObj.versionserial];
+                        // Now versionObj.sizes might be string or array—
+                        // display it accordingly:
+                        const sizesDisplay = Array.isArray(versionObj.sizes)
+                            ? versionObj.sizes.join(", ")
+                            : versionObj.sizes;
 
                         document.getElementById("popup-title").innerText = versionObj.title;
-                        document.getElementById("popup-description").innerText = versionObj.description;
-                        document.getElementById("popup-sizes").innerText = versionObj.sizes.join(", ");
-                        document.getElementById("popup-material").innerText = versionObj.material;
-                        document.getElementById("popup-weight").innerText = versionObj.weight;
+                        document.getElementById("popup-description").innerText = item.description || "N/A";
+                        document.getElementById("popup-sizes").innerText = sizesDisplay;
+                        document.getElementById("popup-material").innerText = versionObj.material || "N/A";
+                        document.getElementById("popup-weight").innerText = versionObj.weight || "N/A";
+
                         document.getElementById("info-popup").classList.remove("hidden");
                     };
 
-                    // Share button
-                    // const shareBtn = vp.querySelector(".share-btn");
-                    // shareBtn.onclick = () => {
-                    //     const url = `${location.href}#item=${pIdx}&ver=${vIdx}`;
-                    //     navigator.clipboard.writeText(url);
-                    //     shareBtn.querySelector("img").src = "icons/share-forward-fill.svg";
-                    //     setTimeout(() => {
-                    //         shareBtn.querySelector("img").src = "icons/share-forward-line.svg";
-                    //     }, 800);
-                    // };
-
-                    // —————————————————————————
-                    // Initialize Like/Cart button images based on state
-                    // Cart button: custom logic
-                    // —————————————————————————
-
-                    // const cartBtn = vp.querySelector(".cart-btn");
-                    // cartBtn.onclick = () => {
-                    //     // Grab the version‐object and its state flags:
-                    //     const item = itemsOrdered[pIdx];
-                    //     const versionObj = item.versions[vIdx];
-                    //     const state = item.versionsState[vIdx];
-                    //     // If this version is out of stock, do nothing but call OutOfStock():
-                    //     if (!versionObj.inStock) {
-                    //         OutOfStock();
-                    //         return;
-                    //     }
-                    //     const priceValue = versionObj.priceValue; // raw numeric
-
-                    //     if (!state.inCart) {
-                    //         // ─────────── Show the “Choose size + quantity” pop‐up ───────────
-                    //         showCartPopup(vp.dataset.id, versionObj.sizes, priceValue, chosenQty => {
-                    //             // Confirm button pressed inside popup:
-
-                    //             // 1) set state.inCart = true, save chosen quantity & size
-                    //             state.inCart = true;
-                    //             const chosenSize = document.getElementById("popup-select-size").value;
-                    //             versionObj.chosenSize = chosenSize;
-                    //             versionObj.chosenQuantity = chosenQty;
-
-                    //             // 2) compute total price
-                    //             const totalPrice = priceValue * chosenQty;
-
-                    //             // 3) Print all requested fields to the console for now:
-                    //             console.log("🛒 Added to cart:", {
-                    //                 title: versionObj.title,
-                    //                 serial: vp.dataset.id,
-                    //                 quantity: chosenQty,
-                    //                 size: chosenSize,
-                    //                 totalPrice: totalPrice,
-                    //                 basePrice: priceValue
-                    //             });
-
-                    //             // 4)code to send to checkout page
-                    //             // ... ... ... ... 
-
-                    //             // 5) Still update the badge total if you want:
-                    //             addToCartCount(totalPrice);
-
-                    //             // 6) change Cart icon to “filled” immediately:
-                    //             const img = cartBtn.querySelector("img");
-                    //             img.src = img.dataset.active;
-                    //             addToCart();
-                    //         });
-                    //     } else {
-                    //         // ─────────── Remove from cart, no popup ───────────
-                    //         // Deduct the amount we previously added
-                    //         const prevQty = versionObj.chosenQuantity || 1;
-                    //         removeFromCartCount(priceValue * prevQty);
-                    //         state.inCart = false;
-                    //         // Reset chosenQuantity
-                    //         versionObj.chosenQuantity = 0;
-                    //         // Toggle cart icon back to “line”
-                    //         const img = cartBtn.querySelector("img");
-                    //         img.src = img.dataset.default;
-                    //     }
-                    // };
-
-
-
-                    // Finally, update the Like/Cart button visuals per state:
 
                     const shareBtn = vp.querySelector(".share-btn");
                     shareBtn.onclick = () => {
@@ -587,62 +1238,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         setTimeout(() => {
                             img.src = "icons/share-forward-line.svg";
                         }, 800);
-                    };
-
-
-                    const cartBtn = vp.querySelector(".cart-btn");
-                    cartBtn.onclick = () => {
-                        // const item = itemsOrdered[pIdx];
-                        // const versionObj = item.versions[vIdx];
-                        // const serial = vp.dataset.id;
-                        // const state = versionStateByID[serial];
-
-                        // 1) If out of stock, call OutOfStock() and bail:
-                        if (!versionObj.inStock) {
-                            OutOfStock();
-                            return;
-                        }
-
-                        // 2) If not yet inCart, show the pop-up; otherwise remove:
-                        if (!state.inCart) {
-                            showCartPopup(serial, versionObj.sizes, versionObj.priceValue, chosenQty => {
-                                // inside confirm callback:
-                                state.inCart = true;
-                                const chosenSize = document.getElementById("popup-select-size").value;
-                                state.chosenSize = chosenSize;
-                                state.chosenQuantity = chosenQty;
-
-                                const totalPrice = versionObj.priceValue * chosenQty;
-                                console.log("🛒 Added to cart:", {
-                                    title: versionObj.title,
-                                    serial: serial,
-                                    quantity: chosenQty,
-                                    size: chosenSize,
-                                    totalPrice: totalPrice,
-                                    basePrice: versionObj.priceValue
-                                });
-
-                                addToCartCount(totalPrice); // your existing function
-                                const img = cartBtn.querySelector("img");
-                                img.src = img.dataset.active;
-                                addToCart();
-
-                                // Persist right away:
-                                saveVersionState(serial);
-                            });
-                        } else {
-                            // Already in cart → remove:
-                            const prevQty = state.chosenQuantity || 1;
-                            removeFromCartCount(versionObj.priceValue * prevQty);
-                            state.inCart = false;
-                            state.chosenQuantity = 0;
-                            state.chosenSize = null;
-                            const img = cartBtn.querySelector("img");
-                            img.src = img.dataset.default;
-
-                            // Persist right away:
-                            saveVersionState(serial);
-                        }
                     };
 
 
@@ -662,7 +1257,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Find the version-panel’s serial:
                 const vp = sbContainer.closest(".version-panel");
                 const serial = vp.dataset.id;
-                const state = versionStateByID[serial];
+                const state = versionStateByID[serial] || {};
 
                 // Like button:
                 const likeImg = sbContainer.querySelector("img[data-active*='heart']");
@@ -677,6 +1272,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
+
+            // itemsOrdered.forEach((item, pIdx) => {
+            //     item.versions.forEach((versionObj, vIdx) => {
+            //         console.log(versionObj.pricevalue);
+
+            //     });
+            // });
 
             // ─────────────────────────────────────────────────────────────────────────────
             // Step 8: toggleIcon(btn) now uses versionStateByID
@@ -757,13 +1359,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const item = itemsOrdered[pIdx];
 
-                // const versionObj = itemsOrdered[pIdx].versions[vIdx];
-                // const fullSerial = `${versionObj.baseSerial}${versionObj.versionSerial.padStart(2, "0")}`;
-
-                // titleEl.innerText = versionObj.title;
-                // serialEl.innerText = `#${fullSerial}`;
-                // priceEl.innerText = `KES ${versionObj.priceValue.toLocaleString()}`;
-
                 // update dots
                 const dots = panels[pIdx].querySelectorAll(".dot");
                 dots.forEach((d, i) => d.classList.toggle("active", i === vIdx));
@@ -810,6 +1405,14 @@ document.addEventListener("DOMContentLoaded", () => {
              *  • unitPrice: raw number (e.g. 1500)
              *  • callback(qty) is called when user hits “Confirm”
              */
+
+                // console.log("received", {
+                //     id : id,
+                //     size_array: sizesArray, 
+                //     price : unitPrice, 
+                //     call_back: callback
+
+                // });
 
                 // 1) Create overlay container
                 const overlay = document.createElement("div");
@@ -966,11 +1569,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 confirmBtn.style.color = "var(--bg)";
                 confirmBtn.style.fontSize = "1rem";
                 confirmBtn.style.cursor = "pointer";
+
                 confirmBtn.onclick = () => {
-                    // Pass the final quantity back to caller
-                    callback(currentQty);
+                    // Pass both qty and selected size to caller
+                    callback(currentQty, select.value);
                     document.body.removeChild(overlay);
                 };
+
                 box.appendChild(confirmBtn);
 
                 // 8) Assemble and show
@@ -2038,7 +2643,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .catch(err => {
             loadingStart(0.55);
             // loadingWait('Loading',1);
-            console.error("Failed to load data.json:", err);
+            console.error("Failed to load products", err);
         });
 
 });
@@ -2268,289 +2873,3 @@ function addToCart() {
 
 
 
-// ---------------------------------------------------------------------------------------------------------------------------------------------- 
-//                                                                 loading popup
-// ---------------------------------------------------------------------------------------------------------------------------------------------- 
-
-(function () {
-    // -------------------------------
-    // Debug helper (prints to console)
-    // -------------------------------
-    function printline(msg) {
-        // console.log("[Loader Debug] " + msg);
-    }
-
-    // -----------------------------------
-    // The order of your shapes (top→bottom)
-    // -----------------------------------
-    const shapeOrder = [
-        "shape_8", "shape_9", "shape_10", "shape_11", "shape_12", // top wedges
-        "shape_7", "shape_6", "shape_5",                           // green arcs
-        "shape_4", "shape_3", "shape_2", "shape_1"                  // letters
-    ];
-
-    let overlay = null;
-    let animationInterval = null;
-    let autoCloseTimer = null;
-
-    // Prevent background scroll/touch
-    function disableScroll() {
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
-    }
-    function enableScroll() {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-    }
-    function preventTouch(e) {
-        e.preventDefault();
-    }
-
-    // ----------------------------------------------------
-    // Create a full‐screen overlay, fetch & insert the SVG
-    // ----------------------------------------------------
-    function createOverlay(withText, message, scale, isBlocking, timeoutSec) {
-        if (overlay) {
-            printline("Overlay already exists; skipping creation.");
-            return;
-        }
-        printline("Creating overlay...");
-
-        // 1) Create overlay container
-        overlay = document.createElement('div');
-        Object.assign(overlay.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.2)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '9999'
-        });
-        // If not blocking, allow clicks through and remove dimming
-        if (!isBlocking) {
-            overlay.style.pointerEvents = 'none';
-            overlay.style.background = 'transparent';
-        }
-
-        overlay.addEventListener('wheel', preventTouch, { passive: false });
-        overlay.addEventListener('touchmove', preventTouch, { passive: false });
-        document.body.appendChild(overlay);
-
-        if (isBlocking) {
-            disableScroll();
-        }
-
-        // 2) Create inner box (rounded, light background)
-        const box = document.createElement('div');
-        Object.assign(box.style, {
-            background: 'rgba(255, 255, 255, 0.93)',
-            borderRadius: '20px',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            boxShadow: '0 0 20px rgba(0,0,0,0.1)',
-            transformOrigin: 'center',
-            transform: `scale(${scale})`
-        });
-        overlay.appendChild(box);
-
-        // 3) Fetch the SVG file and insert it first
-        printline("Fetching SVG from logo/logo.svg …");
-        fetch('logo/logo.svg')
-            .then(response => {
-                if (!response.ok) throw new Error("SVG fetch failed with status " + response.status);
-                return response.text();
-            })
-            .then(svgText => {
-                printline("SVG fetched successfully.");
-
-                // Parse the SVG string into DOM nodes
-                const wrapper = document.createElement('div');
-                wrapper.innerHTML = svgText.trim();
-                const svgElement = wrapper.querySelector('svg');
-
-                if (!svgElement) {
-                    printline("ERROR: <svg> not found in fetched text.");
-                    return;
-                }
-
-                // Add a viewBox so the entire 1080×959 canvas scales down
-                svgElement.setAttribute('viewBox', '0 0 1080 959');
-                // Then set a small display size (200×200)
-                svgElement.setAttribute('width', '200');
-                svgElement.setAttribute('height', '200');
-                // Ensure CSS transform origin is center (for smooth animations)
-                svgElement.style.transformOrigin = '50% 50%';
-
-                // Append SVG (animation) at the top
-                box.appendChild(wrapper);
-                // 4) If withText = true, add a message panel below the SVG
-                if (withText) {
-                    const msgDiv = document.createElement('div');
-                    Object.assign(msgDiv.style, {
-                        background: 'rgba(138, 134, 134, 0.35)',
-                        color: '#3C3835',
-                        marginTop: '10px',
-                        padding: '10px',
-                        borderRadius: '10px',
-                        fontSize: '14px',
-                        textAlign: 'center',
-                        whiteSpace: 'pre-wrap',
-                        maxWidth: '240px'
-                    });
-                    // Split the incoming message by “\n”
-                    const lines = message.split('\n');
-                    if (lines.length > 0) {
-                        // First line in bold:
-                        const firstLine = document.createElement('div');
-                        firstLine.style.fontWeight = 'bold';
-                        firstLine.textContent = lines[0];
-                        msgDiv.appendChild(firstLine);
-
-                        // Remaining lines normal:
-                        for (let i = 1; i < lines.length; i++) {
-                            const normalLine = document.createElement('div');
-                            normalLine.textContent = lines[i];
-                            msgDiv.appendChild(normalLine);
-                        }
-                    }
-
-                    box.appendChild(msgDiv);
-                }
-
-                // After SVG is in DOM, validate IDs and start animation
-                let allFound = true;
-                shapeOrder.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (!el) {
-                        printline(`WARNING: Element with ID "${id}" not found.`);
-                        allFound = false;
-                    }
-                });
-                if (allFound) {
-                    printline("All shape IDs detected—starting animation.");
-                } else {
-                    printline("Some shape IDs are missing; animation may be incomplete.");
-                }
-                startAnimation();
-
-                if (typeof timeoutSec === 'number' && timeoutSec > 0) {
-                    printline("Will auto‐close in " + timeoutSec + "s");
-                    setTimeout(() => {
-                        printline("Auto‐closing loader after " + timeoutSec + "s");
-                        removeOverlay();
-                    }, timeoutSec * 1000);
-                }
-            })
-            .catch(err => {
-                printline("ERROR loading SVG: " + err);
-            });
-
-
-    }
-
-    // --------------------------------------------------------
-    // Animate: disassemble (top→bottom) then reassemble (reverse)
-    // --------------------------------------------------------
-    function startAnimation() {
-        const duration = 500;    // each shape’s animation duration (ms)
-        const delayStep = 100;   // delay between shapes (ms)
-        const moveDist = 50;     // pixels downward/upward
-
-        function disassemble() {
-            shapeOrder.forEach((id, idx) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.animate([
-                    { transform: 'translateY(0px)', opacity: 1 },
-                    { transform: `translateY(${moveDist}px)`, opacity: 0 }
-                ], {
-                    duration: duration,
-                    delay: idx * delayStep,
-                    easing: 'ease-in-out',
-                    fill: 'forwards'
-                });
-            });
-        }
-
-        function reassemble() {
-            shapeOrder.slice().reverse().forEach((id, idx) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.animate([
-                    { transform: `translateY(${moveDist}px)`, opacity: 0 },
-                    { transform: 'translateY(0px)', opacity: 1 }
-                ], {
-                    duration: duration,
-                    delay: idx * delayStep,
-                    easing: 'ease-in-out',
-                    fill: 'forwards'
-                });
-            });
-        }
-
-        function cycle() {
-            printline("Animation cycle: disassemble → reassemble");
-            disassemble();
-            setTimeout(() => {
-                reassemble();
-            }, shapeOrder.length * delayStep + duration);
-        }
-
-        cycle();
-        animationInterval = setInterval(cycle, (shapeOrder.length * delayStep + duration) * 2);
-    }
-
-    function stopAnimation() {
-        if (animationInterval) {
-            clearInterval(animationInterval);
-            animationInterval = null;
-            printline("Animation interval cleared.");
-        }
-    }
-
-    // Remove overlay, stop animation, re‐enable scroll
-    function removeOverlay() {
-        if (autoCloseTimer !== null) {
-            clearTimeout(autoCloseTimer);
-            autoCloseTimer = null;
-        }
-        if (!overlay) {
-            printline("Overlay does not exist; nothing to remove.");
-            return;
-        }
-        printline("Removing overlay and stopping animation.");
-        stopAnimation();
-        overlay.removeEventListener('wheel', preventTouch);
-        overlay.removeEventListener('touchmove', preventTouch);
-        document.body.removeChild(overlay);
-        overlay = null;
-        enableScroll();
-    }
-
-    // ---------------------------------
-    // Expose global functions to window
-    // ---------------------------------
-    window.loadingStart = function (scale = 1.0, isBlocking = true) {
-        printline("loadingStart() called with scale: " + scale, "blocking:", isBlocking);
-        createOverlay(false, "", scale, isBlocking);
-    };
-    window.loadingWait = function (message, scale = 1.0, isBlocking = true, timeoutSec) {
-        printline("loadingWait() called with scale:", scale, "blocking:", isBlocking, "timeoutSec:", timeoutSec);
-        createOverlay(true, message, scale, isBlocking, timeoutSec);
-    };
-
-    window.loadingStop = function () {
-        printline("loadingStop() called.");
-        removeOverlay();
-    };
-    window.loadingWaitStop = function () {
-        printline("loadingWaitStop() called.");
-        removeOverlay();
-    };
-})();

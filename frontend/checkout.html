@@ -18,17 +18,65 @@
     <div class="phone-frame">
         <!-- Top bar -->
 
-        <!-- <div class="top-bar">
-            <span id="category-name">Checkout</span>
-            <img class="logo" src="logo/logo.svg" alt="">
-            <button id="search-btn"><img onclick="Saved()" class="svg" src="icons/search-line.svg"
-                    alt="Search"></button>
-        </div> -->
+        <header class="user-header">
+            <div id="user-info" class="user-top-bar">
+                <div class="top-left">
+                    <img id="user-avatar" src="icons/user-fill.svg" alt="Avatar" class="profile-avatar">
+                    <span id="user-name" class="user-name"></span>
+                </div>
+                <button id="cart-login-btn-top" class="pill-btn login-pill" style="display: block;">Login</button>
+
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main>
+        </main>
+        <div id="checkout-main-page" class="checkout-main" style="display: none;">
+
+            <div class="incartItems">
+                <div class="incartPreview">
+
+                    <div class="incartItemPill">
+                        <button class="cart-pill">item 1</button>
+                    </div>
+                    <div class="incartItemPill">
+                        <button class="cart-pill">item 2</button>
+                    </div>
+                    <div class="incartItemPill">
+                        <button class="cart-pill">item 3</button>
+                    </div>
+                    <div class="incartItemPill">
+                        <button class="cart-pill">item 4</button>
+                    </div>
+                    <div class="incartItemPill">
+                        <button class="cart-pill">item 5</button>
+                    </div>
+
+                </div>
+                <div class="incartInfo">
+                    <p>
+                        total is now = xx + xx + xx <br> = KSH 3000/=
+                    </p>
+                </div>
+            </div>
+
+            <div class="incartOtherInfo">
+                <br>
+                <p>
+                    other info
+                </p>
+            </div>
+
+        </div>
 
 
-        <section id="cart-container">
-            <p>Loading your cart…</p>
-        </section>
+        <div id="not-logged-in-msg-cart" style="display: block;">
+            <p>Please log in to Proceed.</p>
+            <hr style="margin: 10px; border: none; border-top: 1px solid #88888880;">
+            <!-- <p>hi</p> -->
+
+        </div>
 
         <!-- Bottom nav -->
         <div class="nav-bar">
@@ -53,12 +101,15 @@
     </div>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/index.min.js"></script>
     <script src="config.js"></script>
-    <script src="checkout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="script.js"></script>
+    <script src="user.js"></script>
+    <script src="checkout.js"></script>
     <script>
-        loadingWait("This page is under development.\nPlease check back soon!", 1.1, false);
+        document.getElementById("cart-login-btn-top").addEventListener("click", function () {
+            showLoginPopup();
+        });
     </script>
 </body>
 

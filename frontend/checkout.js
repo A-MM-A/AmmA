@@ -1,20 +1,36 @@
 // frontend/checkout.js
 
+const notLoggedMsg2 = document.getElementById("not-logged-in-msg-2");
+const cartloginBtnTop = document.getElementById("cart-login-btn-top");
+
 (async function () {
-  // 1) Initialize Supabase client to get session & user ID
-  const SUPABASE_URL = "<YOUR_SUPABASE_URL>";
-  const SUPABASE_ANON_KEY = "<YOUR_SUPABASE_ANON_KEY>";
-  const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
   // 2) Ensure user is logged in
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { session } } = await supa.auth.getSession();
   if (!session) {
-    alert("Please log in to view your cart.");
-    window.location.href = "index.html";
+    document.getElementById("not-logged-in-msg-cart").style.display = "block";
+    document.getElementById("cart-login-btn-top").style.display = "block";
+    document.getElementById("checkout-main-page").style.display = "none";
+
+    // loadingWait("Guest Account\n Please login to view cart information", 0.8, false);
     return;
+  } else {
+    document.getElementById("not-logged-in-msg-cart").style.display = "none";
+    document.getElementById("cart-login-btn-top").style.display = "none";
+    document.getElementById("checkout-main-page").style.display = "block";
+
   }
+
+
+
+  
+
+  document.addEventListener("DOMContentLoaded", function () {
+    
+  });
+
+
   const userId = session.user.id;
 
   // 3) Fetch cart items from backend
@@ -55,7 +71,7 @@
     })
   );
 
-  renderCart(detailedItems, session.access_token);
+  // renderCart(detailedItems, session.access_token);
 })();
 
 // 5) Render cart items into DOM with quantity controls

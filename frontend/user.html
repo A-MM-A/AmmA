@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>SwipeShop</title>
+    <title>SwipeShop-user</title>
 
     <link rel="shortcut icon" href="logo/favicon.ico" type="image/x-icon">
     <link rel="icon" href="logo/favicon.ico" type="image/x-icon">
@@ -14,18 +14,55 @@
 
 
 <body>
-    <!-- <button  style="z-index: 10;"><a href="admin.html">hi</a></button> -->
     <div class="phone-frame">
 
 
+        <!-- Top bar: login information
+         -->
+        <header class="user-header">
+            <div id="user-info" class="user-top-bar">
+                <div class="top-left">
+                    <img id="user-avatar" src="icons/user-fill.svg" alt="Avatar" class="profile-avatar">
+                    <span id="user-name" class="user-name"></span>
+                </div>
+                <button id="logout-btn" class="pill-btn logout-pill hidden">Logout</button>
+                <button id="login-btn-top" class="pill-btn login-pill hidden">Login</button>
+                
+            </div>
+        </header>
 
 
+
+
+
+        <!-- Main content -->
+        <main id="product-detail">
+            <div class="user-main">
+                <!-- Your existing content here -->
+            </div>
+        </main>
+
+
+        <!-- Settings (pills) and “please log in” -->
+        <section id="settings-section" class="settings-container hidden">
+            <div class="pill-list">
+                <button class="pill">Shipping Address</button>
+                <button class="pill">Configure Mobile Number</button>
+                <button class="pill">Name</button>
+            </div>
+        </section>
+        
+        <section id="not-logged-in-msg" class="hidden" style="z-index: 10;">
+            <p>Please log in to change your account settings.</p>
+            <hr style="margin: 10px; border: none; border-top: 1px solid #88888880;">
+            <!-- <p>hi</p> -->
+        </section>
 
 
 
         <!-- Bottom nav -->
         <div class="nav-bar">
-            <a href="#">
+            <a href="">
                 <button style="box-shadow: 0 6px 3px -3px rgb(0, 128, 255);">
                     <img href="#" class="svg" src="icons/user-fill.svg" alt="Account">
                 </button>
@@ -45,12 +82,11 @@
 
     </div>
 
-
     <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="script.js"></script>
-    <script>
-        loadingWait("This page is under development.\nPlease check back soon!", 1.1, false);
-    </script>
+    <script src="user.js"></script>
+
 </body>
 
 </html>

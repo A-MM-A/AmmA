@@ -34,39 +34,45 @@ module.exports = (supabaseAdmin) => {
   // POST /api/like → toggle like/unlike
   router.post('/like', authenticateUser, async (req, res) => {
     try {
+      console.log("📥 LIKE BODY:", req.body);
       const userId = req.user.id;
-      const { product_version_id } = req.body;
+      const { product_version_id, products, serial } = req.body;
 
       // Check existing like
-      const { data: existingArr, error: chkErr } = await supabase
+      const { data: existingArr, error: chkErr } = await supabaseAdmin
         .from('likes')
         .select('*')
         .eq('user_id', userId)
-        .eq('product_version_id', product_version_id);
+        .eq('product_version_id', product_version_id)
+        .eq('products', products)
+        .eq('serial', serial);
       if (chkErr) throw chkErr;
 
       if (existingArr.length > 0) {
         // Unlike
-        const { error: delErr } = await supabase
+        const { error: delErr } = await supabaseAdmin
           .from('likes')
           .delete()
           .eq('user_id', userId)
-          .eq('product_version_id', product_version_id);
+          .eq('product_version_id', product_version_id)
+          .eq('products', products)
+          .eq('serial', serial);
         if (delErr) throw delErr;
         return res.json({ message: 'Unliked.' });
       } else {
         // Like
-        const { data, error: insErr } = await supabase
+        const { data, error: insErr } = await supabaseAdmin
           .from('likes')
-          .insert({ user_id: userId, product_version_id })
+          .insert({ user_id: userId, product_version_id, products, serial })
           .select()
           .single();
+          console.log("📝 LIKE INSERT RESULT:", { data, insErr });
         if (insErr) throw insErr;
         return res.status(201).json({ data });
       }
     } catch (err) {
       console.error(err);
-      res.status(400).json({ error: 'Failed to toggle like.' });
+      res.status(400).json({ error: err.message || err.toString() });
     }
   });
 

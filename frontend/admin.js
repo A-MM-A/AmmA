@@ -3,7 +3,7 @@
 // 1) Initialize Supabase client (so we can log in admin)
 const SUPABASE_URL = "https://woqqydmwfkkrbplxdenr.supabase.co";  
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvcXF5ZG13ZmtrcmJwbHhkZW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDgyMDksImV4cCI6MjA2NDYyNDIwOX0.YRWVv9VH9WJzXdQQzQTnwDDdp02vsSnMaKL8Nd4ubPU";
-const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2) Grab DOM elements
 const loginSection = document.getElementById("login-section");
@@ -33,7 +33,7 @@ let currentSession = null;
 (async () => {
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await supa.auth.getSession();
   if (session) {
     currentSession = session;
     showAdminActions();
@@ -50,7 +50,7 @@ loginBtn.addEventListener("click", async () => {
   }
   loginMsg.textContent = "Logging in…";
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supa.auth.signInWithPassword({
     email,
     password,
   });

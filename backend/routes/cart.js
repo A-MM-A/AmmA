@@ -52,12 +52,17 @@ module.exports = (supabaseAdmin) => {
   router.post('/cart', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
-      const { product_version_id, quantity, size } = req.body;
+      const { product_version_id, product_id, serial, title, base_price, total_price, quantity, size } = req.body;
       const { data, error } = await supabase
         .from('carts')
         .insert({
           user_id: userId,
           product_version_id,
+          product_id,
+          serial,
+          title,
+          base_price,
+          total_price,
           quantity,
           size
         })

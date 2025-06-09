@@ -31,8 +31,11 @@
     <button onclick="loadingStart(0.5)">Start Loading</button>
     <button onclick="loadingStop()">Stop Loading</button>
     <button
-      onclick="loadingWait('Waiting for confirmation...\n • Enter your Mpesa - PIN\n • You can retry after 30 seconds')">Wait
-      with Message</button>
+      onclick="loadingWait('Waiting for confirmation...\n • Enter your Mpesa - PIN\n • You can retry after 30 seconds')">Wait with Message
+    </button>
+    <button
+      onclick="loadingWait('No Image Found')">Wait with New
+    </button>
     <button onclick="loadingWait('Hi how are you Dev',1.1)">Wait with Message</button>
     <button onclick="loadingWaitStop()">Stop Wait</button>
     <!-- <img src="logo/logo.svg" alt=""> -->
@@ -44,14 +47,14 @@
     <br>
     <br>
 
-    <section id="login-section">
+    <div class="admin-login" id="loginDiv">
       <input type="email" id="admin-email" placeholder="Email" />
       <input type="password" id="admin-password" placeholder="Password" />
-      <button id="admin-login-btn">Log In</button>
+      <button id="admin-login-btn">Login</button>
       <p id="login-msg"></p>
-    </section>
+    </div>
 
-    <section id="admin-actions" style="display:none;">
+    <section id="admin-actions" style="display:block;">
       <h2>Items CRUD</h2>
       <!-- 1) Add item -->
       <button id="create-item-btn">Create New Item</button>
@@ -76,13 +79,28 @@
     </section>
 
 
+    <!-- somewhere in <body> -->
+    <div id="image-test-container">
+      <h2>Image Test</h2>
+      <img id="image-test" src="" alt="Test image will appear here" style="max-width:100%;height:auto;">
+    </div>
+
+
+
   </div>
 
 
 
   <script src="config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="admin.js"></script>
+
+  <!-- test image -->
+  <script>
+    document.getElementById('image-test').src =
+      `${CONFIG.R2_PUBLIC_URL}/FMA00601.jpg`;
+  </script>
+
   <script src="script.js"></script>
 </body>
 
