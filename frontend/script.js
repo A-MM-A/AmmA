@@ -1034,6 +1034,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
 
                         // 🔍 Debug: server response
+                        console.log("url:", `${CONFIG.API_BASE_URL}/like`);
                         console.log("=> /api/like response:", res.status, await res.text());
 
 

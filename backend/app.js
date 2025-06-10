@@ -39,17 +39,17 @@ const cartRoutes = require('./routes/cart');
 const likesRoutes = require('./routes/likes');
 const reviewsRoutes = require('./routes/reviews');
 const uploadRoutes = require('./routes/upload');
-const adminRoutes = require('./routes/admin');
+// const adminRoutes = require('./routes/admin');
 
 
 // ─── MOUNT ROUTES ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes(supabaseAdmin));          // /api/auth/register, /api/auth/login, /api/auth/callback
 app.use('/api/products', productsRoutes(supabaseAdmin));  // /api/products, /api/products/:baseSerial
 app.use('/api/cart', cartRoutes(supabaseAdmin));          // /api/cart, /api/cart/:cartId
-app.use('/api/like', likesRoutes(supabaseAdmin));         // /api/like (toggle), /api/like/:userId
+// app.use('/api/like', likesRoutes(supabaseAdmin));         // /api/like (toggle), /api/like/:userId
 app.use('/api/reviews', reviewsRoutes(supabaseAdmin));    // /api/reviews/:versionId, /api/reviews
 app.use('/api/upload', uploadRoutes(supabaseAdmin, s3, R2_BUCKET, CLOUDFLARE_ACCOUNT_ID));
-app.use('/api/admin', adminRoutes(supabaseAdmin));
+// app.use('/api/admin', adminRoutes(supabaseAdmin));
 
 
 // ─── START THE SERVER ────────────────────────────────────────────────────────────
@@ -57,3 +57,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🛡️  Server running on port ${PORT}`);
 });
+
+
+
