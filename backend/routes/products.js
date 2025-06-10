@@ -11,7 +11,7 @@ module.exports = (supabaseAdmin) => {
   const router = express.Router();
 
   // GET /api/products  → all products + nested versions
-  router.get('/', async (req, res) => {
+  router.get('/products', async (req, res) => {
     try {
       // Fetch all products
       const { data: products, error: productsError } = await supabaseAdmin
@@ -41,9 +41,9 @@ module.exports = (supabaseAdmin) => {
             inStock: v.inStock
           }));
           return {
-            baseSerial: p.baseSerial,
-            category: p.category,
-            subCategory: p.subCategory,
+            baseSerial: product.baseSerial,
+            category: product.category,
+            subCategory: product.subCategory,
             versions: formattedVersions
           };
         })
@@ -57,7 +57,7 @@ module.exports = (supabaseAdmin) => {
   });
 
   // GET /api/products/:baseSerial → a single product + its versions
-  router.get('/:baseSerial', async (req, res) => {
+  router.get('/products/:baseSerial', async (req, res) => {
     try {
       const baseSerial = req.params.baseSerial;
       // 1) Fetch product row by baseSerial
