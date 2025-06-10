@@ -11,6 +11,26 @@ const express = require('express');
 module.exports = (supabaseAdmin) => {
     const router = express.Router();
 
+    async function authenticateAdmin(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer '))
+      return res.status(401).json({ error: 'Missing or invalid authorization header.' });
+
+    const token = authHeader.split(' ')[1];
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabaseAdmin.auth.getUser(token);
+      if (error || !user) throw error || new Error('Invalid token');
+      req.user = user;
+      next();
+    } catch (err) {
+      console.error(err);
+      res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
     router.post('/admin/items', authenticateAdmin, async (req, res) => {
         try {
             const { baseSerial, category, subCategory } = req.body;
