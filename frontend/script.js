@@ -831,7 +831,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemsOrdered.forEach((item, pIdx) => {
                     const panel = document.createElement("div");
                     panel.className = "item-panel";
-                    panel.dataset.category = item.category || ""; // for future filtering
+                    panel.dataset.category = item.category?.code || ""; // for future filtering
 
                     // Horizontal scroll
                     const hScroll = document.createElement("div");
@@ -861,8 +861,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                         // Give each version‑panel a unique ID (its full serial):
-                        const serial = item.baseserial
-                            + String(versionObj.versionserial).padStart(2, "0");
+
+                        // const serial = item.baseserial
+                        //     + String(versionObj.versionserial).padStart(2, "0");
+                        const serial = versionObj.fullSerial;  // <— fullSerial from backend
+
                         vp.dataset.id = serial;
                         console.log(item.category);
                         console.log(item.baseSerial);
@@ -1029,9 +1032,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         const payload = {
 
-                            product_version_id: versionObj.id,
-                            products: versionObj.product_id,
-                            serial: vp.dataset.id
+                            full_serial: versionObj.fullSerial  // <— use fullSerial
+
                         };
                         console.log("payload data is: ", payload);
 
@@ -1135,16 +1137,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
                                     // 🔍 Debug: payload for cart POST
                                     const totalPrice = versionObj.pricevalue * chosenQty;
+                                    // const payload = {
+                                    //     product_version_id: versionObj.id,
+                                    //     products: versionObj.product_id,
+                                    //     serial: serial,
+                                    //     title: versionObj.title,
+                                    //     base_price: versionObj.pricevalue,
+                                    //     total_price: totalPrice,
+                                    //     size: chosenSize,
+                                    //     quantity: chosenQty
+                                    // };
+
+                                    // Build payload matching new carts.insert API:
                                     const payload = {
-                                        product_version_id: versionObj.id,
-                                        products: versionObj.product_id,
-                                        serial: serial,
-                                        title: versionObj.title,
-                                        base_price: versionObj.pricevalue,
-                                        total_price: totalPrice,
-                                        size: chosenSize,
-                                        quantity: chosenQty
+                                        full_serial: serial,                // fullSerial
+                                        title: versionObj.title,            // snapshot title
+                                        size: chosenSize,                   // chosen size
+                                        quantity: chosenQty,                // chosen quantity
+                                        unit_price: versionObj.priceValue,  // per‑unit price
+                                        seller_id: versionObj.sellerId      // seller reference
                                     };
+
+
                                     console.log("POST /api/cart payload:", payload);
 
 

@@ -95,18 +95,12 @@ module.exports = (supabaseAdmin) => {
 
     router.get('/', async (req, res) => {
         try {
-            // 1) fetch all base_items, plus codes from category, sub_category, third_letter
+            // 1) fetch all base_items (we’ll parse category codes in the frontend)
             const { data: baseItems, error: baseErr } = await supabaseAdmin
                 .from('base_items')
-                .select(`
-          id,
-          base_serial,
-          description,
-          categories(code) as category,
-          sub_categories(code) as subCategory,
-          third_letters(code) as thirdLetter
-        `)
+                .select('id, base_serial, description')
                 .order('id', { ascending: true });
+
             if (baseErr) throw baseErr;
 
             // 2) for each base_item, fetch its available & in-stock versions
@@ -115,15 +109,15 @@ module.exports = (supabaseAdmin) => {
                     const { data: versions, error: verErr } = await supabaseAdmin
                         .from('item_versions')
                         .select(`
-              version_number,
-              full_serial,
-              title,
-              price,
-              image_key,
-              sizes,
-              in_stock,
-              available
-            `)
+                          version_number,
+                          full_serial,
+                          title,
+                          price,
+                          image_key,
+                          sizes,
+                          in_stock,
+                          available
+                        `)
                         .eq('base_item_id', item.id)
                         .eq('available', true)
                         .eq('in_stock', true);
@@ -144,9 +138,6 @@ module.exports = (supabaseAdmin) => {
 
                     return {
                         baseSerial: item.base_serial,
-                        category: item.category.code,
-                        subCategory: item.subCategory.code,
-                        thirdLetter: item.thirdLetter.code,
                         description: item.description,
                         versions: formattedVersions
                     };
