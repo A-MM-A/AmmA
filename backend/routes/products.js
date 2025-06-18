@@ -8,117 +8,319 @@
 
 const express = require('express');
 module.exports = (supabaseAdmin) => {
-  const router = express.Router();
+    const router = express.Router();
 
-  // GET /api/products  → all products + nested versions
-  router.get('/', async (req, res) => {
-    try {
-      // Fetch all products
-      const { data: products, error: productsError } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .order('id', { ascending: true });
+    // GET /api/products  → all products + nested versions
+    // router.get('/', async (req, res) => {
+    //   try {
+    //     // Fetch all products
+    //     const { data: products, error: productsError } = await supabaseAdmin
+    //       .from('products')
+    //       .select('*')
+    //       .order('id', { ascending: true });
 
-      if (productsError) throw productsError;
+    //     if (productsError) throw productsError;
 
-      // For each product, fetch its versions
-      const productsWithVersions = await Promise.all(
-        products.map(async (product) => {
-          const { data: versions, error: versionsError } = await supabaseAdmin
-            .from('product_versions')
-            .select('*')
-            .eq('product_id', product.id)
-            .order('id', { ascending: true });
-          if (versionsError) throw versionsError;
-          // Map DB field names to exactly what script.js expects:
-          const formattedVersions = versions.map(v => ({
-            versionSerial: v.versionSerial,
-            title: v.title,
-            priceValue: v.priceValue,
-            sizes: v.sizes,
-            imageKey: v.imageKey,
-            description: v.description,
-            inStock: v.inStock
-          }));
-          return {
-            baseSerial: product.baseSerial,
-            category: product.category,
-            subCategory: product.subCategory,
-            versions: formattedVersions
-          };
-        })
-      );
+    //     // For each product, fetch its versions
+    //     const productsWithVersions = await Promise.all(
+    //       products.map(async (product) => {
+    //         const { data: versions, error: versionsError } = await supabaseAdmin
+    //           .from('product_versions')
+    //           .select('*')
+    //           .eq('product_id', product.id)
+    //           .order('id', { ascending: true });
+    //         if (versionsError) throw versionsError;
+    //         // Map DB field names to exactly what script.js expects:
+    //         const formattedVersions = versions.map(v => ({
+    //           versionSerial: v.versionSerial,
+    //           title: v.title,
+    //           priceValue: v.priceValue,
+    //           sizes: v.sizes,
+    //           imageKey: v.imageKey,
+    //           description: v.description,
+    //           inStock: v.inStock
+    //         }));
+    //         return {
+    //           baseSerial: product.baseSerial,
+    //           category: product.category,
+    //           subCategory: product.subCategory,
+    //           versions: formattedVersions
+    //         };
+    //       })
+    //     );
 
-      res.json({ data: productsWithVersions });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to fetch products.' });
-    }
-  });
+    //     res.json({ data: productsWithVersions });
+    //   } catch (err) {
+    //     console.error(err);
+    //     res.status(500).json({ error: 'Failed to fetch products.' });
+    //   }
 
-  // GET /api/products/:baseSerial → a single product + its versions
-  router.get('/:baseSerial', async (req, res) => {
-    try {
-      const baseSerial = req.params.baseSerial;
-      // 1) Fetch product row by baseSerial
-      const { data: prodArr, error: prodErr } = await supabase
-        .from('products')
-        .select('*')
-        .eq('baseSerial', baseSerial)
-        .limit(1);
-      if (prodErr) throw prodErr;
-      if (prodArr.length === 0) return res.status(404).json({ error: 'Product not found.' });
+    // try {
+    //   // 1) pull all products
+    //   const { data: products, error: productsError } = await supabaseAdmin
+    //     .from('products')
+    //     .select('*')
+    //     .order('id', { ascending: true });
+    //   if (productsError) throw productsError;
 
-      const product = prodArr[0];
-      // 2) Fetch versions
-      const { data: versions, error: verErr } = await supabase
-        .from('product_versions')
-        .select('*')
-        .eq('product_id', product.id)
-        .order('id', { ascending: true });
-      if (verErr) throw verErr;
+    //   // 2) for each product fetch its versions and shape the object
+    //   const productsWithVersions = await Promise.all(
+    //     products.map(async (product) => {
+    //       const { data: versions, error: versionsError } = await supabaseAdmin
+    //         .from('product_versions')
+    //         .select('*')
+    //         .eq('product_id', product.id);
+    //       if (versionsError) throw versionsError;
 
-      // Format exactly for frontend
-      const formattedVersions = versions.map(v => ({
-        versionSerial: v.versionSerial,
-        title: v.title,
-        priceValue: v.priceValue,
-        sizes: v.sizes,
-        imageKey: v.imageKey,
-        description: v.description,
-        inStock: v.inStock
-      }));
+    //       const formattedVersions = versions.map(v => ({
+    //         versionSerial: v.versionSerial,
+    //         title: v.title,
+    //         priceValue: v.priceValue,
+    //         sizes: v.sizes,
+    //         imageKey: v.imageKey,
+    //         description: v.description,
+    //         inStock: v.inStock
+    //       }));
 
-      res.json({
-        data: {
-          baseSerial: product.baseSerial,
-          category: product.category,
-          subCategory: product.subCategory,
-          versions: formattedVersions
+    //       // **return** each shaped product object
+    //       return {
+    //         baseSerial: product.baseSerial,
+    //         category: product.category,
+    //         subCategory: product.subCategory,
+    //         versions: formattedVersions
+    //       };
+    //     })
+    //   );
+
+
+    router.get('/', async (req, res) => {
+        try {
+            // 1) fetch all base_items, plus codes from category, sub_category, third_letter
+            const { data: baseItems, error: baseErr } = await supabaseAdmin
+                .from('base_items')
+                .select(`
+          id,
+          base_serial,
+          description,
+          categories(code) as category,
+          sub_categories(code) as subCategory,
+          third_letters(code) as thirdLetter
+        `)
+                .order('id', { ascending: true });
+            if (baseErr) throw baseErr;
+
+            // 2) for each base_item, fetch its available & in-stock versions
+            const productsWithVersions = await Promise.all(
+                baseItems.map(async (item) => {
+                    const { data: versions, error: verErr } = await supabaseAdmin
+                        .from('item_versions')
+                        .select(`
+              version_number,
+              full_serial,
+              title,
+              price,
+              image_key,
+              sizes,
+              in_stock,
+              available
+            `)
+                        .eq('base_item_id', item.id)
+                        .eq('available', true)
+                        .eq('in_stock', true);
+                    if (verErr) throw verErr;
+
+                    // 3) format versions for the frontend
+                    const formattedVersions = versions.map(v => ({
+                        versionSerial: v.version_number,
+                        fullSerial: v.full_serial,
+                        title: v.title,
+                        priceValue: v.price,
+                        sizes: v.sizes,
+                        imageKey: v.image_key,
+                        description: item.description,
+                        inStock: v.in_stock,
+                        available: v.available
+                    }));
+
+                    return {
+                        baseSerial: item.base_serial,
+                        category: item.category.code,
+                        subCategory: item.subCategory.code,
+                        thirdLetter: item.thirdLetter.code,
+                        description: item.description,
+                        versions: formattedVersions
+                    };
+                })
+            );
+
+
+
+
+            // 3) once you have the full array, send it in one go
+            res.json({ data: productsWithVersions });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to load products.' });
         }
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to load product.' });
-    }
-  });
+
+    });
 
 
-  router.get('/versions/:versionId', async (req, res) => {
-    try {
-      const versionId = parseInt(req.params.versionId, 10);
-      const { data: versions, error } = await supabase
-        .from('product_versions')
-        .select('*')
-        .eq('id', versionId)
-        .single();
-      if (error) throw error;
-      res.json({ data: versions });
-    } catch (err) {
-      console.error(err);
-      res.status(404).json({ error: 'Version not found.' });
-    }
-  });
 
-  return router;
+
+    // GET /api/products/:baseSerial → a single product + its versions
+    // router.get('/:baseSerial', async (req, res) => {
+    //     try {
+    //         const baseSerial = req.params.baseSerial;
+    //         // 1) Fetch product row by baseSerial
+    //         const { data: prodArr, error: prodErr } = await supabase
+    //             .from('products')
+    //             .select('*')
+    //             .eq('baseSerial', baseSerial)
+    //             .limit(1);
+    //         if (prodErr) throw prodErr;
+    //         if (prodArr.length === 0) return res.status(404).json({ error: 'Product not found.' });
+
+    //         const product = prodArr[0];
+    //         // 2) Fetch versions
+    //         const { data: versions, error: verErr } = await supabase
+    //             .from('product_versions')
+    //             .select('*')
+    //             .eq('product_id', product.id)
+    //             .order('id', { ascending: true });
+    //         if (verErr) throw verErr;
+
+    //         // Format exactly for frontend
+    //         const formattedVersions = versions.map(v => ({
+    //             versionSerial: v.versionSerial,
+    //             title: v.title,
+    //             priceValue: v.priceValue,
+    //             sizes: v.sizes,
+    //             imageKey: v.imageKey,
+    //             description: v.description,
+    //             inStock: v.inStock
+    //         }));
+
+    //         res.json({
+    //             data: {
+    //                 baseSerial: product.baseSerial,
+    //                 category: product.category,
+    //                 subCategory: product.subCategory,
+    //                 versions: formattedVersions
+    //             }
+    //         });
+    //     } catch (err) {
+    //         console.error(err);
+    //         res.status(500).json({ error: 'Failed to load product.' });
+    //     }
+    // });
+
+    router.get('/:baseSerial', async (req, res) => {
+        try {
+            const { baseSerial } = req.params;
+
+            // 1) fetch the base_item by base_serial
+            const { data: items, error: itemErr } = await supabaseAdmin
+                .from('base_items')
+                .select('id, base_serial, description')
+                .eq('base_serial', baseSerial)
+                .limit(1);
+            if (itemErr) throw itemErr;
+            if (!items.length) {
+                return res.status(404).json({ error: 'Product not found.' });
+            }
+            const item = items[0];
+
+            // 2) fetch its available & in-stock versions
+            const { data: versions, error: verErr } = await supabaseAdmin
+                .from('item_versions')
+                .select(`
+          version_number,
+          full_serial,
+          title,
+          price,
+          image_key,
+          sizes,
+          in_stock,
+          available
+        `)
+                .eq('base_item_id', item.id)
+                .eq('available', true)
+                .eq('in_stock', true);
+            if (verErr) throw verErr;
+
+            // 3) format for frontend
+            const formattedVersions = versions.map(v => ({
+                versionSerial: v.version_number,
+                fullSerial: v.full_serial,
+                title: v.title,
+                priceValue: v.price,
+                sizes: v.sizes,
+                imageKey: v.image_key,
+                description: item.description,
+                inStock: v.in_stock,
+                available: v.available
+            }));
+
+            res.json({
+                data: {
+                    baseSerial: item.base_serial,
+                    description: item.description,
+                    versions: formattedVersions
+                }
+            });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to load product.' });
+        }
+    });
+
+
+    // router.get('/versions/:versionId', async (req, res) => {
+    //     try {
+    //         const versionId = parseInt(req.params.versionId, 10);
+    //         const { data: versions, error } = await supabase
+    //             .from('product_versions')
+    //             .select('*')
+    //             .eq('id', versionId)
+    //             .single();
+    //         if (error) throw error;
+    //         res.json({ data: versions });
+    //     } catch (err) {
+    //         console.error(err);
+    //         res.status(404).json({ error: 'Version not found.' });
+    //     }
+    // });
+
+    router.get('/versions/:versionId', async (req, res) => {
+        try {
+            const versionId = parseInt(req.params.versionId, 10);
+            const { data: version, error: vErr } = await supabaseAdmin
+                .from('item_versions')
+                .select(`
+                  version_number,
+                  full_serial,
+                  title,
+                  price,
+                  image_key,
+                  sizes,
+                  material,
+                  weight,
+                  other_attrs,
+                  in_stock,
+                  available,
+                  seller_id,
+                  created_at
+                `)
+                .eq('id', versionId)
+                .single();
+            if (vErr) throw vErr;
+            res.json({ data: version });
+        } catch (err) {
+            console.error(err);
+            res.status(404).json({ error: 'Version not found.' });
+        }
+    });
+
+    return router;
 };

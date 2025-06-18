@@ -2,9 +2,10 @@
  * backend/routes/cart.js
  * ───────────────────────
  * Handles:
- *   GET /api/cart         (authenticated)
- *   POST /api/cart        (authenticated)
- *   DELETE /api/cart/:cartId  (authenticated)
+ *   POST   /api/cart         → add item snapshot to cart
+ *   GET    /api/cart         → list all cart snapshots
+ *   PUT    /api/cart/:cartId → update quantity/size
+ *   DELETE /api/cart/:cartId → remove item from cart
  */
 
 const express = require('express');
@@ -32,59 +33,101 @@ module.exports = (supabaseAdmin) => {
     }
   }
 
+  // POST /api/cart → add item to cart
+  router.post('/cart', authenticateUser, async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      // const { product_version_id, product_id, serial, title, base_price, total_price, quantity, size } = req.body;
+      const {
+        full_serial,    // <— e.g. 'FMH00101'
+        title,          // <— version title snapshot
+        size,           // <— user‑selected size
+        quantity,       // <— user‑selected quantity
+        unit_price,     // <— snapshot price per unit
+        seller_id       // <— seller reference
+      } = req.body;
+
+      const { data, error } = await supabase
+        .from('carts')
+
+        // .insert({
+        //   user_id: userId,
+        //   product_version_id,
+        //   product_id,
+        //   serial,
+        //   title,
+        //   base_price,
+        //   total_price,
+        //   quantity,
+        //   size
+        // })
+        // .select()
+        // .single();
+
+        .insert({
+          user_id: userId,
+          full_serial,
+          title,
+          size,
+          quantity,
+          unit_price,
+          seller_id
+        });
+
+      if (error) throw error;
+      res.status(201).json({ data });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to add to cart.' });
+    }
+  });
+
+
+
   // GET /api/cart → list items for the logged-in user
   router.get('/cart', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
+
       const { data, error } = await supabase
         .from('carts')
-        .select('*')
+        // .select('*')
+        .select(`
+          id,
+          full_serial,
+          title,
+          size,
+          quantity,
+          unit_price,
+          total_price,
+          seller_id
+        `)
         .eq('user_id', userId);
+
+
       if (error) throw error;
       res.json({ data });
+
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to load cart.' });
     }
   });
 
-  // POST /api/cart → add item to cart
-  router.post('/cart', authenticateUser, async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const { product_version_id, product_id, serial, title, base_price, total_price, quantity, size } = req.body;
-      const { data, error } = await supabase
-        .from('carts')
-        .insert({
-          user_id: userId,
-          product_version_id,
-          product_id,
-          serial,
-          title,
-          base_price,
-          total_price,
-          quantity,
-          size
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      res.status(201).json({ data });
-    } catch (err) {
-      console.error(err);
-      res.status(400).json({ error: 'Failed to add to cart.' });
-    }
-  });
 
   // PUT /api/cart
   router.put('/cart/:cartId', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
+
       const cartId = parseInt(req.params.cartId, 10);
-      const { quantity } = req.body;
+
+      const { quantity, size } = req.body;
 
       // Verify ownership:
-      const { data: existing, error: selErr } = await supabase
+      const { data: existing, error: selErr } = await supabaseAdmin
         .from('carts')
         .select('user_id')
         .eq('id', cartId)
@@ -94,9 +137,9 @@ module.exports = (supabaseAdmin) => {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('carts')
-        .update({ quantity })
+        .update({ quantity, size })
         .eq('id', cartId)
         .select()
         .single();
@@ -109,14 +152,16 @@ module.exports = (supabaseAdmin) => {
   });
 
 
+
   // DELETE /api/cart/:cartId → remove item
   router.delete('/cart/:cartId', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
+
       const cartId = parseInt(req.params.cartId, 10);
 
       // Verify ownership:
-      const { data: existing, error: selErr } = await supabase
+      const { data: existing, error: selErr } = await supabaseAdmin
         .from('carts')
         .select('user_id')
         .eq('id', cartId)
@@ -126,7 +171,7 @@ module.exports = (supabaseAdmin) => {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('carts')
         .delete()
         .eq('id', cartId);

@@ -848,6 +848,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                     item.versions.forEach((versionObj, vIdx) => {
+                        console.log(versionObj, vIdx);
+
+
                         // version panel (bg+img)
                         const vp = document.createElement("div");
                         vp.className = "version-panel";
@@ -861,6 +864,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         const serial = item.baseserial
                             + String(versionObj.versionserial).padStart(2, "0");
                         vp.dataset.id = serial;
+                        console.log(item.category);
+                        console.log(item.baseSerial);
+
+                        console.log("ITEM OBJECT:", item);
+                        console.log("VERSION OBJ:", versionObj);
+
 
                         let imgSuffix;
                         if (versionObj.imagekey === 1) {
@@ -871,6 +880,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         // 1) blur background using versionObj.img
                         const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}${imgSuffix}`;
+                        console.log(imageUrl);
+
                         vp.style.setProperty("--bgUrl", `url("${imageUrl}")`);
 
 
@@ -900,6 +911,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             <div class="panel-price-text">${formattedPrice}</div>
                           </div>
                         `);
+
+                        console.log(versionObj.pricevalue);
+
 
 
                         // 5) panel-extra: “date added” + “In Stock/Out of Stock” pill
@@ -1019,8 +1033,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             products: versionObj.product_id,
                             serial: vp.dataset.id
                         };
-                        console.log("payload data is: ",payload);
-                        
+                        console.log("payload data is: ", payload);
+
 
 
                         // Persist toggle to Supabase
@@ -1150,7 +1164,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     } else {
                                         console.error("Cart POST failed:", await resp.text());
                                     }
-                                    
+
                                     // UI updates 
                                     state.inCart = true;
                                     state.chosenSize = chosenSize;

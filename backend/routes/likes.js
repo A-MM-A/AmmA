@@ -2,8 +2,8 @@
  * backend/routes/likes.js
  * ────────────────────────
  * Handles:
- *   POST /api/like         (toggle like/unlike; authenticated)
- *   GET  /api/like/:userId  (list liked version IDs for that user)
+ *   POST /api/like         (toggle like/unlike by full_serial )
+ *   GET  /api/like/:userId  (list liked full_serial for that user)
  */
 
 const express = require('express');
@@ -31,45 +31,66 @@ module.exports = (supabaseAdmin) => {
     }
   }
 
+
   // POST /api/like → toggle like/unlike
   router.post('/like', authenticateUser, async (req, res) => {
     try {
       console.log("📥 LIKE BODY:", req.body);
       const userId = req.user.id;
-      const { product_version_id, products, serial } = req.body;
+      // const { product_version_id, products, serial } = req.body;
+      const { full_serial } = req.body;  // <— expect { full_serial: 'FMH00101' }
 
       // Check existing like
       const { data: existingArr, error: chkErr } = await supabaseAdmin
         .from('likes')
         .select('*')
         .eq('user_id', userId)
-        .eq('product_version_id', product_version_id)
-        .eq('products', products)
-        .eq('serial', serial);
+        .eq('full_serial', full_serial);
       if (chkErr) throw chkErr;
 
-      if (existingArr.length > 0) {
-        // Unlike
-        const { error: delErr } = await supabaseAdmin
+
+      // if (existingArr.length > 0) {
+      //   // Unlike
+      //   const { error: delErr } = await supabaseAdmin
+      //     .from('likes')
+      //     .delete()
+      //     .eq('user_id', userId)
+      //     .eq('product_version_id', product_version_id)
+      //     .eq('products', products)
+      //     .eq('serial', serial);
+      //   if (delErr) throw delErr;
+      //   return res.json({ message: 'Unliked.' });
+      // } else {
+      //   // Like
+      //   const { data, error: insErr } = await supabaseAdmin
+      //     .from('likes')
+      //     .insert({ user_id: userId, product_version_id, products, serial })
+      //     .select()
+      //     .single();
+      //   console.log("📝 LIKE INSERT RESULT:", { data, insErr });
+      //   if (insErr) throw insErr;
+
+      //   return res.status(201).json({ data });
+      // }
+
+      if (!existingArr.length) {
+        // insert new like
+        await supabaseAdmin.from('likes').insert({ user_id: userId, full_serial });
+        return res.json({ message: 'Liked.' });
+      } else {
+        // remove existing like
+        await supabaseAdmin
           .from('likes')
           .delete()
           .eq('user_id', userId)
-          .eq('product_version_id', product_version_id)
-          .eq('products', products)
-          .eq('serial', serial);
-        if (delErr) throw delErr;
+          .eq('full_serial', full_serial);
         return res.json({ message: 'Unliked.' });
-      } else {
-        // Like
-        const { data, error: insErr } = await supabaseAdmin
-          .from('likes')
-          .insert({ user_id: userId, product_version_id, products, serial })
-          .select()
-          .single();
-          console.log("📝 LIKE INSERT RESULT:", { data, insErr });
-        if (insErr) throw insErr;
-        return res.status(201).json({ data });
       }
+
+
+
+
+
     } catch (err) {
       console.error(err);
       res.status(400).json({ error: err.message || err.toString() });
@@ -77,16 +98,21 @@ module.exports = (supabaseAdmin) => {
   });
 
 
+
+
   // GET /api/like/:userId → get array of version IDs
-  router.get('/like/:userId', async (req, res) => {
+  router.get('/like/:userId', authenticateUser, async (req, res) => {
+    
     try {
-      const userId = req.params.userId;
-      const { data, error } = await supabase
+      const { userId } = req.params;
+
+      const { data, error } = await supabaseAdmin
         .from('likes')
-        .select('product_version_id')
+        .select('full_serial')
         .eq('user_id', userId);
+
       if (error) throw error;
-      res.json({ data: data.map(r => r.product_version_id) });
+      res.json({ data: data.map(r => r.full_serial) });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Failed to load likes.' });
