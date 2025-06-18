@@ -34,7 +34,7 @@ module.exports = (supabaseAdmin) => {
   }
 
   // POST /api/cart → add item to cart
-  router.post('/cart', authenticateUser, async (req, res) => {
+  router.post('/', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
 
@@ -87,7 +87,7 @@ module.exports = (supabaseAdmin) => {
 
 
   // GET /api/cart → list items for the logged-in user
-  router.get('/cart', authenticateUser, async (req, res) => {
+  router.get('/', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
 
@@ -118,7 +118,7 @@ module.exports = (supabaseAdmin) => {
 
 
   // PUT /api/cart
-  router.put('/cart/:cartId', authenticateUser, async (req, res) => {
+  router.put('/:cartId', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
 
@@ -154,7 +154,7 @@ module.exports = (supabaseAdmin) => {
 
 
   // DELETE /api/cart/:cartId → remove item
-  router.delete('/cart/:cartId', authenticateUser, async (req, res) => {
+  router.delete('/:cartId', authenticateUser, async (req, res) => {
     try {
       const userId = req.user.id;
 

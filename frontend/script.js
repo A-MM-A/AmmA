@@ -1011,8 +1011,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     // side buttons
 
-                    const likeBtn = vp.querySelector(".like-btn");
-                   
+                    const likeBtn = vp.querySelector(".like-btn");                   
                     likeBtn.onclick = async () => {
                         console.log("liked");
 
@@ -1027,7 +1026,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         };
 
                         const serial = vp.dataset.id;
-                        const state = versionStateByID[serial];
+
+                        // const state = versionStateByID[serial];
+                        // Ensure we have a state object for this serial
+                        const state = versionStateByID[serial] ||= { liked: false };
 
 
                         // 🔍 Build & log payload for the like API
@@ -1082,7 +1084,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         // const item = itemsOrdered[pIdx];
                         // const versionObj = item.versions[vIdx];
                         const serial = vp.dataset.id;
-                        const state = versionStateByID[serial];
+                        const state = versionStateByID[serial]||= { inCart: false };
 
                         // 1) If out of stock, call OutOfStock() and bail:
                         if (!versionObj.inStock) {
