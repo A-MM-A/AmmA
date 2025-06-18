@@ -115,12 +115,17 @@ module.exports = (supabaseAdmin) => {
                           price,
                           image_key,
                           sizes,
+                          material,
+                          weight,
+                          other_attrs,
                           in_stock,
+                          profit_margin,
+                          seller_id,
+                          created_at,
                           available
                         `)
                         .eq('base_item_id', item.id)
-                        .eq('available', true)
-                        .eq('in_stock', true);
+                        .eq('available', true);
                     if (verErr) throw verErr;
 
                     // 3) format versions for the frontend
@@ -129,10 +134,15 @@ module.exports = (supabaseAdmin) => {
                         fullSerial: v.full_serial,
                         title: v.title,
                         priceValue: v.price,
-                        sizes: v.sizes,
                         imageKey: v.image_key,
-                        description: item.description,
+                        sizes: v.sizes,
+                        material: v.material,
+                        weight: v.weight,
+                        otherAttrs: v.other_attrs,
                         inStock: v.in_stock,
+                        Profit: v.profit_margin,
+                        Seller: v.seller_id,
+                        timeAdded: v.created_at,
                         available: v.available
                     }));
 
@@ -226,18 +236,24 @@ module.exports = (supabaseAdmin) => {
             const { data: versions, error: verErr } = await supabaseAdmin
                 .from('item_versions')
                 .select(`
-          version_number,
-          full_serial,
-          title,
-          price,
-          image_key,
-          sizes,
-          in_stock,
-          available
-        `)
+                version_number,
+                full_serial,
+                title,
+                price,
+                image_key,
+                sizes,
+                material,
+                weight,
+                other_attrs,
+                in_stock,
+                profit_margin,
+                seller_id,
+                created_at,
+                available
+                `)
                 .eq('base_item_id', item.id)
-                .eq('available', true)
-                .eq('in_stock', true);
+                .eq('available', true);
+
             if (verErr) throw verErr;
 
             // 3) format for frontend
@@ -246,10 +262,15 @@ module.exports = (supabaseAdmin) => {
                 fullSerial: v.full_serial,
                 title: v.title,
                 priceValue: v.price,
-                sizes: v.sizes,
                 imageKey: v.image_key,
-                description: item.description,
+                sizes: v.sizes,
+                material: v.material,
+                weight: v.weight,
+                otherAttrs: v.other_attrs,
                 inStock: v.in_stock,
+                Profit: v.profit_margin,
+                Seller: v.seller_id,
+                timeAdded: v.created_at,
                 available: v.available
             }));
 
@@ -267,43 +288,29 @@ module.exports = (supabaseAdmin) => {
     });
 
 
-    // router.get('/versions/:versionId', async (req, res) => {
-    //     try {
-    //         const versionId = parseInt(req.params.versionId, 10);
-    //         const { data: versions, error } = await supabase
-    //             .from('product_versions')
-    //             .select('*')
-    //             .eq('id', versionId)
-    //             .single();
-    //         if (error) throw error;
-    //         res.json({ data: versions });
-    //     } catch (err) {
-    //         console.error(err);
-    //         res.status(404).json({ error: 'Version not found.' });
-    //     }
-    // });
-
     router.get('/versions/:versionId', async (req, res) => {
         try {
             const versionId = parseInt(req.params.versionId, 10);
             const { data: version, error: vErr } = await supabaseAdmin
                 .from('item_versions')
                 .select(`
-                  version_number,
-                  full_serial,
-                  title,
-                  price,
-                  image_key,
-                  sizes,
-                  material,
-                  weight,
-                  other_attrs,
-                  in_stock,
-                  available,
-                  seller_id,
-                  created_at
+                version_number,
+                full_serial,
+                title,
+                price,
+                image_key,
+                sizes,
+                material,
+                weight,
+                other_attrs,
+                in_stock,
+                profit_margin,
+                seller_id,
+                created_at,
+                available
                 `)
                 .eq('id', versionId)
+
                 .single();
             if (vErr) throw vErr;
             res.json({ data: version });

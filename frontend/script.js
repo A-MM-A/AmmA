@@ -827,11 +827,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 vContainer.innerHTML = "";
 
+                // DEBUG: dump entire fetched data
+                // console.log("buildPanels ▶︎ itemsOrdered:", itemsOrdered);
+
 
                 itemsOrdered.forEach((item, pIdx) => {
                     const panel = document.createElement("div");
                     panel.className = "item-panel";
+
                     panel.dataset.category = item.category?.code || ""; // for future filtering
+                    // panel.dataset.category = ""; // category codes are not returned; strip out
 
                     // Horizontal scroll
                     const hScroll = document.createElement("div");
@@ -848,7 +853,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                     item.versions.forEach((versionObj, vIdx) => {
-                        console.log(versionObj, vIdx);
+
 
 
                         // version panel (bg+img)
@@ -860,30 +865,49 @@ document.addEventListener("DOMContentLoaded", () => {
                         // console.log("Building version", versionObj);
 
 
-                        // Give each version‑panel a unique ID (its full serial):
 
-                        // const serial = item.baseserial
-                        //     + String(versionObj.versionserial).padStart(2, "0");
-                        const serial = versionObj.fullSerial;  // <— fullSerial from backend
 
+                        const serial = versionObj.fullSerial;
                         vp.dataset.id = serial;
-                        console.log(item.category);
-                        console.log(item.baseSerial);
+                        // console.log(item.category);
+                        // console.log(item.baseSerial);
 
-                        console.log("ITEM OBJECT:", item);
-                        console.log("VERSION OBJ:", versionObj);
+                        // console.log("ITEM OBJECT:", item);
+                        // console.log("VERSION OBJ:", versionObj);
+                        console.log("ITEM OBJECT:", item,
+
+                            "\n\n", "Item Level\n", {
+                            Base_Serial: item.baseSerial,
+                            Description: item.description,
+                            Versions: item.versions },
+
+                            "\n\n", "Version Level\n", {
+                            Full_Serial: versionObj.fullSerial,
+                            Title: versionObj.title,
+                            Price: versionObj.priceValue,
+                            Image_Key: versionObj.imageKey,
+                            Sizes: versionObj.sizes,
+                            Material: versionObj.material,
+                            Available: versionObj.available },
+
+                            "\n\n"
+
+                        );
 
 
                         let imgSuffix;
-                        if (versionObj.imagekey === 1) {
+                        if (versionObj.imageKey === 1) {
                             imgSuffix = ".jpg";
-                        } else if (versionObj.imagekey === 2) {
+                        } else if (versionObj.imageKey === 2) {
                             imgSuffix = ".png";
                         }
+                        console.log(versionObj.imageKey);
+
 
                         // 1) blur background using versionObj.img
+                        // const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}.jpg`;
                         const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}${imgSuffix}`;
-                        console.log(imageUrl);
+                        // console.log(imageUrl);
 
                         vp.style.setProperty("--bgUrl", `url("${imageUrl}")`);
 
@@ -903,10 +927,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                         // 4) panel‑title: use versionObj.title, versionSerial, and formatted price
-                        // const formattedPrice = `KES ${versionObj.priceValue.toLocaleString()}`;
-                        const formattedPrice = `KES ${(versionObj.pricevalue ?? 0).toLocaleString()}`;
-                        // const fullSerial = `${item.baseSerial}${versionObj.versionSerial.padStart(2, "0")}`;
-                        const fullSerial = serial;
+
+                        const formattedPrice = `KES ${(versionObj.priceValue ?? 0).toLocaleString()}`;
+
                         vp.insertAdjacentHTML("beforeend", `
                           <div class="panel-title">
                             <div class="panel-title-text">${versionObj.title}</div>
@@ -915,17 +938,17 @@ document.addEventListener("DOMContentLoaded", () => {
                           </div>
                         `);
 
-                        console.log(versionObj.pricevalue);
+
 
 
 
                         // 5) panel-extra: “date added” + “In Stock/Out of Stock” pill
-                        const inStockSVG = versionObj.instock
+                        const inStockSVG = versionObj.inStock
                             ? 'icons/In-Stock-fill.svg'
                             : 'icons/In-Stock-line.svg';
-                        const stockText = versionObj.instock ? 'In Stock' : 'Out of Stock';
-                        const formattedDate = versionObj.dateadded
-                            ? new Date(versionObj.dateadded).toLocaleDateString() : "DD-MM-YYYY";
+                        const stockText = versionObj.inStock ? 'In Stock' : 'Out of Stock';
+                        const formattedDate = versionObj.createdAt
+                            ? new Date(versionObj.createdAt).toLocaleDateString() : "DD-MM-YYYY";
                         vp.insertAdjacentHTML("beforeend", `
                           <div class="panel-extra">
                             <div class="date-text">${formattedDate}</div>
@@ -938,7 +961,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                         // 6) Store raw priceValue in a data attribute for cart math later:
-                        vp.dataset.pricevalue = versionObj.pricevalue;
+                        vp.dataset.pricevalue = versionObj.priceValue;
 
                         hScroll.appendChild(vp);
 
@@ -1240,17 +1263,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         const serial = vp.dataset.id;
                         const item = itemsOrdered[pIdx];
                         const [base, ver] = [item.baseserial, versionObj.versionserial];
-                        // Now versionObj.sizes might be string or array—
-                        // display it accordingly:
+
                         const sizesDisplay = Array.isArray(versionObj.sizes)
-                            ? versionObj.sizes.join(", ")
+                            ? versionObj.sizes.join(", ")  // incase its an array
                             : versionObj.sizes;
 
-                        document.getElementById("popup-title").innerText = versionObj.title;
+                        document.getElementById("popup-title").innerText = versionObj.title || "N/A";
                         document.getElementById("popup-description").innerText = item.description || "N/A";
-                        document.getElementById("popup-sizes").innerText = sizesDisplay;
-                        document.getElementById("popup-material").innerText = versionObj.material || "N/A";
-                        document.getElementById("popup-weight").innerText = versionObj.weight || "N/A";
+                        document.getElementById("popup-sizes").innerText = sizesDisplay || "--";
+                        document.getElementById("popup-material").innerText = versionObj.material || "--";
+                        document.getElementById("popup-weight").innerText = versionObj.weight || "--";
 
                         document.getElementById("info-popup").classList.remove("hidden");
                     };
