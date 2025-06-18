@@ -48,7 +48,7 @@ module.exports = (supabaseAdmin) => {
         seller_id       // <— seller reference
       } = req.body;
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('carts')
 
         // .insert({
@@ -91,7 +91,7 @@ module.exports = (supabaseAdmin) => {
     try {
       const userId = req.user.id;
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('carts')
         // .select('*')
         .select(`

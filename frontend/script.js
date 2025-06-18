@@ -308,52 +308,52 @@ const supa = supabase.createClient(
 
 
 // loading when dat not loaded
-window.addEventListener('DOMContentLoaded', () => {
-    //   console.log('✅ DOMContentLoaded — attaching loader hooks');
+// window.addEventListener('DOMContentLoaded', () => {
+//     //   console.log('✅ DOMContentLoaded — attaching loader hooks');
 
-    // 1. Link clicks & form submissions
-    document.addEventListener('click', e => {
-        const a = e.target.closest('a[href]');
-        if (a && a.hostname === location.hostname) {
-            //   console.log('➡️ link click, starting loader');
-            loadingStart(0.5);
-        }
-    });
-    document.addEventListener('submit', () => {
-        // console.log('➡️ form submit, starting loader');
-        loadingStart(0.5);
-    });
+//     // 1. Link clicks & form submissions
+//     document.addEventListener('click', e => {
+//         const a = e.target.closest('a[href]');
+//         if (a && a.hostname === location.hostname) {
+//             //   console.log('➡️ link click, starting loader');
+//             loadingStart(0.5);
+//         }
+//     });
+//     document.addEventListener('submit', () => {
+//         // console.log('➡️ form submit, starting loader');
+//         loadingStart(0.5);
+//     });
 
-    // 2. Full page load / pageshow stop
-    window.addEventListener('load', () => {
-        // console.log('🏁 window.load, stopping loader');
-        loadingStart(0.5);
-    });
-    window.addEventListener('pageshow', () => {
-        // console.log('🏁 window.pageshow, stopping loader');
-        loadingStop();
-    });
+//     // 2. Full page load / pageshow stop
+//     window.addEventListener('load', () => {
+//         // console.log('🏁 window.load, stopping loader');
+//         loadingStart(0.5);
+//     });
+//     window.addEventListener('pageshow', () => {
+//         // console.log('🏁 window.pageshow, stopping loader');
+//         loadingStop();
+//     });
 
-    // 3. Wrap fetch to auto show/stop loader
-    const _fetch = window.fetch;
-    window.fetch = (...args) => {
-        // console.log('🕸️ fetch start', args);
-        loadingStart(0.5);
-        return _fetch(...args).finally(() => {
-            //   console.log('🕸️ fetch end', args);
-            loadingStop();
-        });
-    };
+//     // 3. Wrap fetch to auto show/stop loader
+//     const _fetch = window.fetch;
+//     window.fetch = (...args) => {
+//         // console.log('🕸️ fetch start', args);
+//         loadingStart(0.5);
+//         return _fetch(...args).finally(() => {
+//             //   console.log('🕸️ fetch end', args);
+//             loadingStop();
+//         });
+//     };
 
-    // 4. Wrap XHR too
-    (function (open) {
-        XMLHttpRequest.prototype.open = function (...args) {
-            this.addEventListener('loadstart', () => { console.log('XHR loadstart'); loadingStart(); });
-            this.addEventListener('loadend', () => { console.log('XHR loadend'); loadingStop(); });
-            open.apply(this, args);
-        };
-    })(XMLHttpRequest.prototype.open);
-});
+//     // 4. Wrap XHR too
+//     (function (open) {
+//         XMLHttpRequest.prototype.open = function (...args) {
+//             this.addEventListener('loadstart', () => { console.log('XHR loadstart'); loadingStart(); });
+//             this.addEventListener('loadend', () => { console.log('XHR loadend'); loadingStop(); });
+//             open.apply(this, args);
+//         };
+//     })(XMLHttpRequest.prototype.open);
+// });
 
 
 
@@ -1011,7 +1011,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     // side buttons
 
-                    const likeBtn = vp.querySelector(".like-btn");                   
+                    const likeBtn = vp.querySelector(".like-btn");
                     likeBtn.onclick = async () => {
                         console.log("liked");
 
@@ -1084,7 +1084,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         // const item = itemsOrdered[pIdx];
                         // const versionObj = item.versions[vIdx];
                         const serial = vp.dataset.id;
-                        const state = versionStateByID[serial]||= { inCart: false };
+                        const state = versionStateByID[serial] ||= { inCart: false };
 
                         // 1) If out of stock, call OutOfStock() and bail:
                         if (!versionObj.inStock) {
@@ -1096,15 +1096,27 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (!state.inCart) {
                             console.log("cart button clicked, it was not in cart before");
 
+                            const price = versionObj.priceValue;
+                            const profit_rate = versionObj.Profit;
+                            const final_price = price * profit_rate;
+
                             showCartPopup(serial,
                                 Array.isArray(versionObj.sizes)
                                     ? versionObj.sizes
                                     : [versionObj.sizes],
-                                versionObj.pricevalue,
-                                // chosenQty => {
+                                final_price,
                                 async (chosenQty, chosenSize) => {
-                                    console.log("CART CLICKED for serial", vp.dataset.id, "versionObj.id=", versionObj.id);
-                                    console.log("Called showcartpopup with :", { serial: serial }, { sizes: versionObj.sizes }, { price: versionObj.pricevalue }, { quantity: chosenQty });
+                                    const totalPrice = final_price * chosenQty;
+
+                                    console.log("CART CLICKED for serial", vp.dataset.id);
+                                    console.log("Called showcartpopup with :", {
+                                        serial: serial,
+                                        size: chosenSize,
+                                        price: final_price,
+                                        quantity: chosenQty,
+                                        Total: totalPrice
+                                    }
+                                    );
 
                                     const { data: { session } } = await supa.auth.getSession();
                                     if (!session) return showLoginPopup();
@@ -1115,7 +1127,6 @@ document.addEventListener("DOMContentLoaded", () => {
                                     // if (!selectEl) { console.error("❌ popup-select-size not found!"); }
 
                                     // const chosenSize = selectEl?.value;
-                                    console.log("Selected size:", chosenSize);
 
                                     // const totalPrice = versionObj.pricevalue * chosenQty;
                                     // console.log("🛒 Added to cart:", {
@@ -1130,19 +1141,16 @@ document.addEventListener("DOMContentLoaded", () => {
                                     console.log("now starting fetch and post");
 
                                     // 🔍 Debug: payload for cart POST
-                                    const price = versionObj.priceValue;
-                                    const profit_rate = versionObj.Profit;
-                                    const final_price = price * profit_rate;
 
-                                    const totalPrice = final_price * chosenQty;
-                                
+
+
                                     // 🔍 Build & log payload for the cart API
                                     const payload = {
                                         full_serial: serial,
                                         title: versionObj.title,
                                         size: chosenSize,
                                         quantity: chosenQty,
-                                        unit_price: versionObj.priceValue,
+                                        unit_price: final_price,
                                         seller_id: versionObj.Seller
                                     };
                                     console.log("POST /api/cart payload:", payload);
@@ -1158,37 +1166,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                         body: JSON.stringify(payload)
                                     });
 
-                                    // if (resp.ok) {
-                                    //     const { data: newRow } = await resp.json();
-                                    //     state.cartRowId = newRow.id;
-                                    // } else {
-                                    //     console.error("Cart POST failed:", await resp.text());
-                                    // }
-
                                     if (resp.ok) {
                                         const { data } = await resp.json();
                                         // store the new row’s ID so we can delete later
                                         state.cartRowId = data.id;
-                                        state.inCart     = true;
+                                        state.inCart = true;
                                         const img = cartBtn.querySelector("img");
                                         img.src = img.dataset.active;
+                                        addToCartCount(totalPrice);
+                                        addToCart();
                                     } else {
                                         console.error("Cart POST failed:", await resp.text());
                                     }
-
-                                    // UI updates 
-                                    state.inCart = true;
-                                    state.chosenSize = chosenSize;
-                                    state.chosenQuantity = chosenQty;
-
-
-
-                                    // … existing add‐to‐cart UI update …
-                                    addToCartCount(totalPrice);
-                                    const img = cartBtn.querySelector("img");
-                                    img.src = img.dataset.active;
-                                    addToCart();
-
 
                                 });
                         } else {
