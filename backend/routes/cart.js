@@ -48,23 +48,10 @@ module.exports = (supabaseAdmin) => {
         seller_id       // <— seller reference
       } = req.body;
 
+
+      // Insert and return the newly created cart row
       const { data, error } = await supabaseAdmin
         .from('carts')
-
-        // .insert({
-        //   user_id: userId,
-        //   product_version_id,
-        //   product_id,
-        //   serial,
-        //   title,
-        //   base_price,
-        //   total_price,
-        //   quantity,
-        //   size
-        // })
-        // .select()
-        // .single();
-
         .insert({
           user_id: userId,
           full_serial,
@@ -73,7 +60,9 @@ module.exports = (supabaseAdmin) => {
           quantity,
           unit_price,
           seller_id
-        });
+        })
+        .select()      // ask Supabase to return the new row
+        .single();     // take the first (and only) element
 
       if (error) throw error;
       res.status(201).json({ data });

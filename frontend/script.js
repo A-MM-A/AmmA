@@ -1168,8 +1168,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                                     if (resp.ok) {
                                         const { data } = await resp.json();
+                                        // Supabase returns an array of inserted rows
+                                        const newRow = Array.isArray(data) ? data[0] : data;
                                         // store the new row’s ID so we can delete later
-                                        state.cartRowId = data.id;
+                                        state.cartRowId = newRow.id;
+
+
                                         state.inCart = true;
                                         const img = cartBtn.querySelector("img");
                                         img.src = img.dataset.active;
