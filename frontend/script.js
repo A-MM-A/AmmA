@@ -878,16 +878,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
                             "\n\n", "Item Level\n", {
                             Base_Serial: item.baseSerial,
+                            CAT_id: item.CAT,
+                            SUB_id: item.SUB,
+                            THIRD_id: item.THIRD,
                             Description: item.description,
                             Versions: item.versions },
 
+                            "\n\n", "VERSION OBJECT:", versionObj,
+
                             "\n\n", "Version Level\n", {
+                            Version_Number: versionObj.versionSerial,
                             Full_Serial: versionObj.fullSerial,
                             Title: versionObj.title,
                             Price: versionObj.priceValue,
                             Image_Key: versionObj.imageKey,
                             Sizes: versionObj.sizes,
                             Material: versionObj.material,
+                            Weight: versionObj.weight,
+                            Other_Attr: versionObj.otherAttrs,
+                            InStock: versionObj.inStock,
+                            Profit_Margin: versionObj.Profit,
+                            SellerId: versionObj.Seller,
+                            Time: versionObj.timeAdded,
                             Available: versionObj.available },
 
                             "\n\n"

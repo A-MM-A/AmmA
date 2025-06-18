@@ -98,7 +98,15 @@ module.exports = (supabaseAdmin) => {
             // 1) fetch all base_items (we’ll parse category codes in the frontend)
             const { data: baseItems, error: baseErr } = await supabaseAdmin
                 .from('base_items')
-                .select('id, base_serial, description')
+                .select(`
+                    id, 
+                    category_id, 
+                    sub_category_id, 
+                    third_letter_id, 
+                    code_number, 
+                    base_serial, 
+                    description
+                    `)
                 .order('id', { ascending: true });
 
             if (baseErr) throw baseErr;
@@ -148,6 +156,9 @@ module.exports = (supabaseAdmin) => {
 
                     return {
                         baseSerial: item.base_serial,
+                        CAT: item.category_id,
+                        SUB: item.sub_category_id,
+                        THIRD: item.third_letter_id,
                         description: item.description,
                         versions: formattedVersions
                     };
@@ -223,7 +234,15 @@ module.exports = (supabaseAdmin) => {
             // 1) fetch the base_item by base_serial
             const { data: items, error: itemErr } = await supabaseAdmin
                 .from('base_items')
-                .select('id, base_serial, description')
+                .select(`
+                    id, 
+                    category_id, 
+                    sub_category_id, 
+                    third_letter_id, 
+                    code_number, 
+                    base_serial, 
+                    description
+                    `)
                 .eq('base_serial', baseSerial)
                 .limit(1);
             if (itemErr) throw itemErr;
@@ -277,6 +296,9 @@ module.exports = (supabaseAdmin) => {
             res.json({
                 data: {
                     baseSerial: item.base_serial,
+                    CAT: item.category_id,
+                    SUB: item.sub_category_id,
+                    THIRD: item.third_letter_id,
                     description: item.description,
                     versions: formattedVersions
                 }
