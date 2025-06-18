@@ -827,9 +827,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 vContainer.innerHTML = "";
 
-                // DEBUG: dump entire fetched data
-                // console.log("buildPanels ▶︎ itemsOrdered:", itemsOrdered);
-
 
                 itemsOrdered.forEach((item, pIdx) => {
                     const panel = document.createElement("div");
@@ -855,6 +852,42 @@ document.addEventListener("DOMContentLoaded", () => {
                     item.versions.forEach((versionObj, vIdx) => {
 
 
+                        // DEBUG: dump entire fetched data
+                        // console.log("ITEM OBJECT:", item,
+
+                        //     "\n\n", "\t\tItem Level\n", {
+                        //     Base_Serial: item.baseSerial,
+                        //     CAT_id: item.CAT,
+                        //     SUB_id: item.SUB,
+                        //     THIRD_id: item.THIRD,
+                        //     Description: item.description,
+                        //     Versions: item.versions
+                        // },
+
+                        //     "\n\n\n\n", "VERSION OBJECT:", versionObj,
+
+                        //     "\n\n", "\t\tVersion Level\n", {
+                        //     Version_Number: versionObj.versionSerial,
+                        //     Full_Serial: versionObj.fullSerial,
+                        //     Title: versionObj.title,
+                        //     Price: versionObj.priceValue,
+                        //     Image_Key: versionObj.imageKey,
+                        //     Sizes: versionObj.sizes,
+                        //     Material: versionObj.material,
+                        //     Weight: versionObj.weight,
+                        //     Other_Attr: versionObj.otherAttrs,
+                        //     InStock: versionObj.inStock,
+                        //     Profit_Margin: versionObj.Profit,
+                        //     SellerId: versionObj.Seller,
+                        //     Time: versionObj.timeAdded,
+                        //     Available: versionObj.available
+                        // },
+
+                        //     "\n\n"
+
+                        // );
+
+
 
                         // version panel (bg+img)
                         const vp = document.createElement("div");
@@ -869,42 +902,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         const serial = versionObj.fullSerial;
                         vp.dataset.id = serial;
-                        // console.log(item.category);
-                        // console.log(item.baseSerial);
 
-                        // console.log("ITEM OBJECT:", item);
-                        // console.log("VERSION OBJ:", versionObj);
-                        console.log("ITEM OBJECT:", item,
-
-                            "\n\n", "Item Level\n", {
-                            Base_Serial: item.baseSerial,
-                            CAT_id: item.CAT,
-                            SUB_id: item.SUB,
-                            THIRD_id: item.THIRD,
-                            Description: item.description,
-                            Versions: item.versions },
-
-                            "\n\n", "VERSION OBJECT:", versionObj,
-
-                            "\n\n", "Version Level\n", {
-                            Version_Number: versionObj.versionSerial,
-                            Full_Serial: versionObj.fullSerial,
-                            Title: versionObj.title,
-                            Price: versionObj.priceValue,
-                            Image_Key: versionObj.imageKey,
-                            Sizes: versionObj.sizes,
-                            Material: versionObj.material,
-                            Weight: versionObj.weight,
-                            Other_Attr: versionObj.otherAttrs,
-                            InStock: versionObj.inStock,
-                            Profit_Margin: versionObj.Profit,
-                            SellerId: versionObj.Seller,
-                            Time: versionObj.timeAdded,
-                            Available: versionObj.available },
-
-                            "\n\n"
-
-                        );
 
 
                         let imgSuffix;
@@ -913,7 +911,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         } else if (versionObj.imageKey === 2) {
                             imgSuffix = ".png";
                         }
-                        console.log(versionObj.imageKey);
 
 
                         // 1) blur background using versionObj.img
@@ -939,8 +936,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                         // 4) panel‑title: use versionObj.title, versionSerial, and formatted price
-
-                        const formattedPrice = `KES ${(versionObj.priceValue ?? 0).toLocaleString()}`;
+                        const price = versionObj.priceValue;
+                        const profit_rate = versionObj.Profit;
+                        const final_price = price * profit_rate;
+                        const formattedPrice = `KES ${(final_price ?? 0).toLocaleString()}`;
 
                         vp.insertAdjacentHTML("beforeend", `
                           <div class="panel-title">
@@ -959,8 +958,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             ? 'icons/In-Stock-fill.svg'
                             : 'icons/In-Stock-line.svg';
                         const stockText = versionObj.inStock ? 'In Stock' : 'Out of Stock';
-                        const formattedDate = versionObj.createdAt
-                            ? new Date(versionObj.createdAt).toLocaleDateString() : "DD-MM-YYYY";
+                        const formattedDate = versionObj.timeAdded
+                            ? new Date(versionObj.timeAdded).toLocaleDateString() : "MM-DD-YYYY";
                         vp.insertAdjacentHTML("beforeend", `
                           <div class="panel-extra">
                             <div class="date-text">${formattedDate}</div>
@@ -1013,42 +1012,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     // side buttons
 
                     const likeBtn = vp.querySelector(".like-btn");
-                    // likeBtn.onclick = () => {
-                    //     const serial = vp.dataset.id;
-                    //     const state = versionStateByID[serial];
-
-                    //     // Toggle the liked state
-                    //     state.liked = !state.liked;
-
-                    //     // Swap the icon
-                    //     const img = likeBtn.querySelector("img");
-                    //     const defaultSrc = img.dataset.default;
-                    //     const activeSrc = img.dataset.active;
-
-                    //     if (state.liked) {
-                    //         img.src = activeSrc;
-
-                    //         // If it's a heart icon, apply heartbeat animation
-                    //         if (defaultSrc.includes("heart")) {
-                    //             img.classList.add("heartbeat");
-                    //             img.addEventListener("animationend", function handler() {
-                    //                 img.classList.remove("heartbeat");
-                    //                 img.removeEventListener("animationend", handler);
-                    //             });
-                    //         }
-                    //     } else {
-                    //         img.src = defaultSrc;
-                    //     }
-
-                    //     // Optional: Save state immediately if needed
-                    //     saveVersionState(serial);
-                    // };
-
+                   
                     likeBtn.onclick = async () => {
                         console.log("liked");
 
                         // 🔍 Debug: did we even hit the handler?
-                        console.log("LIKE CLICKED for serial", vp.dataset.id, "versionObj.id=", versionObj.id);
+                        console.log("LIKE CLICKED for serial", vp.dataset.id);
 
 
                         const { data: { session } } = await supa.auth.getSession();
@@ -1060,17 +1029,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         const serial = vp.dataset.id;
                         const state = versionStateByID[serial];
 
-                        // 🔍 Debug: payload we'll send
-                        console.log("versionObj :", versionObj);
 
-                        console.log("POST /api/like payload:", { product_version_id: versionObj.id });
-
-                        const payload = {
-
-                            full_serial: versionObj.fullSerial  // <— use fullSerial
-
-                        };
-                        console.log("payload data is: ", payload);
+                        // 🔍 Build & log payload for the like API
+                        const payload = { full_serial: versionObj.fullSerial };
+                        console.log("POST /api/like payload: [payload is ]", payload);
 
 
 
@@ -1102,7 +1064,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-                        // Heartbeat animation if desired
+                        // Heartbeat animation
                         const img = likeBtn.querySelector("img");
                         if (state.liked && img.dataset.default.includes("heart")) {
                             img.classList.add("heartbeat");
@@ -1123,7 +1085,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         const state = versionStateByID[serial];
 
                         // 1) If out of stock, call OutOfStock() and bail:
-                        if (!versionObj.instock) {
+                        if (!versionObj.inStock) {
                             OutOfStock();
                             return;
                         }
@@ -1153,11 +1115,6 @@ document.addEventListener("DOMContentLoaded", () => {
                                     // const chosenSize = selectEl?.value;
                                     console.log("Selected size:", chosenSize);
 
-
-                                    // Update UI & state
-                                    // const chosenSize = document.getElementById("popup-select-size").value;
-
-
                                     // const totalPrice = versionObj.pricevalue * chosenQty;
                                     // console.log("🛒 Added to cart:", {
                                     //     title: versionObj.title,
@@ -1171,29 +1128,21 @@ document.addEventListener("DOMContentLoaded", () => {
                                     console.log("now starting fetch and post");
 
                                     // 🔍 Debug: payload for cart POST
-                                    const totalPrice = versionObj.pricevalue * chosenQty;
-                                    // const payload = {
-                                    //     product_version_id: versionObj.id,
-                                    //     products: versionObj.product_id,
-                                    //     serial: serial,
-                                    //     title: versionObj.title,
-                                    //     base_price: versionObj.pricevalue,
-                                    //     total_price: totalPrice,
-                                    //     size: chosenSize,
-                                    //     quantity: chosenQty
-                                    // };
+                                    const price = versionObj.priceValue;
+                                    const profit_rate = versionObj.Profit;
+                                    const final_price = price * profit_rate;
 
-                                    // Build payload matching new carts.insert API:
+                                    const totalPrice = final_price * chosenQty;
+                                
+                                    // 🔍 Build & log payload for the cart API
                                     const payload = {
-                                        full_serial: serial,                // fullSerial
-                                        title: versionObj.title,            // snapshot title
-                                        size: chosenSize,                   // chosen size
-                                        quantity: chosenQty,                // chosen quantity
-                                        unit_price: versionObj.priceValue,  // per‑unit price
-                                        seller_id: versionObj.sellerId      // seller reference
+                                        full_serial: serial,
+                                        title: versionObj.title,
+                                        size: chosenSize,
+                                        quantity: chosenQty,
+                                        unit_price: versionObj.priceValue,
+                                        seller_id: versionObj.Seller
                                     };
-
-
                                     console.log("POST /api/cart payload:", payload);
 
 
@@ -1207,9 +1156,20 @@ document.addEventListener("DOMContentLoaded", () => {
                                         body: JSON.stringify(payload)
                                     });
 
+                                    // if (resp.ok) {
+                                    //     const { data: newRow } = await resp.json();
+                                    //     state.cartRowId = newRow.id;
+                                    // } else {
+                                    //     console.error("Cart POST failed:", await resp.text());
+                                    // }
+
                                     if (resp.ok) {
-                                        const { data: newRow } = await resp.json();
-                                        state.cartRowId = newRow.id;
+                                        const { data } = await resp.json();
+                                        // store the new row’s ID so we can delete later
+                                        state.cartRowId = data.id;
+                                        state.inCart     = true;
+                                        const img = cartBtn.querySelector("img");
+                                        img.src = img.dataset.active;
                                     } else {
                                         console.error("Cart POST failed:", await resp.text());
                                     }
@@ -1222,7 +1182,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                                     // … existing add‐to‐cart UI update …
-                                    addToCartCount(versionObj.pricevalue * chosenQty);
+                                    addToCartCount(totalPrice);
                                     const img = cartBtn.querySelector("img");
                                     img.src = img.dataset.active;
                                     addToCart();
@@ -1282,9 +1242,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         document.getElementById("popup-title").innerText = versionObj.title || "N/A";
                         document.getElementById("popup-description").innerText = item.description || "N/A";
+
                         document.getElementById("popup-sizes").innerText = sizesDisplay || "--";
                         document.getElementById("popup-material").innerText = versionObj.material || "--";
                         document.getElementById("popup-weight").innerText = versionObj.weight || "--";
+                        document.getElementById("popup-seller").innerText = versionObj.Seller || "00";
+                        document.getElementById("popup-other").innerText = versionObj.otherAttrs || "---";
 
                         document.getElementById("info-popup").classList.remove("hidden");
                     };

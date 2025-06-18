@@ -33,7 +33,7 @@ module.exports = (supabaseAdmin) => {
 
 
   // POST /api/like → toggle like/unlike
-  router.post('/like', authenticateUser, async (req, res) => {
+  router.post('/', authenticateUser, async (req, res) => {
     try {
       console.log("📥 LIKE BODY:", req.body);
       const userId = req.user.id;
@@ -101,8 +101,8 @@ module.exports = (supabaseAdmin) => {
 
 
   // GET /api/like/:userId → get array of version IDs
-  router.get('/like/:userId', authenticateUser, async (req, res) => {
-    
+  router.get('/:userId', authenticateUser, async (req, res) => {
+
     try {
       const { userId } = req.params;
 
