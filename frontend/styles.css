@@ -568,6 +568,21 @@ body {
     cursor: pointer;
 }
 
+/* Image container */
+.popup-media-container {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.popup-media-container video,
+.popup-media-container img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    object-fit: contain;
+}
 
 
 
@@ -909,7 +924,7 @@ body {
     background: #a29f9f9e;
 }
 
-.AdminSettings{
+.AdminSettings {
     display: block;
     margin: 3px;
     width: 100%;

@@ -307,8 +307,9 @@ const supa = supabase.createClient(
 })();
 
 
+
 // loading when dat not loaded
-// window.addEventListener('DOMContentLoaded', () => {
+// window.addEventListener('DOMContentLoaded', async() => {
 //     //   console.log('✅ DOMContentLoaded — attaching loader hooks');
 
 //     // 1. Link clicks & form submissions
@@ -525,11 +526,43 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!response.ok) throw new Error("Failed to fetch products from backend");
             return response.json();
         })
-        .then(json => {
+        .then(async json => {
             const rawItems = json.data || [];
 
 
-            // categories.json importing
+            // ─────────────────────────────────────────────────────────────────────────────
+            //      Recommendation algorithm
+            // ─────────────────────────────────────────────────────────────────────────────
+            function computeScore(meta) {
+                const WEIGHTS = { browse: 1, like: 3, cart: 5 };
+                return (meta.browseCount || 0) * WEIGHTS.browse
+                    + (meta.liked ? 1 : 0) * WEIGHTS.like
+                    + (meta.inCart ? 1 : 0) * WEIGHTS.cart;
+            }
+            function recommend(items) {
+                //    Scores items by browse, like, cart; sorts descending
+                //    Then appends 2 random others for diversification
+                // Attach dummy metadata if missing
+                items.forEach(it => {
+                    it.meta = it.meta || { browseCount: 0, liked: false, inCart: false };
+                    it.score = computeScore(it.meta);
+                });
+                // Sort by score descending
+                items.sort((a, b) => b.score - a.score);
+                const N = items.length;
+                if (N <= 2) return items;
+                const main = items.slice(0, N - 2);
+                const other = items.slice(N - 2);
+                shuffle(other);
+                return main.concat(other.slice(0, 2));
+            }
+            let itemsOrdered = recommend(rawItems);
+
+
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            //      categories.json importing
+            // ─────────────────────────────────────────────────────────────────────────────
 
             let categoryDefs = null;
 
@@ -650,9 +683,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const versionStateByID = {};
             rawItems.forEach(item => {
                 item.versions.forEach(versionObj => {
-                    const serial = item.baseserial
-                        + String(versionObj.versionserial).padStart(2, "0");
+                    // use fullSerial from backend
+                    const serial = versionObj.fullSerial;
                     versionStateByID[serial] = {
+
                         liked: false,
                         inCart: false,
                         chosenQuantity: 0,
@@ -662,100 +696,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
 
-            // ─────────────────────────────────────────────────────────────────────────────
-            // Step 2: Load any existing state from localStorage or database
-            // ─────────────────────────────────────────────────────────────────────────────            
-            Object.keys(versionStateByID).forEach(serial => {
-                const saved = localStorage.getItem(`versionState:${serial}`);
-                if (saved) {
-                    try {
-                        versionStateByID[serial] = JSON.parse(saved);
-                    } catch (e) {
-                        console.warn(`Could not parse saved state for ${serial}`, e);
-                    }
-                }
-            });
 
-            // // — Hydrate from Supabase if signed in —
-            // const { data: { session } } = await supaClient.auth.getSession();
-            // if (session) {
-            //     const token = session.access_token;
-            //     const uId = session.user.id;
+            // ─────────────────────────────────────────────────────────────────────────
+            //   Step 2: Load saved likes & cart items from backend
+            // ─────────────────────────────────────────────────────────────────────────
+            // 1) Get current session & token
+            const { data: { session } } = await supa.auth.getSession();
+            if (session) {
+                const token = session.access_token;
+                const uId = session.user.id;
 
-            //     // 1) Fetch liked version IDs
-            //     const likesRes = await fetch(`${CONFIG.API_BASE_URL}/like/${uId}`, {
-            //         headers: { Authorization: `Bearer ${token}` }
-            //     });
-            //     const { data: likedIds } = await likesRes.json();
-
-            //     // 2) Fetch cart rows
-            //     const cartRes = await fetch(`${CONFIG.API_BASE_URL}/cart`, {
-            //         headers: { Authorization: `Bearer ${token}` }
-            //     });
-            //     const { data: cartRows } = await cartRes.json();
-
-            //     // 3) Apply to versionStateByID
-            //     likedIds.forEach(vId => {
-            //         for (const [serial, st] of Object.entries(versionStateByID)) {
-            //             if (st.versionId === vId) st.liked = true;
-            //         }
-            //     });
-            //     cartRows.forEach(row => {
-            //         for (const [serial, st] of Object.entries(versionStateByID)) {
-            //             if (st.versionId === row.product_version_id) {
-            //                 st.inCart = true;
-            //                 st.chosenQuantity = row.quantity;
-            //                 st.chosenSize = row.size;
-            //                 st.cartRowId = row.id;
-            //             }
-            //         }
-            //     });
-            // }
-
-
-
-
-            // ─────────────────────────────────────────────────────────────────────────────
-            // Step 3: Define helper to save a single version’s state into localStorage
-            // ─────────────────────────────────────────────────────────────────────────────
-            // function saveVersionState(serial) {
-            //     localStorage.setItem(`versionState:${serial}`, JSON.stringify(versionStateByID[serial]));
-            // }
-
-
-
-            // ─────────────────────────────────────────────────────────────────────────────
-            // Step 4: Recommendation algorithm (unchanged, still works on rawItems)
-            // ─────────────────────────────────────────────────────────────────────────────
-            function computeScore(meta) {
-                const WEIGHTS = { browse: 1, like: 3, cart: 5 };
-                return (meta.browseCount || 0) * WEIGHTS.browse
-                    + (meta.liked ? 1 : 0) * WEIGHTS.like
-                    + (meta.inCart ? 1 : 0) * WEIGHTS.cart;
-            }
-            function recommend(items) {
-                //    Scores items by browse, like, cart; sorts descending
-                //    Then appends 2 random others for diversification
-                // Attach dummy metadata if missing
-                items.forEach(it => {
-                    it.meta = it.meta || { browseCount: 0, liked: false, inCart: false };
-                    it.score = computeScore(it.meta);
+                // 2) Fetch liked full_serials
+                const likesRes = await fetch(`${CONFIG.API_BASE_URL}/like/${uId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
-                // Sort by score descending
-                items.sort((a, b) => b.score - a.score);
-                const N = items.length;
-                if (N <= 2) return items;
-                const main = items.slice(0, N - 2);
-                const other = items.slice(N - 2);
-                shuffle(other);
-                return main.concat(other.slice(0, 2));
+                const { data: likedArr } = await likesRes.json();
+                likedArr.forEach(serial => {
+                    if (versionStateByID[serial]) versionStateByID[serial].liked = true;
+                });
+
+                // 3) Fetch cart rows
+                const cartRes = await fetch(`${CONFIG.API_BASE_URL}/cart`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const { data: cartArr } = await cartRes.json();
+                cartArr.forEach(row => {
+                    const s = row.full_serial;
+                    if (versionStateByID[s]) {
+                        versionStateByID[s].inCart = true;
+                        versionStateByID[s].cartRowId = row.id;
+                        versionStateByID[s].chosenQuantity = row.quantity;
+                        versionStateByID[s].chosenSize = row.size;
+                    }
+                });
             }
-            let itemsOrdered = recommend(rawItems);
 
-
-
-
-
+            // ─────────────────────────────────────────────────────────────────────────
+            //   Step 3: Build the UI with correct initial states
+            // ─────────────────────────────────────────────────────────────────────────
+            buildPanels();
 
 
 
@@ -1013,15 +992,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const likeBtn = vp.querySelector(".like-btn");
                     likeBtn.onclick = async () => {
-                        console.log("liked");
+                        // console.log("liked");
 
                         // 🔍 Debug: did we even hit the handler?
-                        console.log("LIKE CLICKED for serial", vp.dataset.id);
+                        // console.log("LIKE CLICKED for serial", vp.dataset.id);
 
 
                         const { data: { session } } = await supa.auth.getSession();
                         if (!session) {
-                            console.log("not logged in");
+                            loadingWait("Login \n Please log in to save your progress", 0.8, false, 3);
                             return
                         };
 
@@ -1034,7 +1013,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         // 🔍 Build & log payload for the like API
                         const payload = { full_serial: versionObj.fullSerial };
-                        console.log("POST /api/like payload: [payload is ]", payload);
+                        // console.log("POST /api/like payload: [payload is ]", payload);
 
 
 
@@ -1049,8 +1028,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         });
 
                         // 🔍 Debug: server response
-                        console.log("url:", `${CONFIG.API_BASE_URL}/like`);
-                        console.log("=> /api/like response:", res.status, await res.text());
+                        // console.log("url:", `${CONFIG.API_BASE_URL}/like`);
+                        // console.log("=> /api/like response:", res.status, await res.text());
 
 
 
@@ -1081,8 +1060,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const cartBtn = vp.querySelector(".cart-btn");
                     cartBtn.onclick = async () => {
-                        // const item = itemsOrdered[pIdx];
-                        // const versionObj = item.versions[vIdx];
+
+                        const { data: { session } } = await supa.auth.getSession();
+                        if (!session) {
+                            loadingWait("Login \n Please log in to save your progress", 0.8, false, 3);
+                            return
+                        };
+
+
                         const serial = vp.dataset.id;
                         const state = versionStateByID[serial] ||= { inCart: false };
 
@@ -1094,7 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         // 2) If not yet inCart, show the pop-up; otherwise remove:
                         if (!state.inCart) {
-                            console.log("cart button clicked, it was not in cart before");
+                            // console.log("cart button clicked, it was not in cart before");
 
                             const price = versionObj.priceValue;
                             const profit_rate = versionObj.Profit;
@@ -1108,37 +1093,20 @@ document.addEventListener("DOMContentLoaded", () => {
                                 async (chosenQty, chosenSize) => {
                                     const totalPrice = final_price * chosenQty;
 
-                                    console.log("CART CLICKED for serial", vp.dataset.id);
-                                    console.log("Called showcartpopup with :", {
-                                        serial: serial,
-                                        size: chosenSize,
-                                        price: final_price,
-                                        quantity: chosenQty,
-                                        Total: totalPrice
-                                    }
-                                    );
+                                    // console.log("CART CLICKED for serial", vp.dataset.id);
+                                    // console.log("Called showcartpopup with :", {
+                                    //     serial: serial,
+                                    //     size: chosenSize,
+                                    //     price: final_price,
+                                    //     quantity: chosenQty,
+                                    //     Total: totalPrice
+                                    // }
+                                    // );
 
                                     const { data: { session } } = await supa.auth.getSession();
                                     if (!session) return showLoginPopup();
 
-                                    // 🔍 Debug: ensure the <select> exists
-                                    // const selectEl = document.getElementById("popup-select-size");
-                                    // console.log("popup-select-size element:", selectEl);
-                                    // if (!selectEl) { console.error("❌ popup-select-size not found!"); }
-
-                                    // const chosenSize = selectEl?.value;
-
-                                    // const totalPrice = versionObj.pricevalue * chosenQty;
-                                    // console.log("🛒 Added to cart:", {
-                                    //     title: versionObj.title,
-                                    //     serial: serial,
-                                    //     size: chosenSize,
-                                    //     totalQuantity: chosenQty,
-                                    //     totalPrice: totalPrice,
-                                    //     basePrice: versionObj.pricevalue
-                                    // });
-
-                                    console.log("now starting fetch and post");
+                                    // console.log("now starting fetch and post");
 
                                     // 🔍 Debug: payload for cart POST
 
@@ -1153,7 +1121,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                         unit_price: final_price,
                                         seller_id: versionObj.Seller
                                     };
-                                    console.log("POST /api/cart payload:", payload);
+                                    // console.log("POST /api/cart payload:", payload);
 
 
                                     // Create cart row on server
@@ -1185,7 +1153,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                                 });
                         } else {
-                            console.log("cart button clicked, it was in cart before");
+                            // console.log("cart button clicked, it was in cart before");
 
                             // Already in cart → remove (persist to DB):
                             const { data: { session } } = await supa.auth.getSession();
@@ -1235,17 +1203,73 @@ document.addEventListener("DOMContentLoaded", () => {
                             ? versionObj.sizes.join(", ")  // incase its an array
                             : versionObj.sizes;
 
+                        // 📷 Load image
+
+                        const mediaContainer = document.querySelector(".popup-media-container");
+                        mediaContainer.innerHTML = ""; // Clear any previous media
+
+                        
+                        const videoUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}.mp4`;
+
+                        // Preload video using a hidden <video> to test if it's valid
+                        const testVideo = document.createElement("video");
+                        testVideo.src = videoUrl;
+
+                        // Only triggered if video can be loaded
+                        testVideo.onloadeddata = () => {
+                            // Create actual visible video player
+                            const videoEl = document.createElement("video");
+                            videoEl.src = videoUrl;
+                            videoEl.controls = true;
+                            videoEl.autoplay = true;
+                            videoEl.muted = true;
+                            videoEl.playsInline = true;
+
+                            mediaContainer.appendChild(videoEl);
+                        };
+
+                        // If video fails, fallback to image
+                        testVideo.onerror = () => {
+                            // console.warn("Video failed to load:", videoUrl);
+
+                            let imgSuffix;
+                            if (versionObj.imageKey === 1) {
+                                imgSuffix = ".jpg";
+                            } else if (versionObj.imageKey === 2) {
+                                imgSuffix = ".png";
+                            } else {
+                                imgSuffix = ".jpg"; // default fallback
+                            }
+
+                            const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}${imgSuffix}`;
+                            const imgEl = document.createElement("img");
+                            imgEl.src = imageUrl;
+
+                            imgEl.onerror = () => {
+                                console.warn("Image also failed to load:", imageUrl);
+                                imgEl.src = "assets/!fallback.jpg";
+                            };
+
+                            mediaContainer.appendChild(imgEl);
+                        };
+
+                        // Try to preload video (this is off-screen and silent)
+                        testVideo.load();
+
+
+                        // 📄 Set text content
                         document.getElementById("popup-title").innerText = versionObj.title || "N/A";
                         document.getElementById("popup-description").innerText = item.description || "N/A";
-
                         document.getElementById("popup-sizes").innerText = sizesDisplay || "--";
                         document.getElementById("popup-material").innerText = versionObj.material || "--";
                         document.getElementById("popup-weight").innerText = versionObj.weight || "--";
                         document.getElementById("popup-seller").innerText = versionObj.Seller || "00";
                         document.getElementById("popup-other").innerText = versionObj.otherAttrs || "---";
 
+                        // 📌 Show popup
                         document.getElementById("info-popup").classList.remove("hidden");
                     };
+
 
 
                     const shareBtn = vp.querySelector(".share-btn");
@@ -1296,8 +1320,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // itemsOrdered.forEach((item, pIdx) => {
             //     item.versions.forEach((versionObj, vIdx) => {
-            //         console.log(versionObj.pricevalue);
-
+            //         console.log(versionObj.priceValue);
             //     });
             // });
 
@@ -1401,11 +1424,23 @@ document.addEventListener("DOMContentLoaded", () => {
             // ─────────────────────────────────────────────────────────────────────────────
             // Step 10: Info popup close button (unchanged)
             // ─────────────────────────────────────────────────────────────────────────────
+            const infoPopup = document.getElementById("info-popup");
             const infoPopupBtn = document.querySelector("#info-popup .popup-content button");
+
+            // Close popup when the close button is clicked
             if (infoPopupBtn) {
                 infoPopupBtn.onclick = () => {
-                    document.getElementById("info-popup").classList.add("hidden");
+                    infoPopup.classList.add("hidden");
                 };
+            }
+
+            // Close popup when clicking outside the popup content
+            if (infoPopup) {
+                infoPopup.addEventListener("click", (e) => {
+                    if (e.target === infoPopup) {
+                        infoPopup.classList.add("hidden");
+                    }
+                });
             }
 
             // ─────────────────────────────────────────────────────────────────────────────

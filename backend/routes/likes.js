@@ -48,31 +48,6 @@ module.exports = (supabaseAdmin) => {
         .eq('full_serial', full_serial);
       if (chkErr) throw chkErr;
 
-
-      // if (existingArr.length > 0) {
-      //   // Unlike
-      //   const { error: delErr } = await supabaseAdmin
-      //     .from('likes')
-      //     .delete()
-      //     .eq('user_id', userId)
-      //     .eq('product_version_id', product_version_id)
-      //     .eq('products', products)
-      //     .eq('serial', serial);
-      //   if (delErr) throw delErr;
-      //   return res.json({ message: 'Unliked.' });
-      // } else {
-      //   // Like
-      //   const { data, error: insErr } = await supabaseAdmin
-      //     .from('likes')
-      //     .insert({ user_id: userId, product_version_id, products, serial })
-      //     .select()
-      //     .single();
-      //   console.log("📝 LIKE INSERT RESULT:", { data, insErr });
-      //   if (insErr) throw insErr;
-
-      //   return res.status(201).json({ data });
-      // }
-
       if (!existingArr.length) {
         // insert new like
         await supabaseAdmin.from('likes').insert({ user_id: userId, full_serial });
