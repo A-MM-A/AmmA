@@ -800,7 +800,7 @@ document.addEventListener("DOMContentLoaded", () => {
             function buildPanels() {
                 const vContainer = document.getElementById("verticalScroll");
                 if (!vContainer) {
-                    console.log("v container not found")
+                    // console.log("v container not found")
                     return;
                 }
 

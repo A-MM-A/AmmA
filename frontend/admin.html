@@ -3,23 +3,20 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Admin Panel</title>
+    
+    <link rel="shortcut icon" href="logo/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="logo/favicon.ico" type="image/x-icon">
+
     <link rel="stylesheet" href="styles.css" />
+
 </head>
 
 <body>
 
     <div class="phone-frame">
-        <a href="index.html">go home</a>
-
-        <!-- <div class="admin-login" id="loginDiv">
-      <h2>Admin Login</h2>
-      <input type="password" id="adminPass" placeholder="Password" />
-      <button id="loginBtn">Login</button>
-      <div id="loginMsg"></div>
-    </div> -->
-
+        
         <header class="user-header">
             <div id="user-info" class="user-top-bar">
                 <div class="top-left">
@@ -35,42 +32,41 @@
                 </a>
             </div>
         </header>
-        <main>
 
+        <main>
         </main>
+
+
+        <div class="admin-login" id="loginDiv" style="display: none;">
+            <h2>Admin Login</h2>
+            <input type="password" id="adminPass" placeholder="Password" />
+            <button id="loginBtn">Login</button>
+            <div id="loginMsg"></div>
+        </div>
 
         <div class="AdminMain" id="AdminPanelDiv" style="display: block;">
             <div class="AdminCommandsPreview">
 
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 1</button>
-                </div>
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 2</button>
-                </div>
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 3</button>
-                </div>
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 4</button>
-                </div>
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 5</button>
-                </div>
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 6</button>
-                </div>
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 7</button>
-                </div>
-                <div class="AdminSettings">
-                    <button class="cart-pill">settings 8</button>
-                </div>
+                <button class="setting-pill" data-action="items">Items</button>
+                <button class="setting-pill" data-action="categories">Categories</button>
+                <button class="setting-pill" data-action="reviews">Reviews</button>
+                <button class="setting-pill" data-action="orders">Orders</button>
+                <button class="setting-pill" data-action="analytics">Analytics</button>
+                <button class="setting-pill" data-action="notifications">Notifications</button>
+                <button class="setting-pill" data-action="audit">Audit</button>
+                <button class="setting-pill" data-action="settings">Settings</button>
+                <button class="setting-pill" id="security-word-login-generator">Security Key Generator</button>
 
             </div>
         </div>
 
-        <!-- <button onclick="loadingStart(0.5)">Start Loading</button>
+
+    </div>
+
+
+
+
+    <!-- <button onclick="loadingStart(0.5)">Start Loading</button>
     <button onclick="loadingStop()">Stop Loading</button>
     <button
       onclick="loadingWait('Waiting for confirmation...\n • Enter your Mpesa - PIN\n • You can retry after 30 seconds')">Wait with Message
@@ -80,29 +76,23 @@
     </button>
     <button onclick="loadingWait('Hi how are you Dev',1.1)">Wait with Message</button>
     <button onclick="loadingWaitStop()">Stop Wait</button> -->
-        <!-- <img src="logo/logo.svg" alt=""> -->
-
-        <!-- <button id="security-word-login-generator">Make new Key</button> -->
+    <!-- <img src="logo/logo.svg" alt=""> -->
 
 
 
 
 
-
-
-        <!-- somewhere in <body> -->
-        <!-- <div id="image-test-container">
-      <h2>Image Test</h2>
-      <img id="image-test" src="" alt="Test image will appear here" style="max-width:100%;height:auto;">
-    </div> -->
-
-
-    </div>
+    <!-- somewhere in <body> -->
+    <!-- <div id="image-test-container">
+  <h2>Image Test</h2>
+  <img id="image-test" src="" alt="Test image will appear here" style="max-width:100%;height:auto;">
+</div> -->
 
 
 
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="script.js"></script>
     <script src="admin.js"></script>
 
     <!-- test image
@@ -111,7 +101,6 @@
       `${CONFIG.R2_PUBLIC_URL}/FMA00601.jpg`;
   </script> -->
 
-    <script src="script.js"></script>
 </body>
 
 </html>
