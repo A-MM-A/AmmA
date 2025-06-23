@@ -10,89 +10,39 @@ const express = require('express');
 module.exports = (supabaseAdmin) => {
     const router = express.Router();
 
+    // POST /api/products/versions → Add a new item version
+    router.post('/versions', async (req, res) => {
+        try {
+            const payload = req.body;
+
+            // ✅ Validate required fields
+            const requiredFields = ['base_item_id', 'version_number', 'title', 'price', 'seller_id'];
+            for (const field of requiredFields) {
+                if (!payload[field]) {
+                    return res.status(400).json({ error: `Missing required field: ${field}` });
+                }
+            }
+
+            // ✅ Insert into item_versions table
+            const { data, error } = await supabaseAdmin
+                .from('item_versions')
+                .insert([payload]) // Send the whole payload
+                .select(); // Return inserted row(s), including full_serial
+
+            if (error) throw error;
+
+            res.status(201).json({
+                message: 'Item version added successfully',
+                data: data[0], // Return the inserted row
+            });
+        } catch (err) {
+            console.error('❌ Failed to insert item version:', err.message || err);
+            res.status(500).json({ error: 'Failed to insert item version.' });
+        }
+    });
+
+
     // GET /api/products  → all products + nested versions
-    // router.get('/', async (req, res) => {
-    //   try {
-    //     // Fetch all products
-    //     const { data: products, error: productsError } = await supabaseAdmin
-    //       .from('products')
-    //       .select('*')
-    //       .order('id', { ascending: true });
-
-    //     if (productsError) throw productsError;
-
-    //     // For each product, fetch its versions
-    //     const productsWithVersions = await Promise.all(
-    //       products.map(async (product) => {
-    //         const { data: versions, error: versionsError } = await supabaseAdmin
-    //           .from('product_versions')
-    //           .select('*')
-    //           .eq('product_id', product.id)
-    //           .order('id', { ascending: true });
-    //         if (versionsError) throw versionsError;
-    //         // Map DB field names to exactly what script.js expects:
-    //         const formattedVersions = versions.map(v => ({
-    //           versionSerial: v.versionSerial,
-    //           title: v.title,
-    //           priceValue: v.priceValue,
-    //           sizes: v.sizes,
-    //           imageKey: v.imageKey,
-    //           description: v.description,
-    //           inStock: v.inStock
-    //         }));
-    //         return {
-    //           baseSerial: product.baseSerial,
-    //           category: product.category,
-    //           subCategory: product.subCategory,
-    //           versions: formattedVersions
-    //         };
-    //       })
-    //     );
-
-    //     res.json({ data: productsWithVersions });
-    //   } catch (err) {
-    //     console.error(err);
-    //     res.status(500).json({ error: 'Failed to fetch products.' });
-    //   }
-
-    // try {
-    //   // 1) pull all products
-    //   const { data: products, error: productsError } = await supabaseAdmin
-    //     .from('products')
-    //     .select('*')
-    //     .order('id', { ascending: true });
-    //   if (productsError) throw productsError;
-
-    //   // 2) for each product fetch its versions and shape the object
-    //   const productsWithVersions = await Promise.all(
-    //     products.map(async (product) => {
-    //       const { data: versions, error: versionsError } = await supabaseAdmin
-    //         .from('product_versions')
-    //         .select('*')
-    //         .eq('product_id', product.id);
-    //       if (versionsError) throw versionsError;
-
-    //       const formattedVersions = versions.map(v => ({
-    //         versionSerial: v.versionSerial,
-    //         title: v.title,
-    //         priceValue: v.priceValue,
-    //         sizes: v.sizes,
-    //         imageKey: v.imageKey,
-    //         description: v.description,
-    //         inStock: v.inStock
-    //       }));
-
-    //       // **return** each shaped product object
-    //       return {
-    //         baseSerial: product.baseSerial,
-    //         category: product.category,
-    //         subCategory: product.subCategory,
-    //         versions: formattedVersions
-    //       };
-    //     })
-    //   );
-
-
     router.get('/', async (req, res) => {
         try {
             // 1) fetch all base_items (we’ll parse category codes in the frontend)

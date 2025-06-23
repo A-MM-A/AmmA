@@ -1248,8 +1248,33 @@ function showAddVersionPopup() {
         };
         console.log('Payload ready:', payload);
 
-
         // the posting mechanism to the table : the content will be the payload
+
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.error("❌ Failed to add version:", result.error || result);
+                alert("Failed to add item version: " + (result.error || "Unknown error"));
+                return;
+            }
+
+            console.log("✅ Version added successfully:", result.data);
+            alert("Item version added successfully!");
+            // Optional: reset form, refresh UI, etc.
+        } catch (err) {
+            console.error("❌ Error posting version:", err);
+            alert("Error sending request. Please try again.");
+        }
+
 
 
         // store history
@@ -1956,10 +1981,6 @@ function showEditVersion2Popup(payload) {
         } else {
 
             showMessage("No Changes Detected");
-            // close current popup
-            // document.body.removeChild(overlay);
-            // // open detailed edit popup with the payload
-            // showEditVersion2Popup(payload);
         }
 
 
