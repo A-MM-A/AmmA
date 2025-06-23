@@ -1234,15 +1234,18 @@ function showAddVersionPopup() {
             base_item_id: itemIdInput.value,
             version_number: uniqueIdInput.value.padStart(2, '0'),
             title: titleInput.value,
-            price: priceInput.value,
+            // price: priceInput.value,
+            price: Number(priceInput.value),
             image_key: keyInput.value,
             sizes: sizeInput.value.split(',').map(s => s.trim()),
             // sizes: JSON.stringify(sizeInput.value.split(',').map(s => s.trim())),
             material: materialInput.value,
             weight: weightInput.value,
             other_attrs: attrTextarea.value,
-            in_stock: stockSelect.options[stockSelect.selectedIndex].text,
-            profit_margin: marginInput.value,
+            // in_stock: stockSelect.options[stockSelect.selectedIndex].text,
+            in_stock: true,
+            // profit_margin: marginInput.value,
+            profit_margin: Number(marginInput.value),
             seller_id: sellerIdInput.value,
 
         };
@@ -1258,15 +1261,18 @@ function showAddVersionPopup() {
                 },
                 body: JSON.stringify(payload)
             });
-
+            console.log("await fetch done");
+            
+            
             const result = await response.json();
-
+            console.log("await fetch result done");
+            
             if (!response.ok) {
                 console.error("❌ Failed to add version:", result.error || result);
                 alert("Failed to add item version: " + (result.error || "Unknown error"));
                 return;
             }
-
+            
             console.log("✅ Version added successfully:", result.data);
             alert("Item version added successfully!");
             // Optional: reset form, refresh UI, etc.

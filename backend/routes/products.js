@@ -24,20 +24,38 @@ module.exports = (supabaseAdmin) => {
             }
 
             // ✅ Insert into item_versions table
+            // const { data, error } = await supabaseAdmin
+            //     .from('item_versions')
+            //     .insert([payload]) // Send the whole payload
+            //     .select(); // Return inserted row(s), including full_serial
+
+            // if (error) throw error;
+
+            // res.status(201).json({
+            //     message: 'Item version added successfully',
+            //     data: data[0], // Return the inserted row
+            // });
+
             const { data, error } = await supabaseAdmin
                 .from('item_versions')
-                .insert([payload]) // Send the whole payload
-                .select(); // Return inserted row(s), including full_serial
-
-            if (error) throw error;
-
+                .insert([payload])
+                .select();
+            if (error) {
+                console.error('❌ Supabase insert error:', error);
+                // return the full PostgREST error object to your client:
+                return res
+                    .status(400)
+                    .json({ error: error.message, code: error.code, details: error.details });
+            }
             res.status(201).json({
                 message: 'Item version added successfully',
-                data: data[0], // Return the inserted row
+                data: data[0]
             });
+
+
         } catch (err) {
-            console.error('❌ Failed to insert item version:', err.message || err);
-            res.status(500).json({ error: 'Failed to insert item version.' });
+            console.error('❌ Failed to insert item version:', err);
+            res.status(500).json({ error: err.message || 'Failed to insert item version.' });
         }
     });
 
