@@ -1231,12 +1231,14 @@ function showAddVersionPopup() {
 
 
         const payload = {
-            base_item_id: itemIdInput.value,
+            // base_item_id: itemIdInput.value,
+            base_item_id: Number(itemIdInput.value),
             version_number: uniqueIdInput.value.padStart(2, '0'),
             title: titleInput.value,
             // price: priceInput.value,
             price: Number(priceInput.value),
-            image_key: keyInput.value,
+            // image_key: keyInput.value,
+            image_key: Number(keyInput.value),
             sizes: sizeInput.value.split(',').map(s => s.trim()),
             // sizes: JSON.stringify(sizeInput.value.split(',').map(s => s.trim())),
             material: materialInput.value,
@@ -1246,7 +1248,8 @@ function showAddVersionPopup() {
             in_stock: true,
             // profit_margin: marginInput.value,
             profit_margin: Number(marginInput.value),
-            seller_id: sellerIdInput.value,
+            // seller_id: sellerIdInput.value,
+            seller_id: Number(sellerIdInput.value),
 
         };
         console.log('Payload ready:', payload);
