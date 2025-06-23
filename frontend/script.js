@@ -736,6 +736,13 @@ document.addEventListener("DOMContentLoaded", () => {
             // ─────────────────────────────────────────────────────────────────────────
             buildPanels();
 
+            // Immediately update side-buttons for all panels (not just centered)
+            document.querySelectorAll('.side-buttons').forEach(sb => {
+                updateSideButtons(sb);
+            });
+
+            // Also trigger updateInfo() to set the centered panel’s buttons
+            updateInfo();
 
 
             // ─────────────────────────────────────────────────────────────────────────────
@@ -1208,7 +1215,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         const mediaContainer = document.querySelector(".popup-media-container");
                         mediaContainer.innerHTML = ""; // Clear any previous media
 
-                        
+
                         const videoUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}.mp4`;
 
                         // Preload video using a hidden <video> to test if it's valid
@@ -1383,43 +1390,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
             function updateInfo() {
                 const panels = Array.from(document.querySelectorAll(".item-panel"));
+                if (panels.length === 0) return; // No panels? Exit early.
+
                 const midY = window.innerHeight / 2;
                 let pIdx = 0;
+
+                // Find the panel in the vertical center
                 panels.forEach((p, i) => {
                     const r = p.getBoundingClientRect();
                     if (r.top <= midY && r.bottom >= midY) pIdx = i;
                 });
 
-                const vPanels = panels[pIdx].querySelectorAll(".version-panel");
+                const panel = panels[pIdx];
+                if (!panel) return; // Invalid index? Exit.
+
+                const vPanels = panel.querySelectorAll(".version-panel");
                 const midX = window.innerWidth / 2;
                 let vIdx = 0;
+
+                // Find the version panel in the horizontal center
                 vPanels.forEach((vp, i) => {
                     const r = vp.getBoundingClientRect();
                     if (r.left <= midX && r.right >= midX) vIdx = i;
                 });
 
+                // Update global indices (if these are globals)
                 currentPanelIndex = pIdx;
                 currentVersionIndex = vIdx;
 
-                const item = itemsOrdered[pIdx];
+                const item = itemsOrdered?.[pIdx];
+                if (!item || !item.versions) return; // No item/versions? Exit.
 
-                // update dots
-                const dots = panels[pIdx].querySelectorAll(".dot");
+                // Update dots
+                const dots = panel.querySelectorAll(".dot");
                 dots.forEach((d, i) => d.classList.toggle("active", i === vIdx));
 
-                // show & fade index display
+                // Show & fade index display
+                const idxEl = panel.querySelector(".index-display");
                 const idTimeout = 2;  // time in seconds
-                const idxEl = panels[pIdx].querySelector(".index-display");
                 if (idxEl) {
                     idxEl.innerText = `${vIdx + 1}/${item.versions.length}`;
                     idxEl.style.opacity = 1;
                     clearTimeout(idxEl._timeout);
-                    idxEl._timeout = setTimeout(() => { idxEl.style.opacity = 0; }, idTimeout * 1000);
+                    idxEl._timeout = setTimeout(() => {
+                        idxEl.style.opacity = 0;
+                    }, idTimeout * 1000);
                 }
-                // Update side buttons for this version
-                const sb = vPanels[vIdx].querySelector(".side-buttons");
+
+                // Update side buttons
+                const sb = vPanels[vIdx]?.querySelector(".side-buttons");
                 if (sb) updateSideButtons(sb);
             }
+
+            
 
             // ─────────────────────────────────────────────────────────────────────────────
             // Step 10: Info popup close button (unchanged)

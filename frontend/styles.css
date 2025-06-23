@@ -920,7 +920,7 @@ body {
 .AdminCommandsPreview::-webkit-scrollbar-thumb {
     background: #a29f9f9e;
     border-radius: 30px;
-    
+
 }
 
 .AdminCommandsPreview::-webkit-scrollbar-thumb:hover {
@@ -1026,13 +1026,45 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
+/* confirm buttons */
 .popup-confirm {
+    width: 70%;
+    margin-left: 15%;
+    margin-right: 15%;
     margin-top: 1rem;
     padding: 0.75rem;
     background: var(--accent, #007bff);
     color: #fff;
     border: none;
-    border-radius: 20px;
+    border-radius: 999px;
     cursor: pointer;
     font-size: 1rem;
+}
+
+/* inputs */
+.rounded-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+/* animations */
+.media-unit {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.media-unit.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.media-unit.fade-out {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
