@@ -24,18 +24,6 @@ module.exports = (supabaseAdmin) => {
             }
 
             // ✅ Insert into item_versions table
-            // const { data, error } = await supabaseAdmin
-            //     .from('item_versions')
-            //     .insert([payload]) // Send the whole payload
-            //     .select(); // Return inserted row(s), including full_serial
-
-            // if (error) throw error;
-
-            // res.status(201).json({
-            //     message: 'Item version added successfully',
-            //     data: data[0], // Return the inserted row
-            // });
-
             const { data, error } = await supabaseAdmin
                 .from('item_versions')
                 .insert([payload])
@@ -58,6 +46,38 @@ module.exports = (supabaseAdmin) => {
             res.status(500).json({ error: err.message || 'Failed to insert item version.' });
         }
     });
+
+    // GET /api/products/versions/base/:baseItemId
+    // → returns an array of all version_number (as integers) for that base_item_id
+    router.get(
+        '/versions/base/:baseItemId',
+        async (req, res) => {
+            try {
+                const baseItemId = Number(req.params.baseItemId);
+
+                // fetch only version_number column
+                const { data, error } = await supabaseAdmin
+                    .from('item_versions')
+                    .select('version_number')
+                    .eq('base_item_id', baseItemId);
+
+                if (error) {
+                    console.error('❌ Error fetching versions:', error);
+                    return res.status(400).json({ error: error.message });
+                }
+
+                // map to array of Numbers
+                const versionNumbers = data.map((row) =>
+                    Number(row.version_number)
+                );
+
+                res.json({ versions: versionNumbers });
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Failed to load versions.' });
+            }
+        }
+    );
 
 
     // GET /api/products  → all products + nested versions

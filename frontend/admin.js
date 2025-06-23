@@ -642,8 +642,40 @@ function showAddVersionPopup() {
 
 
 
-
     // ROW 3: Unique Item ID input + availability indicator
+    let usedVersionId = [];   // array containing all versions for the 
+
+    // fetching versions
+    async function loadUsedVersions() {
+        const baseId = Number(itemIdInput.value);
+        if (!baseId) return;
+
+        try {
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/versions/base/${baseId}`
+            );
+            const json = await resp.json();
+            if (resp.ok) {
+                usedVersionId = json.versions;         // e.g. [1,2,3]
+                console.log('Used version IDs:', usedVersionId);
+                // Optionally, trigger a re-check of the indicator if user already typed
+                uniqueIdInput.dispatchEvent(new Event('input'));
+            } else {
+                console.error('Failed to load versions:', json.error);
+            }
+        } catch (err) {
+            console.error('Error loading versions:', err);
+        }
+    }
+
+    // Call it whenever the base item changes:
+    itemIdInput.addEventListener('change', loadUsedVersions);
+    itemIdInput.addEventListener('input', loadUsedVersions);
+
+    // Also on initial form build:
+    loadUsedVersions();
+
+    // actual row 3 ui
     const row3 = document.createElement('div');
     row3.style.display = 'flex';
     row3.style.gap = '8px';
@@ -707,7 +739,7 @@ function showAddVersionPopup() {
 `;
 
 
-    const usedVersionId = [1, 2, 3, 4];
+    // const usedVersionId = [1, 2, 3, 4];
 
     uniqueIdInput.addEventListener('input', () => {
         const inputValue = Number(uniqueIdInput.value);
@@ -1231,25 +1263,18 @@ function showAddVersionPopup() {
 
 
         const payload = {
-            // base_item_id: itemIdInput.value,
-            base_item_id: Number(itemIdInput.value),
+            base_item_id: itemIdInput.value,
             version_number: uniqueIdInput.value.padStart(2, '0'),
             title: titleInput.value,
-            // price: priceInput.value,
-            price: Number(priceInput.value),
-            // image_key: keyInput.value,
-            image_key: Number(keyInput.value),
+            price: priceInput.value,
+            image_key: keyInput.value,
             sizes: sizeInput.value.split(',').map(s => s.trim()),
-            // sizes: JSON.stringify(sizeInput.value.split(',').map(s => s.trim())),
             material: materialInput.value,
             weight: weightInput.value,
             other_attrs: attrTextarea.value,
-            // in_stock: stockSelect.options[stockSelect.selectedIndex].text,
-            in_stock: true,
-            // profit_margin: marginInput.value,
-            profit_margin: Number(marginInput.value),
-            // seller_id: sellerIdInput.value,
-            seller_id: Number(sellerIdInput.value),
+            in_stock: stockSelect.options[stockSelect.selectedIndex].text,
+            profit_margin: marginInput.value,
+            seller_id: sellerIdInput.value,
 
         };
         console.log('Payload ready:', payload);
@@ -1264,21 +1289,17 @@ function showAddVersionPopup() {
                 },
                 body: JSON.stringify(payload)
             });
-            console.log("await fetch done");
-            
-            
+
+
             const result = await response.json();
-            console.log("await fetch result done");
-            
+
             if (!response.ok) {
                 console.error("❌ Failed to add version:", result.error || result);
                 alert("Failed to add item version: " + (result.error || "Unknown error"));
                 return;
             }
-            
+
             console.log("✅ Version added successfully:", result.data);
-            alert("Item version added successfully!");
-            // Optional: reset form, refresh UI, etc.
         } catch (err) {
             console.error("❌ Error posting version:", err);
             alert("Error sending request. Please try again.");
