@@ -47,6 +47,29 @@ module.exports = (supabaseAdmin) => {
         }
     });
 
+    // GET /api/products/base-items
+    // → returns all base_items as [{ id, base_serial }, …]
+    router.get('/base-items', async (req, res) => {
+        try {
+            const { data, error } = await supabaseAdmin
+                .from('base_items')
+                .select('id, base_serial')
+                .order('id', { ascending: true });
+
+            if (error) {
+                console.error('❌ Error fetching base_items:', error);
+                return res.status(400).json({ error: error.message });
+            }
+
+            // send back an array of { id, base_serial }
+            res.json({ items: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to load base_items.' });
+        }
+    });
+
+
     // GET /api/products/versions/base/:baseItemId
     // → returns an array of all version_number (as integers) for that base_item_id
     router.get(

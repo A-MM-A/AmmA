@@ -553,10 +553,10 @@ function showAddVersionPopup() {
     // populate from DB
     // items title map
     const itemMap = {
-        9: "Men Sweater",
-        7: "Men Shirt",
-        10: "Long jeans",
-        2: "Men's Jeans"
+        9: "FMA001",
+        7: "FFA003",
+        10: "EEA004",
+        2: "HTA002"
     };
 
 
@@ -642,6 +642,8 @@ function showAddVersionPopup() {
 
 
 
+
+
     // ROW 3: Unique Item ID input + availability indicator
     let usedVersionId = [];   // array containing all versions for the 
 
@@ -657,7 +659,7 @@ function showAddVersionPopup() {
             const json = await resp.json();
             if (resp.ok) {
                 usedVersionId = json.versions;         // e.g. [1,2,3]
-                console.log('Used version IDs:', usedVersionId);
+                // console.log('Used version IDs:', usedVersionId);
                 // Optionally, trigger a re-check of the indicator if user already typed
                 uniqueIdInput.dispatchEvent(new Event('input'));
             } else {
@@ -739,14 +741,16 @@ function showAddVersionPopup() {
 `;
 
 
-    // const usedVersionId = [1, 2, 3, 4];
+    // usedVersionId = [1, 2, 3, 4];
 
     uniqueIdInput.addEventListener('input', () => {
         const inputValue = Number(uniqueIdInput.value);
 
         if (uniqueIdInput.value === "") {
             statusIndicator.style.backgroundColor = 'gray';
-        } else if (usedVersionId.includes(inputValue) || savedUniqueId) {
+        } else if (usedVersionId.includes(inputValue) || inputValue === savedUniqueId) {
+            console.log(usedVersionId, inputValue);
+
             statusIndicator.style.backgroundColor = 'rgb(255, 0, 0)'; // red for used ID
         } else {
             statusIndicator.style.backgroundColor = 'rgb(0, 255, 0)'; // green for available ID
@@ -881,7 +885,7 @@ function showAddVersionPopup() {
             .split(',')
             .map(item => item.trim())
             .filter(item => item.length > 0);
-        console.log('Size Array:', array);
+        // console.log('Size Array:', array);
     });
 
     // Append to row
