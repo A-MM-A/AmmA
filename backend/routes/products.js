@@ -102,6 +102,28 @@ module.exports = (supabaseAdmin) => {
         }
     );
 
+    // GET /api/sellers
+    // → returns all sellers as [{ id, name }, …]
+    router.get('/sellers', async (req, res) => {
+        try {
+            const { data, error } = await supabaseAdmin
+                .from('sellers')
+                .select('id, name')
+                .order('id', { ascending: true });
+
+            if (error) {
+                console.error('❌ Error fetching sellers:', error);
+                return res.status(400).json({ error: error.message });
+            }
+
+            res.json({ sellers: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to load sellers.' });
+        }
+    });
+
+
 
     // GET /api/products  → all products + nested versions
     router.get('/', async (req, res) => {

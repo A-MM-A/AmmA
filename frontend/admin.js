@@ -153,8 +153,10 @@ function showMessage(msg) {
 
     setTimeout(() => {
         document.body.removeChild(messageBox);
-    }, 3000); // fixed: 3 seconds, not 300000
+    }, 3000); 
 }
+
+
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------- 
@@ -264,6 +266,8 @@ function showItemConfigPopup() {
 
 function showAddVersionPopup() {
     const { overlay, title, content } = createPopup('Add Version', showItemConfigPopup);
+
+    const confirmBtn = document.createElement('button');
 
 
     // ROW 1: Media boxes + inputs below with external labels
@@ -498,7 +502,7 @@ function showAddVersionPopup() {
     itemIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
 
     const itemIdInput = document.createElement('input');
-    itemIdInput.placeholder = 'E.g   FMA001';
+    itemIdInput.placeholder = 'E.g   1';
     itemIdInput.maxLength = 6;
     itemIdInput.classList.add("rounded-input");
     itemIdInput.style = `
@@ -506,16 +510,7 @@ function showAddVersionPopup() {
         `;
 
 
-    // Prefill itemIdInput if stored
-    const savedItemId = localStorage.getItem('lastItemId');
-    if (savedItemId) {
-        itemIdInput.value = savedItemId;
-        itemIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
 
-        requestAnimationFrame(() => {
-            itemIdInput.dispatchEvent(new Event('input'));
-        });
-    }
 
     itemIdInput.addEventListener('input', () => {
         itemIdInput.value = itemIdInput.value.toUpperCase();
@@ -549,22 +544,6 @@ function showAddVersionPopup() {
     const itemSelect = document.createElement('select');
     itemSelect.classList.add("rounded-input");
 
-
-    // populate from DB
-    // items title map
-    const itemMap = {
-        9: "FMA001",
-        7: "FFA003",
-        10: "EEA004",
-        2: "HTA002"
-    };
-
-
-
-    const Items = buildItemOptions(itemMap);
-    itemSelect.innerHTML = Items;
-
-
     itemSelect.addEventListener('change', () => {
         if (itemSelect.value !== '') {
             itemSelect.style.backgroundColor = 'rgba(193, 239, 183, 0.43)'; // light green
@@ -579,63 +558,129 @@ function showAddVersionPopup() {
 
 
 
-    function buildItemOptions(itemMap) {
-        return `
-        <option value="" selected>Select Item…</option>
-        ${Object.entries(itemMap)
-                .map(([id, title]) => `<option value="${id}">${title}</option>`)
-                .join('')}
-        `;
+    // populate from DB
+
+    let itemMap = {};       // id → serial
+    let serialToId = {};    // serial → id
+    let options;
+
+    async function loadBaseItems() {
+        try {
+            const resp = await fetch(`${CONFIG.API_BASE_URL}/products/base-items`);
+            const json = await resp.json();
+            if (!resp.ok) throw new Error(json.error);
+
+            // fill maps
+            itemMap = {};
+            serialToId = {};
+            json.items.forEach(({ id, base_serial }) => {
+                itemMap[String(id)] = base_serial;
+                serialToId[base_serial] = String(id);
+            });
+            // console.log(itemMap);
+
+
+            // build <option> list
+            options = [
+                `<option value="">Select Item…</option>`,
+                ...Object.entries(itemMap).map(
+                    ([id, serial]) => `<option value="${id}">${serial}</option>`
+                )
+            ].join('');
+
+            itemSelect.innerHTML = options;
+
+        } catch (err) {
+            console.error('Failed to load items:', err);
+            itemSelect.innerHTML = `<option value="">Error loading items</option>`;
+        }
+    }
+
+    // call on init
+    loadBaseItems();
+
+    // 3) two-way binding logic
+
+    // when user types an ID
+    itemIdInput.addEventListener('input', () => {
+        const id = itemIdInput.value.trim();
+        if (id) {
+            // disable select
+            itemSelect.disabled = true;
+            itemSelect.style.opacity = '0.8';
+            itemSelect.style.backgroundColor = '';
+
+            // show matching serial (or fallback)
+            const serial = itemMap[id] || 'No Item Found';
+            itemSelect.innerHTML = `<option value="">${serial}</option>`;
+        } else {
+            // reset select
+            itemSelect.disabled = false;
+            itemSelect.style.opacity = '1';
+            itemSelect.innerHTML = options;  // repopulate full list
+        }
+    });
+
+    // when user picks from the selector
+    itemSelect.addEventListener('change', () => {
+        const selId = itemSelect.value;       // this is the <option value="id">
+        if (selId) {
+            // disable input
+            itemIdInput.readOnly = true;
+            itemIdInput.style.opacity = '0.5';
+            itemIdInput.style.backgroundColor = '';
+
+            // set input to the corresponding ID
+            itemIdInput.value = selId;
+        } else {
+            // reset input
+            itemIdInput.readOnly = false;
+            itemIdInput.style.opacity = '1';
+            itemIdInput.value = '';
+        }
+    });
+
+
+
+    // Prefill itemIdInput if stored
+    async function initItemField() {
+        // 1a) First, load the items from the server
+        await loadBaseItems();
+
+        // 1b) Now that itemMap & the selector are ready, prefill from localStorage
+        const savedItemId = localStorage.getItem('lastItemId');
+        if (savedItemId) {
+            // set the input
+            itemIdInput.value = savedItemId;
+            itemIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+            // dispatch the 'input' event so your listener locks & updates the selector
+            itemIdInput.dispatchEvent(new Event('input'));
+        }
+    }
+
+    initItemField();
+
+    function isItemSelectionValid() {
+        const id = itemIdInput.value.trim();
+        const sel = itemSelect.value;
+
+        // If they typed an ID, it must be one of the fetched keys
+        if (id !== '') {
+            return Object.prototype.hasOwnProperty.call(itemMap, id);
+        }
+        // If they used the dropdown, it must be a non-placeholder value
+        if (sel !== '') {
+            return true;
+        }
+        return false;
     }
 
 
-    // Reverse map
-    const titleToIdMap = Object.entries(itemMap).reduce((acc, [id, title]) => {
-        acc[title] = id;
-        return acc;
-    }, {});
-
-    itemIdInput.addEventListener('input', () => {
-        const id = itemIdInput.value.trim().toUpperCase();
-        itemIdInput.value = id; // Force uppercase
-
-        if (id !== '') {
-            itemSelect.readOnly = true;
-            itemSelect.style.opacity = 0.5;
-
-            const title = itemMap[id] || 'No Item Found';
-            itemSelect.innerHTML = `<option value="">${title}</option>`;
-            itemSelect.style.backgroundColor = '';
-
-        } else {
-            itemSelect.readOnly = false;
-            itemSelect.style.opacity = 1;
-            itemSelect.innerHTML = Items; // Reset to original options
-            itemSelect.style.backgroundColor = '';
-        }
-    });
-
-    itemSelect.addEventListener('change', () => {
-        const selected = itemSelect.options[itemSelect.selectedIndex].text;
-
-        if (itemSelect.value !== '') {
-            itemIdInput.readOnly = true;
-            itemIdInput.style.opacity = 0.5;
-            itemIdInput.style.backgroundColor = '';
-
-            const id = titleToIdMap[selected] || '';
-            itemIdInput.value = id;
-
-        } else {
-            itemIdInput.readOnly = false;
-            itemIdInput.style.opacity = 1;
-            itemIdInput.value = '';
-            itemIdInput.style.backgroundColor = '';
-        }
-    });
 
 
     // Append containers to row
+
     row2.appendChild(itemIdContainer);
     row2.appendChild(itemSelectContainer);
     content.appendChild(row2);
@@ -662,6 +707,7 @@ function showAddVersionPopup() {
                 // console.log('Used version IDs:', usedVersionId);
                 // Optionally, trigger a re-check of the indicator if user already typed
                 uniqueIdInput.dispatchEvent(new Event('input'));
+                uniqueIdInput.style.backgroundColor = '';
             } else {
                 console.error('Failed to load versions:', json.error);
             }
@@ -741,16 +787,12 @@ function showAddVersionPopup() {
 `;
 
 
-    // usedVersionId = [1, 2, 3, 4];
-
     uniqueIdInput.addEventListener('input', () => {
         const inputValue = Number(uniqueIdInput.value);
 
         if (uniqueIdInput.value === "") {
             statusIndicator.style.backgroundColor = 'gray';
         } else if (usedVersionId.includes(inputValue) || inputValue === savedUniqueId) {
-            console.log(usedVersionId, inputValue);
-
             statusIndicator.style.backgroundColor = 'rgb(255, 0, 0)'; // red for used ID
         } else {
             statusIndicator.style.backgroundColor = 'rgb(0, 255, 0)'; // green for available ID
@@ -1257,12 +1299,22 @@ function showAddVersionPopup() {
     const row11 = document.createElement('div');
 
     // Button
-    const confirmBtn = document.createElement('button');
     confirmBtn.textContent = 'Confirm';
     confirmBtn.className = 'popup-confirm';
 
+    function updateConfirmButton() {
+        // confirmBtn.disabled = !isItemSelectionValid();
+    }
+
     // Click logic
     confirmBtn.addEventListener('click', async () => {
+        if (!isItemSelectionValid()) {
+            showMessage("Invalid Item Id");
+            return;
+        }
+
+
+
         const customName = fileNameInput.value.trim();
 
 
@@ -2015,6 +2067,7 @@ function showEditVersion2Popup(payload) {
         } else {
 
             showMessage("No Changes Detected");
+            
         }
 
 
