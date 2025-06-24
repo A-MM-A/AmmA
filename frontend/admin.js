@@ -153,7 +153,7 @@ function showMessage(msg) {
 
     setTimeout(() => {
         document.body.removeChild(messageBox);
-    }, 3000); 
+    }, 3000);
 }
 
 
@@ -581,12 +581,12 @@ function showAddVersionPopup() {
 
 
             // build <option> list
-            options = [
-                `<option value="">Select Item…</option>`,
-                ...Object.entries(itemMap).map(
-                    ([id, serial]) => `<option value="${id}">${serial}</option>`
-                )
-            ].join('');
+            options = `
+            <option value="" selected>Select Item…</option>
+                ${Object.entries(itemMap)
+                    .map(([id, serial]) => `<option value="${id}">${serial}</option>`)
+                    .join('')}
+                `;
 
             itemSelect.innerHTML = options;
 
@@ -705,9 +705,12 @@ function showAddVersionPopup() {
             if (resp.ok) {
                 usedVersionId = json.versions;         // e.g. [1,2,3]
                 // console.log('Used version IDs:', usedVersionId);
-                // Optionally, trigger a re-check of the indicator if user already typed
+
+                // reset unique id input and indicator
                 uniqueIdInput.dispatchEvent(new Event('input'));
                 uniqueIdInput.style.backgroundColor = '';
+                uniqueIdInput.value = '';
+                statusIndicator.style.backgroundColor = 'gray';
             } else {
                 console.error('Failed to load versions:', json.error);
             }
@@ -798,6 +801,13 @@ function showAddVersionPopup() {
             statusIndicator.style.backgroundColor = 'rgb(0, 255, 0)'; // green for available ID
         }
     });
+
+    function isVersionValid() {
+        const v = Number(uniqueIdInput.value);
+
+        // must be non-empty, numeric, and not in usedVersionId
+        return uniqueIdInput.value.trim() !== '' && !usedVersionId.includes(v);
+    }
 
     statusContainer.appendChild(statusIndicator);
 
@@ -1114,15 +1124,6 @@ function showAddVersionPopup() {
     sellerIdInput.type = 'number';
     sellerIdInput.classList.add("rounded-input");
 
-    const savedSellerId = localStorage.getItem('lastSellerId');
-    if (savedSellerId) {
-        sellerIdInput.value = savedSellerId;
-        sellerIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
-
-        requestAnimationFrame(() => {
-            sellerIdInput.dispatchEvent(new Event('input'));
-        });
-    }
 
 
     sellerIdInput.addEventListener('input', () => {
@@ -1161,78 +1162,124 @@ function showAddVersionPopup() {
     sellerSelectContainer.appendChild(sellerSelect);
 
 
-
     // populate from DB
-    // sellers title map
-    const sellerMap = {
-        1: "Al Muftah Shop",
-        2: "Multistar Electronics",
-        3: "Bi fashion",
-        4: "Mwembe kuku",
-        5: "Jolte City"
-    };
+
+    // --- dynamic data + maps ---
+    let sellerMap = {};      // id → name
+    let sellerToIdMap = {};  // name → id
+    let SellersHTML;    // the <option> list
 
 
+    async function loadSellers() {
+        try {
+            const resp = await fetch(`${CONFIG.API_BASE_URL}/products/sellers`);
+            const json = await resp.json();
+            if (!resp.ok) throw new Error(json.error);
 
-    function buildSellerOptions(sellerMap) {
-        return `
-        <option value="" selected>Select Item…</option>
-        ${Object.entries(sellerMap)
-                .map(([id, title]) => `<option value="${id}">${title}</option>`)
-                .join('')}
-        `;
+            // build maps
+            sellerMap = {};
+            sellerToIdMap = {};
+            json.sellers.forEach(({ id, name }) => {
+                sellerMap[String(id)] = name;
+                sellerToIdMap[name] = String(id);
+            });
+            // console.log(itemMap);
+
+
+            // build options HTML
+            SellersHTML = `
+            <option value="" selected>Select Seller…</option>
+                ${Object.entries(sellerMap)
+                    .map(([id, name]) => `<option value="${id}">${name}</option>`)
+                    .join('')}
+                `;
+
+            sellerSelect.innerHTML = SellersHTML;
+
+        } catch (err) {
+            console.error('Error loading sellers:', err);
+            sellerSelect.innerHTML = `<option value="">Error loading sellers</option>`;
+        }
     }
 
-    const sellers = buildSellerOptions(sellerMap);
-    sellerSelect.innerHTML = sellers;
+    // call on init
+    loadSellers();
 
 
-
-    // Reverse map
-    const sellerToIdMap = Object.entries(sellerMap).reduce((acc, [id, title]) => {
-        acc[title] = id;
-        return acc;
-    }, {});
-
-
+    // --- two‐way binding logic
+    // when typing an ID
     sellerIdInput.addEventListener('input', () => {
-        const id = sellerIdInput.value.trim().toUpperCase();
-        sellerIdInput.value = id; // Force uppercase
-
+        const id = sellerIdInput.value.trim();
         if (id !== '') {
-            sellerSelect.readOnly = true;
-            sellerSelect.style.opacity = 0.5;
-
-            const title = sellerMap[id] || 'No Seller Found';
-            sellerSelect.innerHTML = `<option value="">${title}</option>`;
+            // disable select
+            sellerSelect.disabled = true;
+            sellerSelect.style.opacity = '0.5';
             sellerSelect.style.backgroundColor = '';
 
+            // show matching serial (or fallback)
+            const name = sellerMap[id] || 'No Seller Found';
+            sellerSelect.innerHTML = `<option value="">${name}</option>`;
         } else {
-            sellerSelect.readOnly = false;
-            sellerSelect.style.opacity = 1;
-            sellerSelect.innerHTML = sellers; // Reset to original options
-            sellerSelect.style.backgroundColor = '';
+            // reset select
+            sellerSelect.disabled = false;
+            sellerSelect.style.opacity = '1';
+            sellerSelect.innerHTML = SellersHTML;
         }
     });
 
+    // when picking from selector
     sellerSelect.addEventListener('change', () => {
-        const selected = sellerSelect.options[sellerSelect.selectedIndex].text;
-
-        if (sellerSelect.value !== '') {
+        const selId = sellerSelect.value;
+        if (selId !== '') {
+            // disable input
             sellerIdInput.readOnly = true;
-            sellerIdInput.style.opacity = 0.5;
+            sellerIdInput.style.opacity = '0.5';
             sellerIdInput.style.backgroundColor = '';
 
-            const id = sellerToIdMap[selected] || '';
-            sellerIdInput.value = id;
-
+            // set input to the corresponding ID
+            sellerIdInput.value = selId;
         } else {
+            // reset input
             sellerIdInput.readOnly = false;
-            sellerIdInput.style.opacity = 1;
+            sellerIdInput.style.opacity = '1';
             sellerIdInput.value = '';
-            sellerIdInput.style.backgroundColor = '';
         }
     });
+
+
+    // Prefill sellerId if stored
+    async function initSellerField() {
+        // 1a) First, load the sellers from the server
+        await loadSellers();
+
+        // 1b) Now that itemMap & the selector are ready, prefill from localStorage
+        const savedSellerId = localStorage.getItem('lastSellerId');
+        if (savedSellerId) {
+            // set the input
+            sellerIdInput.value = savedSellerId;
+            sellerIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+            // dispatch the 'input' event so it locks & updates the selector
+            sellerIdInput.dispatchEvent(new Event('input'));
+        }
+    }
+    initSellerField()
+
+
+    function isSellerSelectionValid() {
+        const id = sellerIdInput.value.trim();
+        const sel = sellerSelect.value;
+
+        // If they typed an ID, it must be one of the fetched keys
+        if (id !== '') {
+            return Object.prototype.hasOwnProperty.call(sellerMap, id);
+        }
+        // If they used the dropdown, it must be a non-placeholder value
+        if (sel !== '') {
+            return true;
+        }
+        return false;
+    }
+
 
 
     // Append both to row
@@ -1308,77 +1355,72 @@ function showAddVersionPopup() {
 
     // Click logic
     confirmBtn.addEventListener('click', async () => {
-        if (!isItemSelectionValid()) {
-            showMessage("Invalid Item Id");
-            return;
-        }
-
+        // if (!keyInput.value) {
+        //     showMessage("Empty Image Key");
+        //     return;
+        // }
+        // if (!isItemSelectionValid()) {
+        //     showMessage("Invalid Item Id");
+        //     return;
+        // }
+        // if (!isVersionValid()) {
+        //     showMessage("Invalid Version Id");
+        //     return;
+        // }
+        // if (!titleInput.value) {
+        //     showMessage("Empty Title");
+        //     return;
+        // }
+        // if (!priceInput.value) {
+        //     showMessage("Empty Price");
+        //     return;
+        // }
+        // if (!sizeInput.value) {
+        //     showMessage("Empty Size");
+        //     return;
+        // }
+        // if (!materialInput.value) {
+        //     showMessage("Empty Material");
+        //     return;
+        // }
+        // if (!weightInput.value) {
+        //     showMessage("Empty Weight");
+        //     return;
+        // }
+        // if (!marginInput.value) {
+        //     showMessage("Empty Profit Margin");
+        //     return;
+        // }
+        // if (!isSellerSelectionValid()) {
+        //     showMessage("Invalid Seller Id");
+        //     return;
+        // }
+        // if (!attrTextarea.value) {
+        //     showMessage("Empty Text Area");
+        //     return;
+        // }
 
 
         const customName = fileNameInput.value.trim();
 
+        async function uploadToR2(file) {
+            const formData = new FormData();
+            formData.append('file', file, file.name);
 
-        const payload = {
-            base_item_id: itemIdInput.value,
-            version_number: uniqueIdInput.value.padStart(2, '0'),
-            title: titleInput.value,
-            price: priceInput.value,
-            image_key: keyInput.value,
-            sizes: sizeInput.value.split(',').map(s => s.trim()),
-            material: materialInput.value,
-            weight: weightInput.value,
-            other_attrs: attrTextarea.value,
-            in_stock: stockSelect.options[stockSelect.selectedIndex].text,
-            profit_margin: marginInput.value,
-            seller_id: sellerIdInput.value,
-
-        };
-        console.log('Payload ready:', payload);
-
-        // the posting mechanism to the table : the content will be the payload
-
-        try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
+            const res = await fetch(`${CONFIG.API_BASE_URL}/upload`, {
+                method: 'POST',
+                // NO Authorization header needed
+                body: formData
             });
 
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                console.error("❌ Failed to add version:", result.error || result);
-                alert("Failed to add item version: " + (result.error || "Unknown error"));
-                return;
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Upload failed');
             }
 
-            console.log("✅ Version added successfully:", result.data);
-        } catch (err) {
-            console.error("❌ Error posting version:", err);
-            alert("Error sending request. Please try again.");
+            const { publicUrl } = await res.json();
+            return publicUrl;
         }
-
-
-
-        // store history
-        localStorage.setItem('lastItemId', itemIdInput.value);
-        localStorage.setItem('lastSellerId', sellerIdInput.value);
-        localStorage.setItem('lastFileName', fileNameInput.value);
-        localStorage.setItem('lastSize', sizeInput.value);
-        localStorage.setItem('lastMaterial', materialInput.value);
-        localStorage.setItem('lastWeight', weightInput.value);
-        localStorage.setItem('lastAttrs', attrTextarea.value);
-        localStorage.setItem('lastProfit', marginInput.value);
-        localStorage.setItem('lastUniqueId', uniqueIdInput.value);
-        localStorage.setItem('lastTitle', titleInput.value);
-        localStorage.setItem('lastPrice', priceInput.value);
-
-
-
-
 
 
         for (const type of ['Image', 'Video']) {
@@ -1406,6 +1448,15 @@ function showAddVersionPopup() {
 
             console.log(`${type}: Compressed File`, compressedFile);
 
+            try {
+                // ── UPLOAD TO R2 ──
+                const publicUrl = await uploadToR2(compressedFile);
+                console.log(`${type} uploaded to:`, publicUrl);
+                // TODO: use `publicUrl` in your UI or product payload
+            } catch (err) {
+                console.error(`${type} upload error:`, err);
+            }
+
 
             // For now, download the compressed file locally to test
             const link = document.createElement('a');
@@ -1413,6 +1464,66 @@ function showAddVersionPopup() {
             link.download = compressedFile.name;
             link.click();
         }
+
+
+
+        const payload = {
+            base_item_id: itemIdInput.value,
+            version_number: uniqueIdInput.value.padStart(2, '0'),
+            title: titleInput.value,
+            price: priceInput.value,
+            image_key: keyInput.value,
+            sizes: sizeInput.value.split(',').map(s => s.trim()),
+            material: materialInput.value,
+            weight: weightInput.value,
+            other_attrs: attrTextarea.value,
+            in_stock: stockSelect.options[stockSelect.selectedIndex].text,
+            profit_margin: marginInput.value,
+            seller_id: sellerIdInput.value,
+
+        };
+        console.log('Payload ready:', payload);
+
+        // the posting mechanism to the table : the content will be the payload
+
+        // try {
+        //     const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json"
+        //         },
+        //         body: JSON.stringify(payload)
+        //     });
+
+
+        //     const result = await response.json();
+
+        //     if (!response.ok) {
+        //         console.error("❌ Failed to add version:", result.error || result);
+        //         alert("Failed to add item version: " + (result.error || "Unknown error"));
+        //         return;
+        //     }
+
+        //     console.log("✅ Version added successfully:", result.data);
+        // } catch (err) {
+        //     console.error("❌ Error posting version:", err);
+        //     alert("Error sending request. Please try again.");
+        // }
+
+
+
+        // store history
+        localStorage.setItem('lastItemId', itemIdInput.value);
+        localStorage.setItem('lastSellerId', sellerIdInput.value);
+        localStorage.setItem('lastFileName', fileNameInput.value);
+        localStorage.setItem('lastSize', sizeInput.value);
+        localStorage.setItem('lastMaterial', materialInput.value);
+        localStorage.setItem('lastWeight', weightInput.value);
+        localStorage.setItem('lastAttrs', attrTextarea.value);
+        localStorage.setItem('lastProfit', marginInput.value);
+        localStorage.setItem('lastUniqueId', uniqueIdInput.value);
+        localStorage.setItem('lastTitle', titleInput.value);
+        localStorage.setItem('lastPrice', priceInput.value);
 
 
 
@@ -2067,7 +2178,7 @@ function showEditVersion2Popup(payload) {
         } else {
 
             showMessage("No Changes Detected");
-            
+
         }
 
 

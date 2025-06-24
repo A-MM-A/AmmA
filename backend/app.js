@@ -24,11 +24,11 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // ─── AWS-S3 (R2) CLIENT ───────────────────────────────────────────────────────────
 const s3 = new AWS.S3({
-    endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-    signatureVersion: 'v4',
-    region: 'auto',
+  endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  accessKeyId: R2_ACCESS_KEY_ID,
+  secretAccessKey: R2_SECRET_ACCESS_KEY,
+  signatureVersion: 'v4',
+  region: 'auto',
 });
 
 
@@ -48,7 +48,7 @@ app.use('/api/products', productsRoutes(supabaseAdmin));  // /api/products, /api
 app.use('/api/cart', cartRoutes(supabaseAdmin));          // /api/cart, /api/cart/:cartId
 app.use('/api/like', likesRoutes(supabaseAdmin));         // /api/like (toggle), /api/like/:userId
 app.use('/api/reviews', reviewsRoutes(supabaseAdmin));    // /api/reviews/:versionId, /api/reviews
-app.use('/api/upload', uploadRoutes(supabaseAdmin, s3, R2_BUCKET, CLOUDFLARE_ACCOUNT_ID));
+app.use('/api/upload', uploadRoutes(s3, R2_BUCKET, CLOUDFLARE_ACCOUNT_ID));
 app.use('/api/admin', adminRoutes(supabaseAdmin));
 
 
@@ -56,4 +56,14 @@ app.use('/api/admin', adminRoutes(supabaseAdmin));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🛡️  Server running on port ${PORT}`);
+});
+
+
+// 404
+app.use((req, res, next) => res.status(404).json({ error: 'Not found' }));
+
+// 500
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
 });

@@ -901,7 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         // 1) blur background using versionObj.img
                         // const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}.jpg`;
-                        const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}${imgSuffix}`;
+                        const imageUrl = `${CONFIG.R2_PUBLIC_URL}/${serial}${imgSuffix}`;  // e.g `${CONFIG.R2_PUBLIC_URL}/FFA00301.jpg`;
                         // console.log(imageUrl);
 
                         vp.style.setProperty("--bgUrl", `url("${imageUrl}")`);
@@ -1442,7 +1442,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (sb) updateSideButtons(sb);
             }
 
-            
+
 
             // ─────────────────────────────────────────────────────────────────────────────
             // Step 10: Info popup close button (unchanged)
