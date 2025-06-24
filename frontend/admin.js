@@ -1355,50 +1355,50 @@ function showAddVersionPopup() {
 
     // Click logic
     confirmBtn.addEventListener('click', async () => {
-        // if (!keyInput.value) {
-        //     showMessage("Empty Image Key");
-        //     return;
-        // }
-        // if (!isItemSelectionValid()) {
-        //     showMessage("Invalid Item Id");
-        //     return;
-        // }
-        // if (!isVersionValid()) {
-        //     showMessage("Invalid Version Id");
-        //     return;
-        // }
-        // if (!titleInput.value) {
-        //     showMessage("Empty Title");
-        //     return;
-        // }
-        // if (!priceInput.value) {
-        //     showMessage("Empty Price");
-        //     return;
-        // }
-        // if (!sizeInput.value) {
-        //     showMessage("Empty Size");
-        //     return;
-        // }
-        // if (!materialInput.value) {
-        //     showMessage("Empty Material");
-        //     return;
-        // }
-        // if (!weightInput.value) {
-        //     showMessage("Empty Weight");
-        //     return;
-        // }
-        // if (!marginInput.value) {
-        //     showMessage("Empty Profit Margin");
-        //     return;
-        // }
-        // if (!isSellerSelectionValid()) {
-        //     showMessage("Invalid Seller Id");
-        //     return;
-        // }
-        // if (!attrTextarea.value) {
-        //     showMessage("Empty Text Area");
-        //     return;
-        // }
+        if (!keyInput.value) {
+            showMessage("Empty Image Key");
+            return;
+        }
+        if (!isItemSelectionValid()) {
+            showMessage("Invalid Item Id");
+            return;
+        }
+        if (!isVersionValid()) {
+            showMessage("Invalid Version Id");
+            return;
+        }
+        if (!titleInput.value) {
+            showMessage("Empty Title");
+            return;
+        }
+        if (!priceInput.value) {
+            showMessage("Empty Price");
+            return;
+        }
+        if (!sizeInput.value) {
+            showMessage("Empty Size");
+            return;
+        }
+        if (!materialInput.value) {
+            showMessage("Empty Material");
+            return;
+        }
+        if (!weightInput.value) {
+            showMessage("Empty Weight");
+            return;
+        }
+        if (!marginInput.value) {
+            showMessage("Empty Profit Margin");
+            return;
+        }
+        if (!isSellerSelectionValid()) {
+            showMessage("Invalid Seller Id");
+            return;
+        }
+        if (!attrTextarea.value) {
+            showMessage("Empty Text Area");
+            return;
+        }
 
 
         const customName = fileNameInput.value.trim();
@@ -1426,7 +1426,7 @@ function showAddVersionPopup() {
         for (const type of ['Image', 'Video']) {
             let file = selectedFiles[type];
             if (!file) {
-                console.log(`${type}: No file selected.`);
+                // console.log(`${type}: No file selected.`);
                 continue;
             }
 
@@ -1437,7 +1437,7 @@ function showAddVersionPopup() {
             selectedFiles[type] = renamedFile;
             file = renamedFile;
 
-            console.log(`${type}: Original File`, file);
+            // console.log(`${type}: Original File`, file);
 
             let compressedFile;
             if (type === 'Image') {
@@ -1446,12 +1446,13 @@ function showAddVersionPopup() {
                 compressedFile = await compressVideo(file);
             }
 
-            console.log(`${type}: Compressed File`, compressedFile);
+            // console.log(`${type}: Compressed File`, compressedFile);
 
             try {
                 // ── UPLOAD TO R2 ──
                 const publicUrl = await uploadToR2(compressedFile);
-                console.log(`${type} uploaded to:`, publicUrl);
+                console.log(`Image uploaded`);
+                // console.log(`${type} uploaded to:`, publicUrl);
                 // TODO: use `publicUrl` in your UI or product payload
             } catch (err) {
                 console.error(`${type} upload error:`, err);
@@ -1486,29 +1487,29 @@ function showAddVersionPopup() {
 
         // the posting mechanism to the table : the content will be the payload
 
-        // try {
-        //     const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json"
-        //         },
-        //         body: JSON.stringify(payload)
-        //     });
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
 
 
-        //     const result = await response.json();
+            const result = await response.json();
 
-        //     if (!response.ok) {
-        //         console.error("❌ Failed to add version:", result.error || result);
-        //         alert("Failed to add item version: " + (result.error || "Unknown error"));
-        //         return;
-        //     }
+            if (!response.ok) {
+                console.error("❌ Failed to add version:", result.error || result);
+                alert("Failed to add item version: " + (result.error || "Unknown error"));
+                return;
+            }
 
-        //     console.log("✅ Version added successfully:", result.data);
-        // } catch (err) {
-        //     console.error("❌ Error posting version:", err);
-        //     alert("Error sending request. Please try again.");
-        // }
+            console.log("✅ Version added successfully:", result.data);
+        } catch (err) {
+            console.error("❌ Error posting version:", err);
+            alert("Error sending request. Please try again.");
+        }
 
 
 
