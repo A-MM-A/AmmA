@@ -23,8 +23,7 @@ module.exports = (s3, R2_BUCKET, CLOUDFLARE_ACCOUNT_ID) => {
     }
 
     const { originalname, buffer, mimetype } = req.file;
-    const timestamp = Date.now();
-    const key = `${timestamp}_${originalname}`;  // or any other key scheme
+    const key = originalname;
 
     try {
       // Upload to R2
