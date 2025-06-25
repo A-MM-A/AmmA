@@ -10,6 +10,10 @@ const express = require('express');
 module.exports = (supabaseAdmin) => {
     const router = express.Router();
 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+    //                                                                 Adding an item version
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+
     // POST /api/products/versions → Add a new item version
     router.post('/versions', async (req, res) => {
         try {
@@ -123,6 +127,64 @@ module.exports = (supabaseAdmin) => {
         }
     });
 
+
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+    //                                                           Editting an item version
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+
+    // GET /api/products/versions/serial/:fullSerial -> gets the item using full serial
+    router.get('/versions/serial/:fullSerial', async (req, res) => {
+        try {
+            const fullSerial = req.params.fullSerial;
+            const { data, error } = await supabaseAdmin
+                .from('item_versions')
+                .select(`
+        full_serial, title, price, sizes, material, weight,
+        other_attrs, in_stock, profit_margin, seller_id, available
+      `)
+                .eq('full_serial', fullSerial)
+                .single();
+
+            if (error) {
+                console.error('❌ Version not found:', error);
+                return res.status(404).json({ error: 'Version not found' });
+            }
+            res.json({ version: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to fetch version' });
+        }
+    });
+
+    // PUT /api/products/versions/serial/:fullSerial -> edits the item 
+    router.put('/versions/serial/:fullSerial', async (req, res) => {
+        try {
+            const fullSerial = req.params.fullSerial;
+            const updates = req.body; // expect keys: title, price, sizes, etc.
+            const { data, error } = await supabaseAdmin
+                .from('item_versions')
+                .update(updates)
+                .eq('full_serial', fullSerial)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('❌ Failed to update version:', error);
+                return res.status(400).json({ error: error.message });
+            }
+            res.json({ message: 'Updated successfully', version: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to update version' });
+        }
+    });
+
+
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+    //                                                           Fetching an item for viewing
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
 
 
     // GET /api/products  → all products + nested versions
