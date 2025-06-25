@@ -145,25 +145,7 @@ async function compressVideo(file) {
     return new File([file], file.name, { type: file.type });
 }
 
-// upload to r2
-async function uploadToR2(file) {
-    const formData = new FormData();
-    formData.append('file', file, file.name);
 
-    const res = await fetch(`${CONFIG.API_BASE_URL}/upload`, {
-        method: 'POST',
-        // NO Authorization header needed
-        body: formData
-    });
-
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Upload failed');
-    }
-
-    const { publicUrl } = await res.json();
-    return publicUrl;
-}
 
 // show message
 function showMessage(msg) {
@@ -533,18 +515,19 @@ function showAddVersionPopup() {
             // fill maps
             itemMap = {};
             serialToId = {};
-            json.items.forEach(({ id, base_serial }) => {
-                itemMap[String(id)] = base_serial;
-                serialToId[base_serial] = String(id);
+            json.items.forEach(({ id, base_serial, description }) => {
+                const label = `${base_serial} ${description}`;      // ← new
+                itemMap[String(id)] = label;                       // store combined label
+                serialToId[label] = String(id);                    // reverse lookup if needed
             });
-            // console.log(itemMap);
+            console.log(itemMap);
 
 
             // build <option> list
             options = `
             <option value="" selected>Select Item…</option>
                 ${Object.entries(itemMap)
-                    .map(([id, serial]) => `<option value="${id}">${serial}</option>`)
+                    .map(([id, label]) => `<option value="${id}">${label}</option>`)
                     .join('')}
                 `;
 
@@ -1315,50 +1298,50 @@ function showAddVersionPopup() {
 
     // Click logic
     confirmBtn.addEventListener('click', async () => {
-        if (!keyInput.value) {
-            showMessage("Empty Image Key");
-            return;
-        }
-        if (!isItemSelectionValid()) {
-            showMessage("Invalid Item Id");
-            return;
-        }
-        if (!isVersionValid()) {
-            showMessage("Invalid Version Id");
-            return;
-        }
-        if (!titleInput.value) {
-            showMessage("Empty Title");
-            return;
-        }
-        if (!priceInput.value) {
-            showMessage("Empty Price");
-            return;
-        }
-        if (!sizeInput.value) {
-            showMessage("Empty Size");
-            return;
-        }
-        if (!materialInput.value) {
-            showMessage("Empty Material");
-            return;
-        }
-        if (!weightInput.value) {
-            showMessage("Empty Weight");
-            return;
-        }
-        if (!marginInput.value) {
-            showMessage("Empty Profit Margin");
-            return;
-        }
-        if (!isSellerSelectionValid()) {
-            showMessage("Invalid Seller Id");
-            return;
-        }
-        if (!attrTextarea.value) {
-            showMessage("Empty Text Area");
-            return;
-        }
+        // if (!keyInput.value) {
+        //     showMessage("Empty Image Key");
+        //     return;
+        // }
+        // if (!isItemSelectionValid()) {
+        //     showMessage("Invalid Item Id");
+        //     return;
+        // }
+        // if (!isVersionValid()) {
+        //     showMessage("Invalid Version Id");
+        //     return;
+        // }
+        // if (!titleInput.value) {
+        //     showMessage("Empty Title");
+        //     return;
+        // }
+        // if (!priceInput.value) {
+        //     showMessage("Empty Price");
+        //     return;
+        // }
+        // if (!sizeInput.value) {
+        //     showMessage("Empty Size");
+        //     return;
+        // }
+        // if (!materialInput.value) {
+        //     showMessage("Empty Material");
+        //     return;
+        // }
+        // if (!weightInput.value) {
+        //     showMessage("Empty Weight");
+        //     return;
+        // }
+        // if (!marginInput.value) {
+        //     showMessage("Empty Profit Margin");
+        //     return;
+        // }
+        // if (!isSellerSelectionValid()) {
+        //     showMessage("Invalid Seller Id");
+        //     return;
+        // }
+        // if (!attrTextarea.value) {
+        //     showMessage("Empty Text Area");
+        //     return;
+        // }
 
 
         const customName = fileNameInput.value.trim();
@@ -1374,20 +1357,14 @@ function showAddVersionPopup() {
             }
 
             const ext = file.name.split('.').pop();
-            const renamedFile = (customName)
-                ? new File([file], `${customName}.${ext}`, { type: file.type })
-                : file;
+            let renamedFile;
+            if (customName) {
+                renamedFile = new File([file], `${customName}.${ext}`, { type: file.type })
+            } else {
+                renamedFile = file;
+            }
             selectedFiles[type] = renamedFile;
             file = renamedFile;
-
-            // console.log(`${type}: Original File`, file);
-
-            // let compressedFile;
-            // if (type === 'Image') {
-            //     compressedFile = await compressImage(file);
-            // } else {
-            //     compressedFile = await compressVideo(file);
-            // }
 
             let uploadFile;
             if (type === 'Image') {
@@ -1399,6 +1376,26 @@ function showAddVersionPopup() {
             }
 
             // console.log(`${type}: Compressed File`, compressedFile);
+
+            // upload to r2
+            async function uploadToR2(file) {
+                const formData = new FormData();
+                formData.append('file', file, file.name);
+
+                const res = await fetch(`${CONFIG.API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    // NO Authorization header needed
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'Upload failed');
+                }
+
+                const { publicUrl } = await res.json();
+                return publicUrl;
+            }
 
             try {
                 // ── UPLOAD TO R2 ──
@@ -1414,55 +1411,55 @@ function showAddVersionPopup() {
 
             // For now, download the compressed file locally to test
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(compressedFile);
-            link.download = compressedFile.name;
+            link.href = URL.createObjectURL(uploadFile);
+            link.download = uploadFile.name;
             link.click();
         }
 
 
 
-        const payload = {
-            base_item_id: itemIdInput.value,
-            version_number: uniqueIdInput.value.padStart(2, '0'),
-            title: titleInput.value,
-            price: priceInput.value,
-            image_key: keyInput.value,
-            sizes: sizeInput.value.split(',').map(s => s.trim()),
-            material: materialInput.value,
-            weight: weightInput.value,
-            other_attrs: attrTextarea.value,
-            in_stock: stockSelect.options[stockSelect.selectedIndex].text,
-            profit_margin: marginInput.value,
-            seller_id: sellerIdInput.value,
+        // const payload = {
+        //     base_item_id: itemIdInput.value,
+        //     version_number: uniqueIdInput.value.padStart(2, '0'),
+        //     title: titleInput.value,
+        //     price: priceInput.value,
+        //     image_key: keyInput.value,
+        //     sizes: sizeInput.value.split(',').map(s => s.trim()),
+        //     material: materialInput.value,
+        //     weight: weightInput.value,
+        //     other_attrs: attrTextarea.value,
+        //     in_stock: stockSelect.options[stockSelect.selectedIndex].text,
+        //     profit_margin: marginInput.value,
+        //     seller_id: sellerIdInput.value,
 
-        };
-        console.log('Payload ready:', payload);
+        // };
+        // console.log('Payload ready:', payload);
 
-        // the posting mechanism to the table : the content will be the payload
+        // // the posting mechanism to the table : the content will be the payload
 
-        try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
+        // try {
+        //     const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json"
+        //         },
+        //         body: JSON.stringify(payload)
+        //     });
 
 
-            const result = await response.json();
+        //     const result = await response.json();
 
-            if (!response.ok) {
-                console.error("❌ Failed to add version:", result.error || result);
-                alert("Failed to add item version: " + (result.error || "Unknown error"));
-                return;
-            }
+        //     if (!response.ok) {
+        //         console.error("❌ Failed to add version:", result.error || result);
+        //         alert("Failed to add item version: " + (result.error || "Unknown error"));
+        //         return;
+        //     }
 
-            console.log("✅ Version added successfully:", result.data);
-        } catch (err) {
-            console.error("❌ Error posting version:", err);
-            alert("Error sending request. Please try again.");
-        }
+        //     console.log("✅ Version added successfully:", result.data);
+        // } catch (err) {
+        //     console.error("❌ Error posting version:", err);
+        //     alert("Error sending request. Please try again.");
+        // }
 
 
 
@@ -2447,7 +2444,6 @@ function showAddImagePopup() {
 
             for (const type of ['Image', 'Video']) {
                 let file = selectedFiles[type];
-
                 if (!file) {
                     console.log(`${type}: No file selected.`);
                     continue;
@@ -2456,10 +2452,12 @@ function showAddImagePopup() {
                 const ext = file.name.split('.').pop();
                 let renamedFile;
                 if (customName) {
-                    new File([file], `${customName}.${ext}`, { type: file.type })
+                    renamedFile = new File([file], `${customName}.${ext}`, { type: file.type })
                 } else {
-                    file;
+                    renamedFile = file;
                 }
+                selectedFiles[type] = renamedFile;
+                file = renamedFile;
 
                 let uploadFile;
                 if (type === 'Image') {
@@ -2470,6 +2468,26 @@ function showAddImagePopup() {
                     uploadFile = renamedFile;
                 }
 
+                // upload to r2
+                async function uploadToR2(file) {
+                    const formData = new FormData();
+                    formData.append('file', file, file.name);
+
+                    const res = await fetch(`${CONFIG.API_BASE_URL}/upload`, {
+                        method: 'POST',
+                        // NO Authorization header needed
+                        body: formData
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || 'Upload failed');
+                    }
+
+                    const { publicUrl } = await res.json();
+                    return publicUrl;
+                }
+
 
                 // ── UPLOAD TO R2 ──
                 try {
@@ -2477,8 +2495,8 @@ function showAddImagePopup() {
                     console.log(`Image uploaded`);
                     // console.log(`${type} uploaded to:`, publicUrl);
                     // you can store it on the unit if you like:
-                    unit._uploadedUrls = unit._uploadedUrls || {};
-                    unit._uploadedUrls[type.toLowerCase()] = publicUrl;
+                    // unit._uploadedUrls = unit._uploadedUrls || {};
+                    // unit._uploadedUrls[type.toLowerCase()] = publicUrl;
                 } catch (err) {
                     console.error(`${type} upload error:`, err);
                     continue;  // skip download/test for this file if upload fails
@@ -2487,10 +2505,11 @@ function showAddImagePopup() {
 
                 // For now, download the compressed file locally to test
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(compressed);
-                link.download = compressed.name;
+                link.href = URL.createObjectURL(uploadFile);
+                link.download = uploadFile.name;
                 link.click();
             }
+
         }
 
         overlay.remove();

@@ -53,7 +53,7 @@ module.exports = (supabaseAdmin) => {
         try {
             const { data, error } = await supabaseAdmin
                 .from('base_items')
-                .select('id, base_serial')
+                .select('id, base_serial, description')
                 .order('id', { ascending: true });
 
             if (error) {
