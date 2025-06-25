@@ -1231,7 +1231,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             // Create actual visible video player
                             const videoEl = document.createElement("video");
                             videoEl.src = videoUrl;
-                            videoEl.controls = true;
+                            // videoEl.controls = true;
                             videoEl.autoplay = true;
                             videoEl.muted = true;
                             videoEl.playsInline = true;

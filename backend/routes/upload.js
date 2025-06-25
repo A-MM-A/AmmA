@@ -55,40 +55,25 @@ module.exports = (s3, R2_BUCKET, CLOUDFLARE_ACCOUNT_ID) => {
     const ext = originalname.split('.').pop().toLowerCase();
 
     // // ── 3a) If video, transcode via FFmpeg ─────────────────────────
-    if (mimetype.startsWith('video/')) {
-      //   // create temp files
-      //   const { path: inPath, cleanup: cleanIn } = await tmp.file({ postfix: `.${ext}` });
-      //   const { path: outPath, cleanup: cleanOut } = await tmp.file({ postfix: '.mp4' });
+    // if (mimetype.startsWith('video/')) {
 
-      //   // write buffer → disk
-      //   await fs.writeFile(inPath, buffer);
-
-      //   // transcode to 720p H.264 @1 Mbps
-      //   await new Promise((resolve, reject) => {
-      //     ffmpeg(inPath)
-      //       .videoCodec('libx264')
-      //       .size('320x?')                 // down to 320px wide
-      //       .outputOptions([
-      //         '-preset superfast',         // even faster encode
-      //         '-crf 35',                   // more aggressive compression
-      //         '-tune zerolatency',         // reduce buffering
-      //         '-movflags +faststart'
-      //       ])
-      //       .on('end', resolve)
-      //       .on('error', reject)
-      //       .save(outPath);
-      //   });
-
-      //   // read compressed back into memory
-      //   uploadBuffer = await fs.readFile(outPath);
-
-      //   // cleanup temps
-      //   await cleanIn();
-      //   await cleanOut();
-
-      // adjust filename & MIME
-      originalname = originalname.replace(/\.\w+$/, '.mp4');
+    //   // adjust filename & MIME
+    //   originalname = originalname.replace(/\.\w+$/, '.mp4');
+    //   mimetype = 'video/mp4';
+    // }
+    if (mimetype === 'video/webm') {
+      const inPath = await writeTempFile(buffer, '.webm');
+      const outPath = inPath.replace(/\.webm$/, '.mp4');
+      await new Promise((resolve, reject) => {
+        ffmpeg(inPath)
+          .outputOptions('-c copy')        // just remux, no re-encode
+          .on('end', resolve)
+          .on('error', reject)
+          .save(outPath);
+      });
+      buffer = await fs.readFile(outPath);
       mimetype = 'video/mp4';
+      key = key.replace(/\.webm$/, '.mp4');
     }
 
     // ── 3b) Upload to R2 ────────────────────────────────────────────
