@@ -1493,9 +1493,9 @@ function showAddVersionPopup() {
         }
 
 
-        
+
         loadingStart(0.5);
-        
+
         const customName = fileNameInput.value.trim();
 
         for (const type of ['Image', 'Video']) {
@@ -1698,51 +1698,70 @@ function showEditVersionPopup() {
 
     // 2) Edit button
     const editBtn = document.createElement('button');
+    editBtn.type = 'submit';
     editBtn.textContent = 'Edit';
     editBtn.className = 'popup-confirm';
     content.appendChild(editBtn);
 
 
+    itemIdInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            editBtn.click();
+        }
+    });
 
 
     // 3) On click, build dummy payload and open second popup
-    editBtn.onclick = () => {
+    editBtn.onclick = async () => {
+        loadingStart(0.5);
 
-        const input1 = itemIdInput.value.trim();
+        const serial = itemIdInput.value.trim();
 
-        if (input1 !== "" && itemIdInput.value.length >= 8) {
+        if (serial !== "" && itemIdInput.value.length >= 8) {
 
-            // fetching functionallity here, which will output payload like below.
-            // will fetch data based on full serial inputted
-            // incase item does not exist, console error Not found and recall this function
+            // fetching functionallity
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/products/versions/serial/${serial}`
+                );
+                const json = await resp.json();
 
+                if (!resp.ok) {
+                    loadingStop();
+                    console.error('Not found:', json.error);
+                    showMessage("Version Not found");
+                    return;
+                }
 
+                const version = json.version;
+                const payload = {
+                    full_serial: version.full_serial,
+                    title: version.title,
+                    price: version.price,
+                    sizes: version.sizes,
+                    material: version.material,
+                    weight: version.weight,
+                    other_attrs: version.other_attrs,
+                    in_stock: version.in_stock,
+                    profit_margin: version.profit_margin,
+                    seller_id: version.seller_id,
+                    available: version.available
+                };
 
-            const payload = {
-                full_serial: itemIdInput.value,
-                title: 'Sample Title',
-                price: '1000',
-                sizes: ['Small', 'Medium', 'Large'],
-                material: 'Cotton',
-                weight: '<1000g',
-                other_attrs: 'Additional attributes...',
-                in_stock: 'TRUE',
-                profit_margin: '1.9',
-                seller_id: '1',
-                available: 'FALSE'
-            };
+                loadingStop();
+                document.body.removeChild(overlay);
+                showEditVersion2Popup(payload);
 
-
-
-
-            // close current popup
-            document.body.removeChild(overlay);
-            // open detailed edit popup with the payload
-            showEditVersion2Popup(payload);
+            } catch (err) {
+                loadingStop();
+                showMessage("Error fetching version");
+                console.error('Fetch error:', err);
+            }
 
         } else {
             errorMsgP.style.display = 'block';
-
+            loadingStop();
+            return;
         }
 
     };
@@ -1768,19 +1787,19 @@ function showEditVersion2Popup(payload) {
         available: payloadAvailable
     } = payload;
 
-    console.log("Payload Values Received\n", {
-        Serial: payloadSerial,
-        Title: payloadTitle,
-        Price: payloadPrice,
-        Sizes: payloadSizes,
-        Material: payloadMaterial,
-        Weight: payloadWeight,
-        Other_attrs: payloadOther,
-        In_stock: payloadStock,
-        Profit: payloadProfit,
-        Seller: payloadSeller,
-        Available: payloadAvailable
-    });
+    // console.log("Payload Values Received\n", {
+    //     Serial: payloadSerial,
+    //     Title: payloadTitle,
+    //     Price: payloadPrice,
+    //     Sizes: payloadSizes,
+    //     Material: payloadMaterial,
+    //     Weight: payloadWeight,
+    //     Other_attrs: payloadOther,
+    //     In_stock: payloadStock,
+    //     Profit: payloadProfit,
+    //     Seller: payloadSeller,
+    //     Available: payloadAvailable
+    // });
 
 
 
@@ -1859,11 +1878,11 @@ function showEditVersion2Popup(payload) {
   <option value="TRUE">TRUE</option>
   <option value="FALSE">FALSE</option>
 `;
-    let stockstatus = payloadStock.toUpperCase();
-    if (payloadStock == 0) {
-        stockstatus = 'FALSE';
-    } else if (payloadStock == 1) {
+    let stockstatus;
+    if (payloadStock) {
         stockstatus = 'TRUE';
+    } else {
+        stockstatus = 'FALSE';
     }
 
     newstockSelect.value = stockstatus;
@@ -1892,11 +1911,11 @@ function showEditVersion2Popup(payload) {
   <option value="FALSE">FALSE</option>
 `;
 
-    let availablestatus = payloadAvailable.toUpperCase();
-    if (payloadAvailable == 0) {
-        availablestatus = 'FALSE';
-    } else if (payloadAvailable == 1) {
+    let availablestatus;
+    if (payloadAvailable) {
         availablestatus = 'TRUE';
+    } else {
+        availablestatus = 'FALSE';
     }
 
     newavailable.value = availablestatus;
@@ -2238,22 +2257,23 @@ function showEditVersion2Popup(payload) {
     confirmBtn.className = 'popup-confirm';
     content.appendChild(confirmBtn);
 
-    confirmBtn.onclick = () => {
+    confirmBtn.onclick = async () => {
+        loadingStart(0.5);
         // Gather updated values 
 
+        const serial = payloadSerial;
         const updatedPayload = {
-            full_serial: payloadSerial,
+            full_serial: serial,
             title: newtitleInput.value,
-            price: newpriceInput.value,
+            price: Number(newpriceInput.value),
             sizes: newsizeInput.value.split(',').map(s => s.trim()),
             material: newmaterialInput.value,
             weight: newweightInput.value,
             other_attrs: newattrTextarea.value,
-            in_stock: newstockSelect.options[newstockSelect.selectedIndex].text,
-            profit_margin: newmarginInput.value,
-            seller_id: newsellerIdInput.value,
-            available: newavailable.options[newavailable.selectedIndex].text
-
+            in_stock: (newstockSelect.value === 'TRUE'),
+            profit_margin: Number(newmarginInput.value),
+            seller_id: Number(newsellerIdInput.value),
+            available: (newavailable.value === 'TRUE')
         };
 
 
@@ -2261,22 +2281,42 @@ function showEditVersion2Popup(payload) {
             return JSON.stringify(Object.entries(obj1).sort()) === JSON.stringify(Object.entries(obj2).sort());
         }
 
+        // console.log('Payload', payload, '\nUpdated version:',  updatedPayload);
+
 
         if (!deepEqual(payload, updatedPayload)) {
 
 
             // TODO: send updatedPayload to backend
             // the posting mechanism to the table : the content will be the payload
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/products/versions/serial/${serial}`,
+                    {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updatedPayload)
+                    }
+                );
+                const json = await resp.json();
+                if (!resp.ok) {
+                    loadingStop();
+                    showMessage("Failed To Update");
+                    return;
+                }
+                loadingStop();
+                overlay.remove();
+                Saved();
 
-
-
-            console.log('Updated Payload ready:', updatedPayload);
-            overlay.remove();
-            Saved();
-
+            } catch (err) {
+                loadingStop();
+                console.error('Update error:', err);
+                alert('Error saving changes');
+            }
 
         } else {
 
+            loadingStop();
             showMessage("No Changes Detected");
 
         }

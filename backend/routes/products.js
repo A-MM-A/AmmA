@@ -130,7 +130,7 @@ module.exports = (supabaseAdmin) => {
 
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
-    //                                                           Editting an item version
+    //                                                     Editting & deleting an item version
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
 
     // GET /api/products/versions/serial/:fullSerial -> gets the item using full serial
@@ -177,6 +177,33 @@ module.exports = (supabaseAdmin) => {
         } catch (err) {
             console.error(err);
             res.status(500).json({ error: 'Failed to update version' });
+        }
+    });
+
+    router.delete('/versions/serial/:fullSerial', async (req, res) => {
+        try {
+            const fullSerial = req.params.fullSerial;
+
+            // attempt delete
+            const { data, error } = await supabaseAdmin
+                .from('item_versions')
+                .delete()
+                .eq('full_serial', fullSerial)
+                .select()           // returns deleted row(s)
+                .single();          // expect exactly one
+
+            if (error) {
+                console.error('❌ Failed to delete version:', error);
+                return res.status(400).json({ error: error.message });
+            }
+            if (!data) {
+                return res.status(404).json({ error: 'Version not found' });
+            }
+
+            res.json({ message: 'Deleted successfully', deleted: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to delete version' });
         }
     });
 
