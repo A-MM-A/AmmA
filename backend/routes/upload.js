@@ -4,44 +4,119 @@
  * Handles:
  *   POST /api/upload  (no auth, multipart/form-data)
  *     → Uploads to Cloudflare R2, returns { key, publicUrl }
+ *
+ * Dependencies: express, multer, express-rate-limit, fluent-ffmpeg,
+ *               tmp-promise, aws-sdk (S3), fs/promises
  */
 
 const express = require('express');
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
+const ffmpegPath = require('ffmpeg-static');
+const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegPath);
+const tmp = require('tmp-promise');
+const fs = require('fs').promises;
 
 module.exports = (s3, R2_BUCKET, CLOUDFLARE_ACCOUNT_ID) => {
   const router = express.Router();
 
-  // Multer setup: store file in memory buffer
-  const storage = multer.memoryStorage();
-  const upload = multer({ storage });
+  // ── 1) Rate limiter ───────────────────────────────────────────────
+  const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,   // 15 minutes
+    max: 20,               // limit each IP to 20 upload requests
+    message: { error: 'Too many uploads; please wait 15 minutes.' }
+  });
+  router.use(uploadLimiter);
 
-  // POST /api/upload
+  // ── 2) Multer setup (memory, 50 MB max, images/videos only) ──────
+  const storage = multer.memoryStorage();
+  const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 },  // 50 MiB
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/') ||
+        file.mimetype.startsWith('video/')) {
+        cb(null, true);
+      } else {
+        cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'Only image/video allowed'));
+      }
+    }
+  });
+
+  // ── 3) POST /api/upload - Upload Route ───────────────────────────────────────────────
   router.post('/', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
 
-    const { originalname, buffer, mimetype } = req.file;
-    const key = originalname;
+    let { originalname, buffer, mimetype } = req.file;
+    let uploadBuffer = buffer;
+    const ext = originalname.split('.').pop().toLowerCase();
 
+    // ── 3a) If video, transcode via FFmpeg ─────────────────────────
+    if (mimetype.startsWith('video/')) {
+      // create temp files
+      const { path: inPath, cleanup: cleanIn } = await tmp.file({ postfix: `.${ext}` });
+      const { path: outPath, cleanup: cleanOut } = await tmp.file({ postfix: '.mp4' });
+
+      // write buffer → disk
+      await fs.writeFile(inPath, buffer);
+
+      // transcode to 720p H.264 @1 Mbps
+      await new Promise((resolve, reject) => {
+        ffmpeg(inPath)
+          .videoCodec('libx264')
+          .size('1280x720')
+          .outputOptions('-b:v 1M')
+          .on('end', resolve)
+          .on('error', reject)
+          .save(outPath);
+      });
+
+      // read compressed back into memory
+      uploadBuffer = await fs.readFile(outPath);
+
+      // cleanup temps
+      await cleanIn();
+      await cleanOut();
+
+      // adjust filename & MIME
+      originalname = originalname.replace(/\.\w+$/, '.mp4');
+      mimetype = 'video/mp4';
+    }
+
+    // ── 3b) Upload to R2 ────────────────────────────────────────────
+    const key = originalname;  // or prefix with folders as you like
     try {
-      // Upload to R2
       await s3.putObject({
         Bucket: R2_BUCKET,
         Key: key,
-        Body: buffer,
+        Body: uploadBuffer,
         ContentType: mimetype,
         ACL: 'public-read'
       }).promise();
 
-      // Construct public URL
       const publicUrl = `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}/${key}`;
-      res.status(201).json({ key, publicUrl });
+      return res.status(201).json({ key, publicUrl });
+
     } catch (err) {
       console.error('R2 upload error', err);
-      res.status(500).json({ error: 'Failed to upload to R2.' });
+      return res.status(500).json({ error: 'Failed to upload to R2.' });
     }
+  });
+
+  // ── 4) Multer error handler ───────────────────────────────────────
+  router.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Max is 50 MB.' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: err.message });
+      }
+    }
+    next(err);
   });
 
   return router;

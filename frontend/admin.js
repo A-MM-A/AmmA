@@ -93,23 +93,45 @@ function createPopup(titleText, onBack) {
 }
 
 // compress image
-function compressImage(file) {
+/**
+ * Compress an image by resizing it to at most maxDim × maxDim
+ * and then re-encoding at given quality.
+ *
+ * @param {File} file           original image file
+ * @param {number} maxDim       max width or height in px (e.g. 1080)
+ * @param {number} quality      JPEG quality between 0 and 1 (e.g. 0.2)
+ * @returns {Promise<File>}     compressed File
+ */
+function compressImage(file, maxDim = 1080, quality = 0.2) {
     return new Promise(resolve => {
         const reader = new FileReader();
         reader.onload = () => {
             const img = new Image();
             img.onload = () => {
+                // compute new size
+                let { width, height } = img;
+                if (width > maxDim || height > maxDim) {
+                    const ratio = width > height ? maxDim / width : maxDim / height;
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+
+                // draw onto canvas
                 const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-
+                canvas.width = width;
+                canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
+                ctx.drawImage(img, 0, 0, width, height);
 
+                // toBlob at desired quality
                 canvas.toBlob(blob => {
-                    const compressed = new File([blob], file.name, { type: file.type });
+                    const compressed = new File(
+                        [blob],
+                        file.name.replace(/\.\w+$/, '.jpg'), // ensure .jpg extension
+                        { type: 'image/jpeg' }
+                    );
                     resolve(compressed);
-                }, 'image/jpeg', 0.2); // JPEG, 20% quality
+                }, 'image/jpeg', quality);
             };
             img.src = reader.result;
         };
@@ -121,6 +143,26 @@ function compressImage(file) {
 async function compressVideo(file) {
     // This does NOT compress much — real compression needs server-side tools like ffmpeg
     return new File([file], file.name, { type: file.type });
+}
+
+// upload to r2
+async function uploadToR2(file) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    const res = await fetch(`${CONFIG.API_BASE_URL}/upload`, {
+        method: 'POST',
+        // NO Authorization header needed
+        body: formData
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+    }
+
+    const { publicUrl } = await res.json();
+    return publicUrl;
 }
 
 // show message
@@ -191,79 +233,6 @@ function showItemConfigPopup() {
 
 
 // -----1----- Add Version popup
-// function showAddVersionPopup() {
-//     const { overlay, title, content } = createPopup('Add Version', showItemConfigPopup);
-
-//     // 11 inputs + 2 selectors in first 2 rows
-//     for (let i = 1; i <= 11; i++) {
-//         const row = document.createElement('div');
-//         row.style.display = 'flex';
-//         row.style.gap = '6px';
-//         row.style.marginBottom = '6px';
-
-//         const input = document.createElement('input');
-//         input.title = `Field ${i}`;
-//         input.placeholder = `Field ${i}`;
-//         input.style.flex = i <= 2 ? '1' : 'auto';
-//         input.style.padding = '6px';
-//         row.appendChild(input);
-
-//         if (i <= 2) {
-//             const sel = document.createElement('select');
-//             sel.innerHTML = '<option>Unit</option><option>Value</option>';
-//             sel.style.padding = '6px';
-//             row.appendChild(sel);
-//         }
-
-//         content.appendChild(row);
-//     }
-
-//     // wide description box
-//     const desc = document.createElement('textarea');
-//     desc.placeholder = 'Version description…';
-//     desc.style.width = '100%';
-//     desc.style.height = '60px';
-//     desc.style.overflowX = 'auto';
-//     content.appendChild(desc);
-
-//     // file + camera + name input + preview
-//     const fileRow = document.createElement('div');
-//     fileRow.style.display = 'flex';
-//     fileRow.style.alignItems = 'center';
-//     fileRow.style.gap = '4px';
-
-//     const upload = document.createElement('input');
-//     upload.type = 'file';
-//     upload.accept = 'image/*,video/*';
-//     upload.onchange = (e) => {
-//         const [file] = e.target.files;
-//         if (!file) return;
-//         const reader = new FileReader();
-//         reader.onload = () => {
-//             const img = document.createElement('img');
-//             img.src = reader.result;
-//             img.style.width = '40px';
-//             img.style.height = '40px';
-//             fileRow.appendChild(img);
-//         };
-//         reader.readAsDataURL(file);
-//     };
-//     fileRow.appendChild(upload);
-
-//     const nameIn = document.createElement('input');
-//     nameIn.placeholder = 'File name…';
-//     nameIn.style.flex = '1';
-//     fileRow.appendChild(nameIn);
-
-//     content.appendChild(fileRow);
-
-//     // confirm
-//     const confirm = document.createElement('button');
-//     confirm.className = 'popup-confirm';
-//     confirm.textContent = 'Confirm';
-//     content.appendChild(confirm);
-// }
-
 function showAddVersionPopup() {
     const { overlay, title, content } = createPopup('Add Version', showItemConfigPopup);
 
@@ -317,22 +286,13 @@ function showAddVersionPopup() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = type === 'Image' ? 'image/*' : 'video/*';
-        input.capture = type.toLowerCase();
+        input.capture = 'environment';
         input.style = 'opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer;';
 
 
         input.onchange = e => {
             const file = e.target.files[0];
             if (!file) return;
-
-            // // Use the provided file name input
-            // const customName = fileNameInput.value.trim();
-            // const ext = file.name.split('.').pop();
-
-            // // Only rename if name is provided
-            // const finalFile = (customName)
-            //     ? new File([file], `${customName}.${ext}`, { type: file.type })
-            //     : file;
 
             const finalFile = file;
 
@@ -1403,24 +1363,7 @@ function showAddVersionPopup() {
 
         const customName = fileNameInput.value.trim();
 
-        async function uploadToR2(file) {
-            const formData = new FormData();
-            formData.append('file', file, file.name);
 
-            const res = await fetch(`${CONFIG.API_BASE_URL}/upload`, {
-                method: 'POST',
-                // NO Authorization header needed
-                body: formData
-            });
-
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || 'Upload failed');
-            }
-
-            const { publicUrl } = await res.json();
-            return publicUrl;
-        }
 
 
         for (const type of ['Image', 'Video']) {
@@ -1439,23 +1382,33 @@ function showAddVersionPopup() {
 
             // console.log(`${type}: Original File`, file);
 
-            let compressedFile;
+            // let compressedFile;
+            // if (type === 'Image') {
+            //     compressedFile = await compressImage(file);
+            // } else {
+            //     compressedFile = await compressVideo(file);
+            // }
+
+            let uploadFile;
             if (type === 'Image') {
-                compressedFile = await compressImage(file);
+                // front-end compression + resize
+                uploadFile = await compressImage(renamedFile, 1080, 0.2);
             } else {
-                compressedFile = await compressVideo(file);
+                // videos stay as-is; server will transcode
+                uploadFile = renamedFile;
             }
 
             // console.log(`${type}: Compressed File`, compressedFile);
 
             try {
                 // ── UPLOAD TO R2 ──
-                const publicUrl = await uploadToR2(compressedFile);
+                const publicUrl = await uploadToR2(uploadFile);
                 console.log(`Image uploaded`);
                 // console.log(`${type} uploaded to:`, publicUrl);
                 // TODO: use `publicUrl` in your UI or product payload
             } catch (err) {
                 console.error(`${type} upload error:`, err);
+                continue;  // skip download/test for this file if upload fails
             }
 
 
@@ -2270,7 +2223,6 @@ function showAddImagePopup() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = type === 'Image' ? 'image/*' : 'video/*';
-            input.capture = type.toLowerCase();
             input.style = `
             opacity:0;
             position:absolute;
@@ -2509,11 +2461,27 @@ function showAddImagePopup() {
                     file;
                 }
 
-                let compressedFile;
+                let uploadFile;
                 if (type === 'Image') {
-                    compressedFile = await compressImage(renamedFile);
+                    // front-end compression + resize
+                    uploadFile = await compressImage(renamedFile, 1080, 0.2);
                 } else {
-                    compressedFile = await compressVideo(renamedFile);
+                    // videos stay as-is; server will transcode
+                    uploadFile = renamedFile;
+                }
+
+
+                // ── UPLOAD TO R2 ──
+                try {
+                    const publicUrl = await uploadToR2(uploadFile);
+                    console.log(`Image uploaded`);
+                    // console.log(`${type} uploaded to:`, publicUrl);
+                    // you can store it on the unit if you like:
+                    unit._uploadedUrls = unit._uploadedUrls || {};
+                    unit._uploadedUrls[type.toLowerCase()] = publicUrl;
+                } catch (err) {
+                    console.error(`${type} upload error:`, err);
+                    continue;  // skip download/test for this file if upload fails
                 }
 
 
