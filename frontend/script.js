@@ -920,11 +920,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         // 3) side‑buttons (unchanged)
                         vp.insertAdjacentHTML("beforeend", sideButtonsHTML());
 
+                        function rounding(value) {
+                            return Math.ceil(value / 10) * 10;
+                        }
+
 
                         // 4) panel‑title: use versionObj.title, versionSerial, and formatted price
                         const price = versionObj.priceValue;
                         const profit_rate = versionObj.Profit;
-                        const final_price = price * profit_rate;
+                        const final_price = rounding(price * profit_rate);
                         const formattedPrice = `KES ${(final_price ?? 0).toLocaleString()}`;
 
                         vp.insertAdjacentHTML("beforeend", `

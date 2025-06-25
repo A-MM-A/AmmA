@@ -436,7 +436,7 @@ function showAddVersionPopup() {
 
     // Input container (1 part)
     const itemIdContainer = document.createElement('div');
-    itemIdContainer.style.flex = '2';
+    itemIdContainer.style.flex = '1';
     itemIdContainer.style.minWidth = '0';
 
     const itemIdLabel = document.createElement('label');
@@ -444,7 +444,7 @@ function showAddVersionPopup() {
     itemIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
 
     const itemIdInput = document.createElement('input');
-    itemIdInput.placeholder = 'E.g   1';
+    itemIdInput.placeholder = 'E.g  1';
     itemIdInput.maxLength = 6;
     itemIdInput.classList.add("rounded-input");
     itemIdInput.style = `
@@ -505,33 +505,54 @@ function showAddVersionPopup() {
     let itemMap = {};       // id → serial
     let serialToId = {};    // serial → id
     let options;
+    let fetched = false;
 
     async function loadBaseItems() {
+        // visuals when fetching items
+        itemSelect.disabled = true;
+        itemIdInput.disabled = true;
+        itemSelect.innerHTML = '<option>Loading items…</option>';
+
         try {
-            const resp = await fetch(`${CONFIG.API_BASE_URL}/products/base-items`);
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/base-items`
+            );
             const json = await resp.json();
-            if (!resp.ok) throw new Error(json.error);
+            if (resp.ok) {
+                fetched = true;
 
-            // fill maps
-            itemMap = {};
-            serialToId = {};
-            json.items.forEach(({ id, base_serial, description }) => {
-                const label = `${base_serial} ${description}`;      // ← new
-                itemMap[String(id)] = label;                       // store combined label
-                serialToId[label] = String(id);                    // reverse lookup if needed
-            });
-            console.log(itemMap);
+                // fill maps
+                itemMap = {};
+                serialToId = {};
+                json.items.forEach(({ id, base_serial, description }) => {
+                    const label = `${base_serial} : ${description}`;      // ← new
+                    itemMap[String(id)] = label;                       // store combined label
+                    serialToId[label] = String(id);                    // reverse lookup if needed
+                });
+                // console.log(itemMap);
 
 
-            // build <option> list
-            options = `
-            <option value="" selected>Select Item…</option>
-                ${Object.entries(itemMap)
-                    .map(([id, label]) => `<option value="${id}">${label}</option>`)
-                    .join('')}
-                `;
+                // build <option> list
+                options = `
+                <option value="" selected>Select Item…</option>
+                    ${Object.entries(itemMap)
+                        .map(([id, label]) => `<option value="${id}">${label}</option>`)
+                        .join('')}
+                    `;
 
-            itemSelect.innerHTML = options;
+                itemSelect.innerHTML = options;
+
+                // visuals when items fetched
+                itemSelect.disabled = false;
+                itemIdInput.disabled = false;
+                loadUsedVersions();
+
+
+            } else {
+                console.error('Failed to load Items:', json.error);
+                throw new Error(json.error);
+            }
+
 
         } catch (err) {
             console.error('Failed to load items:', err);
@@ -546,6 +567,7 @@ function showAddVersionPopup() {
 
     // when user types an ID
     itemIdInput.addEventListener('input', () => {
+        loadUsedVersions();
         const id = itemIdInput.value.trim();
         if (id) {
             // disable select
@@ -581,24 +603,25 @@ function showAddVersionPopup() {
             itemIdInput.style.opacity = '1';
             itemIdInput.value = '';
         }
+        loadUsedVersions();
     });
 
 
-
     // Prefill itemIdInput if stored
+    const savedItemId = localStorage.getItem('lastItemId');
     async function initItemField() {
         // 1a) First, load the items from the server
         await loadBaseItems();
 
         // 1b) Now that itemMap & the selector are ready, prefill from localStorage
-        const savedItemId = localStorage.getItem('lastItemId');
-        if (savedItemId) {
+        if (savedItemId && fetched) {
             // set the input
             itemIdInput.value = savedItemId;
             itemIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
 
             // dispatch the 'input' event so your listener locks & updates the selector
             itemIdInput.dispatchEvent(new Event('input'));
+
         }
     }
 
@@ -637,6 +660,21 @@ function showAddVersionPopup() {
 
     // fetching versions
     async function loadUsedVersions() {
+        // console.log("called");
+
+        // visuals when fetching loading values
+        uniqueIdLabel.innerHTML = `<p> Unique Version ID : <span style="color : rgb(114, 236, 136);">Loading...</span></p>`;
+        statusIndicator.style.backgroundColor = 'blue';
+        uniqueIdInput.disabled = true;
+
+        if (!isItemSelectionValid()) {
+            uniqueIdInput.style.backgroundColor = '';
+            uniqueIdInput.value = '';
+            statusIndicator.style.backgroundColor = 'gray';
+            return;
+        }
+
+
         const baseId = Number(itemIdInput.value);
         if (!baseId) return;
 
@@ -649,25 +687,29 @@ function showAddVersionPopup() {
                 usedVersionId = json.versions;         // e.g. [1,2,3]
                 // console.log('Used version IDs:', usedVersionId);
 
+
+                // assigning the next value
+                let nextId = 1;
+                while (usedVersionId.includes(nextId)) {
+                    nextId++;
+                }
+                uniqueIdInput.value = nextId;
+
                 // reset unique id input and indicator
                 uniqueIdInput.dispatchEvent(new Event('input'));
-                uniqueIdInput.style.backgroundColor = '';
-                uniqueIdInput.value = '';
-                statusIndicator.style.backgroundColor = 'gray';
+
+                // visuals when loading values are fetched
+                uniqueIdLabel.textContent = 'Unique Version ID';
+                uniqueIdInput.disabled = false;
             } else {
                 console.error('Failed to load versions:', json.error);
+                uniqueIdLabel.innerHTML = `<p> Unique Version ID : <span style="color : rgb(218, 137, 31);">Failed ...</span></p>`;
             }
         } catch (err) {
             console.error('Error loading versions:', err);
         }
     }
 
-    // Call it whenever the base item changes:
-    itemIdInput.addEventListener('change', loadUsedVersions);
-    itemIdInput.addEventListener('input', loadUsedVersions);
-
-    // Also on initial form build:
-    loadUsedVersions();
 
     // actual row 3 ui
     const row3 = document.createElement('div');
@@ -750,6 +792,11 @@ function showAddVersionPopup() {
 
         // must be non-empty, numeric, and not in usedVersionId
         return uniqueIdInput.value.trim() !== '' && !usedVersionId.includes(v);
+    }
+
+    // incase the base item has not been fetched
+    if (!fetched) {
+        uniqueIdInput.disabled = true;
     }
 
     statusContainer.appendChild(statusIndicator);
@@ -991,13 +1038,37 @@ function showAddVersionPopup() {
   background-color: rgba(193, 239, 183, 0.43);
 `;
 
+    function rounding(value) {
+        return Math.ceil(value / 10) * 10;
+    }
+
+
     marginInput.addEventListener('input', () => {
+        const totalPrice = rounding(marginInput.value * priceInput.value);
         if (marginInput.value.trim() !== '') {
             marginInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+            // update the live calculator after profit label
+            if (priceInput.value) {
+                marginLabel.textContent = `Profit Margin : ${totalPrice}`;
+            } else {
+                marginLabel.textContent = `Profit Margin `;
+            }
         } else {
             marginInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
         }
     });
+
+    // update the live calculator after profit label
+    priceInput.addEventListener('input', () => {
+        const totalPrice = rounding(marginInput.value * priceInput.value);
+        if (priceInput.value) {
+            marginLabel.textContent = `Profit Margin : ${totalPrice}`;
+        } else {
+            marginLabel.textContent = `Profit Margin `;
+        }
+    });
+
     // Prefill if stored
     const savedProfit = localStorage.getItem('lastProfit');
     if (savedProfit) {
@@ -1114,30 +1185,48 @@ function showAddVersionPopup() {
 
 
     async function loadSellers() {
+        // visuals when fetching items
+        sellerSelect.disabled = true;
+        sellerIdInput.disabled = true;
+        sellerSelect.innerHTML = '<option>Loading Sellers…</option>';
+
         try {
-            const resp = await fetch(`${CONFIG.API_BASE_URL}/products/sellers`);
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/sellers`
+            );
             const json = await resp.json();
-            if (!resp.ok) throw new Error(json.error);
+            if (resp.ok) {
+                // build maps
+                sellerMap = {};
+                sellerToIdMap = {};
+                json.sellers.forEach(({ id, name }) => {
+                    sellerMap[String(id)] = name;
+                    sellerToIdMap[name] = String(id);
+                });
+                // console.log(itemMap);
 
-            // build maps
-            sellerMap = {};
-            sellerToIdMap = {};
-            json.sellers.forEach(({ id, name }) => {
-                sellerMap[String(id)] = name;
-                sellerToIdMap[name] = String(id);
-            });
-            // console.log(itemMap);
+
+                // build options HTML
+                SellersHTML = `
+                <option value="" selected>Select Seller…</option>
+                    ${Object.entries(sellerMap)
+                        .map(([id, name]) => `<option value="${id}">${name}</option>`)
+                        .join('')}
+                    `;
+
+                sellerSelect.innerHTML = SellersHTML;
+
+                // visuals when fetching items
+                sellerSelect.disabled = false;
+                sellerIdInput.disabled = false;
 
 
-            // build options HTML
-            SellersHTML = `
-            <option value="" selected>Select Seller…</option>
-                ${Object.entries(sellerMap)
-                    .map(([id, name]) => `<option value="${id}">${name}</option>`)
-                    .join('')}
-                `;
 
-            sellerSelect.innerHTML = SellersHTML;
+            } else {
+                console.error('Failed to load Sellers:', json.error);
+                throw new Error(json.error);
+            }
+
 
         } catch (err) {
             console.error('Error loading sellers:', err);
@@ -1298,50 +1387,50 @@ function showAddVersionPopup() {
 
     // Click logic
     confirmBtn.addEventListener('click', async () => {
-        // if (!keyInput.value) {
-        //     showMessage("Empty Image Key");
-        //     return;
-        // }
-        // if (!isItemSelectionValid()) {
-        //     showMessage("Invalid Item Id");
-        //     return;
-        // }
-        // if (!isVersionValid()) {
-        //     showMessage("Invalid Version Id");
-        //     return;
-        // }
-        // if (!titleInput.value) {
-        //     showMessage("Empty Title");
-        //     return;
-        // }
-        // if (!priceInput.value) {
-        //     showMessage("Empty Price");
-        //     return;
-        // }
-        // if (!sizeInput.value) {
-        //     showMessage("Empty Size");
-        //     return;
-        // }
-        // if (!materialInput.value) {
-        //     showMessage("Empty Material");
-        //     return;
-        // }
-        // if (!weightInput.value) {
-        //     showMessage("Empty Weight");
-        //     return;
-        // }
-        // if (!marginInput.value) {
-        //     showMessage("Empty Profit Margin");
-        //     return;
-        // }
-        // if (!isSellerSelectionValid()) {
-        //     showMessage("Invalid Seller Id");
-        //     return;
-        // }
-        // if (!attrTextarea.value) {
-        //     showMessage("Empty Text Area");
-        //     return;
-        // }
+        if (!keyInput.value) {
+            showMessage("Empty Image Key");
+            return;
+        }
+        if (!isItemSelectionValid()) {
+            showMessage("Invalid Item Id");
+            return;
+        }
+        if (!isVersionValid()) {
+            showMessage("Invalid Version Id");
+            return;
+        }
+        if (!titleInput.value) {
+            showMessage("Empty Title");
+            return;
+        }
+        if (!priceInput.value) {
+            showMessage("Empty Price");
+            return;
+        }
+        if (!sizeInput.value) {
+            showMessage("Empty Size");
+            return;
+        }
+        if (!materialInput.value) {
+            showMessage("Empty Material");
+            return;
+        }
+        if (!weightInput.value) {
+            showMessage("Empty Weight");
+            return;
+        }
+        if (!marginInput.value) {
+            showMessage("Empty Profit Margin");
+            return;
+        }
+        if (!isSellerSelectionValid()) {
+            showMessage("Invalid Seller Id");
+            return;
+        }
+        if (!attrTextarea.value) {
+            showMessage("Empty Text Area");
+            return;
+        }
 
 
         const customName = fileNameInput.value.trim();
@@ -1418,48 +1507,48 @@ function showAddVersionPopup() {
 
 
 
-        // const payload = {
-        //     base_item_id: itemIdInput.value,
-        //     version_number: uniqueIdInput.value.padStart(2, '0'),
-        //     title: titleInput.value,
-        //     price: priceInput.value,
-        //     image_key: keyInput.value,
-        //     sizes: sizeInput.value.split(',').map(s => s.trim()),
-        //     material: materialInput.value,
-        //     weight: weightInput.value,
-        //     other_attrs: attrTextarea.value,
-        //     in_stock: stockSelect.options[stockSelect.selectedIndex].text,
-        //     profit_margin: marginInput.value,
-        //     seller_id: sellerIdInput.value,
+        const payload = {
+            base_item_id: itemIdInput.value,
+            version_number: uniqueIdInput.value.padStart(2, '0'),
+            title: titleInput.value,
+            price: priceInput.value,
+            image_key: keyInput.value,
+            sizes: sizeInput.value.split(',').map(s => s.trim()),
+            material: materialInput.value,
+            weight: weightInput.value,
+            other_attrs: attrTextarea.value,
+            in_stock: stockSelect.options[stockSelect.selectedIndex].text,
+            profit_margin: marginInput.value,
+            seller_id: sellerIdInput.value,
 
-        // };
-        // console.log('Payload ready:', payload);
+        };
+        console.log('Payload ready:', payload);
 
-        // // the posting mechanism to the table : the content will be the payload
+        // the posting mechanism to the table : the content will be the payload
 
-        // try {
-        //     const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json"
-        //         },
-        //         body: JSON.stringify(payload)
-        //     });
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
 
 
-        //     const result = await response.json();
+            const result = await response.json();
 
-        //     if (!response.ok) {
-        //         console.error("❌ Failed to add version:", result.error || result);
-        //         alert("Failed to add item version: " + (result.error || "Unknown error"));
-        //         return;
-        //     }
+            if (!response.ok) {
+                console.error("❌ Failed to add version:", result.error || result);
+                alert("Failed to add item version: " + (result.error || "Unknown error"));
+                return;
+            }
 
-        //     console.log("✅ Version added successfully:", result.data);
-        // } catch (err) {
-        //     console.error("❌ Error posting version:", err);
-        //     alert("Error sending request. Please try again.");
-        // }
+            console.log("✅ Version added successfully:", result.data);
+        } catch (err) {
+            console.error("❌ Error posting version:", err);
+            alert("Error sending request. Please try again.");
+        }
 
 
 
