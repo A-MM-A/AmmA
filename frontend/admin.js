@@ -140,9 +140,69 @@ function compressImage(file, maxDim = 1080, quality = 0.2) {
 }
 
 // compress video
-async function compressVideo(file) {
-    // This does NOT compress much — real compression needs server-side tools like ffmpeg
-    return new File([file], file.name, { type: file.type });
+/**
+ * Compress an arbitrary video File by re-recording it at low resolution & bitrate.
+ * @param {File} file         The original video file
+ * @param {number} width      Target width in px (e.g. 640)
+ * @param {number} fps        Frames per second to record (e.g. 15)
+ * @param {number} bitrate    Video bits per second (e.g. 250_000 for 250kbps)
+ * @returns {Promise<File>}   A new, smaller WebM File
+ */
+async function compressVideo(file, width = 640, fps = 15, bitrate = 250_000) {
+    // 1) Create video element to play the original
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = url;
+    video.muted = true;
+    await video.play().catch(() => { }); // some browsers need this to be user-initiated
+
+    // 2) Compute height to keep aspect ratio
+    const aspect = video.videoHeight / video.videoWidth;
+    const height = Math.round(width * aspect);
+
+    // 3) Set up an off-screen canvas and draw at reduced resolution
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    // 4) Capture the canvas stream
+    const stream = canvas.captureStream(fps);
+
+    // 5) Set up MediaRecorder on that stream
+    const recorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm; codecs=vp8',
+        videoBitsPerSecond: bitrate
+    });
+
+    const chunks = [];
+    recorder.ondataavailable = e => chunks.push(e.data);
+
+    // 6) Start recording, and paint frames on each requestAnimationFrame
+    recorder.start();
+    let painting = true;
+    (function drawFrame() {
+        if (!painting) return;
+        ctx.drawImage(video, 0, 0, width, height);
+        requestAnimationFrame(drawFrame);
+    })();
+
+    // 7) Stop when the source video ends (or you decide)
+    await new Promise(resolve => {
+        video.onended = resolve;
+        // or setTimeout(resolve, someDuration) to limit length
+    });
+    painting = false;
+    recorder.stop();
+
+    // 8) Wait for recorder to finish
+    await new Promise(resolve => recorder.onstop = resolve);
+    video.pause();
+    URL.revokeObjectURL(url);
+
+    // 9) Build a new File from the recorded chunks
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    return new File([blob], file.name.replace(/\.\w+$/, '.webm'), { type: blob.type });
 }
 
 
@@ -2553,8 +2613,8 @@ function showAddImagePopup() {
                     // front-end compression + resize
                     uploadFile = await compressImage(renamedFile, 1080, 0.2);
                 } else {
-                    // videos stay as-is; server will transcode
-                    uploadFile = renamedFile;
+                    // compressVideo 
+                    uploadFile = await compressVideo(renamedFile, 640, 15, 250_000);
                 }
 
                 // upload to r2

@@ -67,11 +67,11 @@ module.exports = (s3, R2_BUCKET, CLOUDFLARE_ACCOUNT_ID) => {
       await new Promise((resolve, reject) => {
         ffmpeg(inPath)
           .videoCodec('libx264')
-          .size('640x?')                         // downscale to 640px wide
+          .size('320x?')                 // down to 320px wide
           .outputOptions([
-            '-preset ultrafast',
-            '-crf 28',
-            '-b:v 500k',
+            '-preset superfast',         // even faster encode
+            '-crf 35',                   // more aggressive compression
+            '-tune zerolatency',         // reduce buffering
             '-movflags +faststart'
           ])
           .on('end', resolve)
