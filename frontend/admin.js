@@ -149,6 +149,7 @@ function compressImage(file, maxDim = 1080, quality = 0.2) {
  * @returns {Promise<File>}   A new, smaller WebM File
  */
 async function compressVideo(file, width = 640, fps = 15, bitrate = 250_000) {
+    loadingStart(0.5);
     // 1) Create video element to play the original
     const url = URL.createObjectURL(file);
     const video = document.createElement('video');
@@ -202,6 +203,7 @@ async function compressVideo(file, width = 640, fps = 15, bitrate = 250_000) {
 
     // 9) Build a new File from the recorded chunks
     const blob = new Blob(chunks, { type: 'video/webm' });
+    loadingStop();
     return new File([blob], file.name.replace(/\.\w+$/, '.webm'), { type: blob.type });
 }
 
@@ -2622,11 +2624,13 @@ function showAddImagePopup() {
                     const formData = new FormData();
                     formData.append('file', file, file.name);
 
+                    loadingStart(0.5);
                     const res = await fetch(`${CONFIG.API_BASE_URL}/upload`, {
                         method: 'POST',
                         // NO Authorization header needed
                         body: formData
                     });
+                    loadingStop();
 
                     if (!res.ok) {
                         const err = await res.json().catch(() => ({}));
