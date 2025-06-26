@@ -2258,6 +2258,42 @@ function showEditVersion2Popup(payload) {
     content.appendChild(confirmBtn);
 
     confirmBtn.onclick = async () => {
+        
+        
+        
+        if (!newtitleInput.value) {
+            showMessage("Empty Title");
+            return;
+        }
+        if (!newpriceInput.value) {
+            showMessage("Empty Price");
+            return;
+        }
+        if (!newsizeInput.value) {
+            showMessage("Empty Size");
+            return;
+        }
+        if (!newmaterialInput.value) {
+            showMessage("Empty Material");
+            return;
+        }
+        if (!newweightInput.value) {
+            showMessage("Empty Weight");
+            return;
+        }
+        if (!newmarginInput.value) {
+            showMessage("Empty Profit Margin");
+            return;
+        }
+        if (!newsellerIdInput.value) {
+            showMessage("Invalid Seller Id");
+            return;
+        }
+        if (!newattrTextarea.value) {
+            showMessage("Empty Text Area");
+            return;
+        }
+
         loadingStart(0.5);
         // Gather updated values 
 
@@ -2302,6 +2338,7 @@ function showEditVersion2Popup(payload) {
                 if (!resp.ok) {
                     loadingStop();
                     showMessage("Failed To Update");
+                    // console.error('Update failed:', json.error);
                     return;
                 }
                 loadingStop();
@@ -2311,7 +2348,7 @@ function showEditVersion2Popup(payload) {
             } catch (err) {
                 loadingStop();
                 console.error('Update error:', err);
-                alert('Error saving changes');
+                showMessage("Error saving changes");
             }
 
         } else {
@@ -3032,6 +3069,48 @@ function showDeleteVersion() {
 
         }
 
+    };
+
+    deleteBtn.onclick = async () => {
+        loadingStart(0.5);
+        const serial1 = itemIdInput.value.trim();
+        const serial2 = itemIdInput2.value.trim();
+
+        if (serial1 === serial2 && serial1 !== '' && serial1.length >= 8) {
+            // console.log(`Deleting Item Version : ${serial1}`);
+
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/products/versions/serial/${serial1}`,
+                    { method: 'DELETE' }
+                );
+                const json = await resp.json();
+
+                if (!resp.ok) {
+                    loadingStop();
+                    showMessage("Failed To Delete");
+                    // console.error('Delete failed:', json.error);
+                    // alert('Failed to delete version: ' + (json.error || resp.status));
+                    return;
+                }
+
+                // console.log('Deleted:', json.deleted);
+                
+                // close current popup
+                loadingStop();
+                overlay.remove();
+                Saved();
+
+            } catch (err) {
+                loadingStop();
+                console.error('Delete error:', err);
+                showMessage("Error deleting version");
+            }
+
+        } else {
+            loadingStop();
+            errorMsgP2.style.display = 'block';
+        }
     };
 
 }
