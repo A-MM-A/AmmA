@@ -517,17 +517,21 @@ function shuffle(arr) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    loadingStart(0.5);
     // ─────────────────────────────────────────────────────────────────────────────
     //   Step A: Fetch rawItems from data.json  
     // ─────────────────────────────────────────────────────────────────────────────
-    fetch(`${CONFIG.API_BASE_URL}/products`)
+    await fetch(`${CONFIG.API_BASE_URL}/products`)
         .then(response => {
             if (!response.ok) throw new Error("Failed to fetch products from backend");
             return response.json();
         })
         .then(async json => {
-            const rawItems = json.data || [];
+            const rawItems = await json.data || [];
+            loadingStop();
+            // console.log("fetchdone");
+            // console.log(rawItems);
 
 
             // ─────────────────────────────────────────────────────────────────────────────

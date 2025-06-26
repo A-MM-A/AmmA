@@ -208,6 +208,80 @@ module.exports = (supabaseAdmin) => {
     });
 
 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+    //                                                                 Adding an item
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+
+
+
+    // GET /api/products/categories
+    // → returns all categories as [{ id, code, name }, …]
+    router.get('/categories', async (req, res) => {
+        try {
+            const { data, error } = await supabaseAdmin
+                .from('categories')
+                .select('id, code, name')
+                .order('id', { ascending: true });
+
+            if (error) {
+                console.error('❌ Error fetching categories:', error);
+                return res.status(400).json({ error: error.message });
+            }
+
+            // send back an array of fetched data
+            res.json({ items: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to load categories.' });
+        }
+    });
+
+
+    // GET /api/products/sub_categories
+    // → returns all sub_categories as [{ id, category_id, code, name }, …]
+    router.get('/sub_categories', async (req, res) => {
+        try {
+            const { data, error } = await supabaseAdmin
+                .from('sub_categories')
+                .select('id, category_id, code, name')
+                .order('id', { ascending: true });
+                
+                if (error) {
+                console.error('❌ Error fetching sub_categories:', error);
+                return res.status(400).json({ error: error.message });
+            }
+            
+            // send back an array of fetched data
+            res.json({ items: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to load sub_categories.' });
+        }
+    });
+    
+    
+    // GET /api/products/third_letters
+    // → returns all third_letters as [{ id, category_id, sub_category_id, code, name }, …]
+    router.get('/third_letters', async (req, res) => {
+        try {
+            const { data, error } = await supabaseAdmin
+            .from('third_letters')
+                .select('id, category_id, sub_category_id, code, name')
+                .order('id', { ascending: true });
+
+                if (error) {
+                console.error('❌ Error fetching third_letters:', error);
+                return res.status(400).json({ error: error.message });
+            }
+
+            // send back an array of fetched data
+            res.json({ items: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to load third_letters.' });
+        }
+    });
+
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
     //                                                           Fetching an item for viewing

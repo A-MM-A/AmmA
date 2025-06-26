@@ -72,10 +72,21 @@ function createPopup(titleText, onBack) {
     back.className = 'popup-back-btn';
     back.innerHTML = '<img src="icons/back.svg" alt="Back">';
 
-    back.onclick = () => {
+    // close popup function
+    function closePopup() {
         document.body.removeChild(overlay);
         if (typeof onBack === 'function') onBack();
-    };
+    }
+
+    back.onclick = closePopup;
+
+    // close when clicking outside the box
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closePopup();
+        }
+    });
+
 
     // title
     const title = document.createElement('h2');
@@ -430,16 +441,7 @@ function showAddVersionPopup() {
             fileNameInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
         }
     });
-    // Prefill if stored
-    const savedfileName = localStorage.getItem('lastFileName');
-    if (savedfileName) {
-        fileNameInput.value = savedfileName;
-        fileNameInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
 
-        requestAnimationFrame(() => {
-            fileNameInput.dispatchEvent(new Event('input'));
-        });
-    }
 
     fileNameContainer.appendChild(fileNameLabel);
     fileNameContainer.appendChild(fileNameInput);
@@ -504,19 +506,12 @@ function showAddVersionPopup() {
     itemIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
 
     const itemIdInput = document.createElement('input');
+    itemIdInput.type = 'number';
     itemIdInput.placeholder = 'E.g  1';
     itemIdInput.maxLength = 6;
     itemIdInput.classList.add("rounded-input");
-    itemIdInput.style = `
-          text-transform: uppercase;
-        `;
 
 
-
-
-    itemIdInput.addEventListener('input', () => {
-        itemIdInput.value = itemIdInput.value.toUpperCase();
-    });
     itemIdInput.addEventListener('input', () => {
         if (itemIdInput.value.length > 6) {
             itemIdInput.value = itemIdInput.value.slice(0, 6);
@@ -560,12 +555,13 @@ function showAddVersionPopup() {
 
 
 
-    // populate from DB
+    // Fetching Options from DB
 
     let itemMap = {};       // id → serial
     let serialToId = {};    // serial → id
     let options;
     let fetched = false;
+    let Item_base_serial = "";
 
     async function loadBaseItems() {
         // visuals when fetching items
@@ -638,6 +634,7 @@ function showAddVersionPopup() {
             // show matching serial (or fallback)
             const serial = itemMap[id] || 'No Item Found';
             itemSelect.innerHTML = `<option value="">${serial}</option>`;
+            Item_base_serial = serial;  // this gets the base-serial to be used for file name
         } else {
             // reset select
             itemSelect.disabled = false;
@@ -657,6 +654,7 @@ function showAddVersionPopup() {
 
             // set input to the corresponding ID
             itemIdInput.value = selId;
+            Item_base_serial = itemMap[selId];  // this gets the base-serial to be used for file name
         } else {
             // reset input
             itemIdInput.readOnly = false;
@@ -801,6 +799,17 @@ function showAddVersionPopup() {
             uniqueIdInput.value = uniqueIdInput.value.slice(0, 2);
         }
     });
+
+    // filling up file name automatically
+    uniqueIdInput.addEventListener('input', () => {
+        const filename = `${Item_base_serial.substring(0, 6)}${uniqueIdInput.value.padStart(2, '0')}`;
+        // console.log(filename);
+        fileNameInput.value = filename;
+        fileNameInput.dispatchEvent(new Event('input'));
+    });
+
+
+
     uniqueIdInput.addEventListener('input', () => {
         if (uniqueIdInput.value.trim() !== '') {
             uniqueIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
@@ -854,7 +863,7 @@ function showAddVersionPopup() {
         return uniqueIdInput.value.trim() !== '' && !usedVersionId.includes(v);
     }
 
-    // incase the base item has not been fetched
+    // incase the base item id has not been fetched
     if (!fetched) {
         uniqueIdInput.disabled = true;
     }
@@ -1091,6 +1100,7 @@ function showAddVersionPopup() {
     marginLabel.textContent = 'Profit Margin';
     marginLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
     const marginInput = document.createElement('input');
+    marginInput.type = 'number';
     marginInput.placeholder = 'E.g   1.5';
     marginInput.value = '1.5';
     marginInput.classList.add("rounded-input");
@@ -1441,9 +1451,7 @@ function showAddVersionPopup() {
     confirmBtn.textContent = 'Confirm';
     confirmBtn.className = 'popup-confirm';
 
-    function updateConfirmButton() {
-        // confirmBtn.disabled = !isItemSelectionValid();
-    }
+
 
     // Click logic
     confirmBtn.addEventListener('click', async () => {
@@ -1615,7 +1623,6 @@ function showAddVersionPopup() {
         // store history
         localStorage.setItem('lastItemId', itemIdInput.value);
         localStorage.setItem('lastSellerId', sellerIdInput.value);
-        localStorage.setItem('lastFileName', fileNameInput.value);
         localStorage.setItem('lastSize', sizeInput.value);
         localStorage.setItem('lastMaterial', materialInput.value);
         localStorage.setItem('lastWeight', weightInput.value);
@@ -2258,9 +2265,9 @@ function showEditVersion2Popup(payload) {
     content.appendChild(confirmBtn);
 
     confirmBtn.onclick = async () => {
-        
-        
-        
+
+
+
         if (!newtitleInput.value) {
             showMessage("Empty Title");
             return;
@@ -2368,9 +2375,226 @@ function showEditVersion2Popup(payload) {
 
 // -----3----- Add Item popup
 function showAddItemPopup() {
-    createPopup('Add Item', showItemConfigPopup);
-}
+    const { overlay, title, content } = createPopup('Add Item', showItemConfigPopup);
 
+    // ROW 1: Category selection
+    const row1 = document.createElement('div');
+    row1.style.display = 'flex';
+    row1.style.gap = '8px';
+    row1.style.width = '100%';
+    row1.style.marginBottom = '12px';
+
+    // Input container (1 part)
+    const CATIdContainer = document.createElement('div');
+    CATIdContainer.style.flex = '1';
+    CATIdContainer.style.minWidth = '0';
+
+    const CATIdLabel = document.createElement('label');
+    CATIdLabel.textContent = 'Category Id';
+    CATIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+
+    const CATIdInput = document.createElement('input');
+    CATIdInput.type = 'number';
+    CATIdInput.placeholder = 'E.g  1';
+    CATIdInput.maxLength = 2;
+    CATIdInput.classList.add("rounded-input");
+
+
+    CATIdInput.addEventListener('input', () => {
+        if (CATIdInput.value.length > 2) {
+            CATIdInput.value = CATIdInput.value.slice(0, 2);
+        }
+    });
+
+    CATIdInput.addEventListener('input', () => {
+        if (CATIdInput.value.trim() !== '') {
+            CATIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+        } else {
+            CATIdInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+        }
+    });
+
+    CATIdContainer.appendChild(CATIdLabel);
+    CATIdContainer.appendChild(CATIdInput);
+
+    // Selector container (2 parts)
+    const CATSelectContainer = document.createElement('div');
+    CATSelectContainer.style.flex = '3';
+    CATSelectContainer.style.minWidth = '0';
+
+    const CATSelectLabel = document.createElement('label');
+    CATSelectLabel.textContent = 'Category Selector';
+    CATSelectLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+
+    const CATSelect = document.createElement('select');
+    CATSelect.classList.add("rounded-input");
+
+    CATSelect.addEventListener('change', () => {
+        if (CATSelect.value !== '') {
+            CATSelect.style.backgroundColor = 'rgba(193, 239, 183, 0.43)'; // light green
+        } else {
+            CATSelect.style.backgroundColor = 'rgba(210, 185, 161, 0.46)'; // reset
+        }
+    });
+
+    CATSelectContainer.appendChild(CATSelectLabel);
+    CATSelectContainer.appendChild(CATSelect);
+
+
+
+
+    // Fetching Options from DB
+
+    let CATMap = {};       // id → serial
+    let serialToId = {};    // serial → id
+    let options;
+    let fetchedCAT = false;    // to block future inputs incase of error    
+
+    async function loadCAT() {
+        // visuals when fetching items
+        CATSelect.disabled = true;
+        CATIdInput.disabled = true;
+        CATSelect.innerHTML = '<option>Loading items…</option>';
+
+        try {
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/base-items`
+            );
+            const json = await resp.json();
+            if (resp.ok) {
+                fetchedCAT = true;
+
+                // fill maps
+                CATMap = {};
+                serialToId = {};
+                json.items.forEach(({ id, code, name }) => {
+                    const label = `${code} : ${name}`;  
+                    CATMap[String(id)] = label;          // store combined label
+                    serialToId[label] = String(id);          // reverse lookup if needed
+                });
+                console.log(CATMap);
+
+
+                // build <option> list
+                options = `
+                <option value="" selected>Select Item…</option>
+                    ${Object.entries(CATMap)
+                        .map(([id, label]) => `<option value="${id}">${label}</option>`)
+                        .join('')}
+                    `;
+
+                CATSelect.innerHTML = options;
+
+                // visuals when items fetched
+                CATSelect.disabled = false;
+                CATIdInput.disabled = false;
+
+
+            } else {
+                console.error('Failed to load Items:', json.error);
+                throw new Error(json.error);
+            }
+
+
+        } catch (err) {
+            console.error('Failed to load items:', err);
+            CATSelect.innerHTML = `<option value="">Error loading items</option>`;
+        }
+    }
+
+    // call on init
+    loadCAT();
+
+    // two-way binding logic
+
+    // 1) when user types an ID
+    CATIdInput.addEventListener('input', () => {
+        const id = CATIdInput.value.trim();
+        if (id) {
+            // disable select
+            CATSelect.disabled = true;
+            CATSelect.style.opacity = '0.8';
+            CATSelect.style.backgroundColor = '';
+
+            // show matching serial (or fallback)
+            const serial = itemMap[id] || 'No Item Found';
+            CATSelect.innerHTML = `<option value="">${serial}</option>`;
+            Item_base_serial = serial;  // this gets the base-serial to be used for file name
+        } else {
+            // reset select
+            CATSelect.disabled = false;
+            CATSelect.style.opacity = '1';
+            CATSelect.innerHTML = options;  // repopulate full list
+        }
+    });
+
+    // 2) when user picks from the selector
+    CATSelect.addEventListener('change', () => {
+        const selId = CATSelect.value;       // this is the <option value="id">
+        if (selId) {
+            // disable input
+            CATIdInput.readOnly = true;
+            CATIdInput.style.opacity = '0.5';
+            CATIdInput.style.backgroundColor = '';
+
+            // set input to the corresponding ID
+            CATIdInput.value = selId;
+            Item_base_serial = itemMap[selId];  // this gets the base-serial to be used for file name
+        } else {
+            // reset input
+            CATIdInput.readOnly = false;
+            CATIdInput.style.opacity = '1';
+            CATIdInput.value = '';
+        }
+    });
+
+
+    // // Prefill CATIdInput if stored
+    // const savedItemId = localStorage.getItem('lastItemId');
+    // async function initItemField() {
+    //     // 1a) First, load the items from the server
+    //     await loadBaseItems();
+
+    //     // 1b) Now that itemMap & the selector are ready, prefill from localStorage
+    //     if (savedItemId && fetched) {
+    //         // set the input
+    //         CATIdInput.value = savedItemId;
+    //         CATIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+    //         // dispatch the 'input' event so your listener locks & updates the selector
+    //         CATIdInput.dispatchEvent(new Event('input'));
+
+    //     }
+    // }
+
+    // initItemField();
+
+    function isCATSelectionValid() {
+        const id = CATIdInput.value.trim();
+        const sel = CATSelect.value;
+
+        // If they typed an ID, it must be one of the fetched keys
+        if (id !== '') {
+            return Object.prototype.hasOwnProperty.call(itemMap, id);
+        }
+        // If they used the dropdown, it must be a non-placeholder value
+        if (sel !== '') {
+            return true;
+        }
+        return false;
+    }
+
+    // Append containers to row
+
+    row1.appendChild(CATIdContainer);
+    row1.appendChild(CATSelectContainer);
+    content.appendChild(row1);
+
+
+
+
+}
+showAddItemPopup();
 
 // -----4----- Edit Item popup
 function showEditItemPopup() {
@@ -3095,7 +3319,7 @@ function showDeleteVersion() {
                 }
 
                 // console.log('Deleted:', json.deleted);
-                
+
                 // close current popup
                 loadingStop();
                 overlay.remove();
@@ -3114,7 +3338,6 @@ function showDeleteVersion() {
     };
 
 }
-
 
 
 
