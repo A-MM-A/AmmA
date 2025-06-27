@@ -81,11 +81,11 @@ function createPopup(titleText, onBack) {
     back.onclick = closePopup;
 
     // close when clicking outside the box
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            closePopup();
-        }
-    });
+    // overlay.addEventListener('click', (e) => {
+    //     if (e.target === overlay) {
+    //         closePopup();
+    //     }
+    // });
 
 
     // title
@@ -835,13 +835,13 @@ function showAddVersionPopup() {
 
     const statusIndicator = document.createElement('div');
     statusIndicator.style = `
-  width: 20px;
-  height: 20px;
-  margin: 9px;
-  border-radius: 50%;
-  background-color: gray; /* will be updated based on availability */
-  border: 2px solid #fff;
-`;
+      width: 20px;
+      height: 20px;
+      margin: 9px;
+      border-radius: 50%;
+      background-color: gray; /* will be updated based on availability */
+      border: 2px solid #fff;
+    `;
 
 
     uniqueIdInput.addEventListener('input', () => {
@@ -2390,7 +2390,7 @@ function showAddItemPopup() {
     CATIdContainer.style.minWidth = '0';
 
     const CATIdLabel = document.createElement('label');
-    CATIdLabel.textContent = 'Category Id';
+    CATIdLabel.textContent = 'CAT Id';
     CATIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
 
     const CATIdInput = document.createElement('input');
@@ -2446,19 +2446,19 @@ function showAddItemPopup() {
     // Fetching Options from DB
 
     let CATMap = {};       // id → serial
-    let serialToId = {};    // serial → id
-    let options;
+    let CATserialToId = {};    // serial → id
+    let CAToptions;
     let fetchedCAT = false;    // to block future inputs incase of error    
 
     async function loadCAT() {
         // visuals when fetching items
         CATSelect.disabled = true;
         CATIdInput.disabled = true;
-        CATSelect.innerHTML = '<option>Loading items…</option>';
+        CATSelect.innerHTML = '<option>Loading Categories…</option>';
 
         try {
             const resp = await fetch(
-                `${CONFIG.API_BASE_URL}/products/base-items`
+                `${CONFIG.API_BASE_URL}/products/categories`
             );
             const json = await resp.json();
             if (resp.ok) {
@@ -2466,28 +2466,30 @@ function showAddItemPopup() {
 
                 // fill maps
                 CATMap = {};
-                serialToId = {};
+                CATserialToId = {};
                 json.items.forEach(({ id, code, name }) => {
-                    const label = `${code} : ${name}`;  
+                    const label = `${code} : ${name}`;
                     CATMap[String(id)] = label;          // store combined label
-                    serialToId[label] = String(id);          // reverse lookup if needed
+                    CATserialToId[label] = String(id);          // reverse lookup if needed
                 });
                 console.log(CATMap);
 
 
                 // build <option> list
-                options = `
+                CAToptions = `
                 <option value="" selected>Select Item…</option>
                     ${Object.entries(CATMap)
                         .map(([id, label]) => `<option value="${id}">${label}</option>`)
                         .join('')}
                     `;
 
-                CATSelect.innerHTML = options;
+                CATSelect.innerHTML = CAToptions;
 
                 // visuals when items fetched
                 CATSelect.disabled = false;
                 CATIdInput.disabled = false;
+                SUBinit();
+                Thirdinit();
 
 
             } else {
@@ -2498,7 +2500,7 @@ function showAddItemPopup() {
 
         } catch (err) {
             console.error('Failed to load items:', err);
-            CATSelect.innerHTML = `<option value="">Error loading items</option>`;
+            CATSelect.innerHTML = `<option value="">Error loading Categories</option>`;
         }
     }
 
@@ -2509,6 +2511,8 @@ function showAddItemPopup() {
 
     // 1) when user types an ID
     CATIdInput.addEventListener('input', () => {
+        SUBinit();
+        Thirdinit();
         const id = CATIdInput.value.trim();
         if (id) {
             // disable select
@@ -2517,14 +2521,13 @@ function showAddItemPopup() {
             CATSelect.style.backgroundColor = '';
 
             // show matching serial (or fallback)
-            const serial = itemMap[id] || 'No Item Found';
+            const serial = CATMap[id] || 'No Category Found';
             CATSelect.innerHTML = `<option value="">${serial}</option>`;
-            Item_base_serial = serial;  // this gets the base-serial to be used for file name
         } else {
             // reset select
             CATSelect.disabled = false;
             CATSelect.style.opacity = '1';
-            CATSelect.innerHTML = options;  // repopulate full list
+            CATSelect.innerHTML = CAToptions;  // repopulate full list
         }
     });
 
@@ -2539,35 +2542,39 @@ function showAddItemPopup() {
 
             // set input to the corresponding ID
             CATIdInput.value = selId;
-            Item_base_serial = itemMap[selId];  // this gets the base-serial to be used for file name
         } else {
             // reset input
             CATIdInput.readOnly = false;
             CATIdInput.style.opacity = '1';
             CATIdInput.value = '';
         }
+        SUBinit();
+        Thirdinit();
     });
 
 
-    // // Prefill CATIdInput if stored
-    // const savedItemId = localStorage.getItem('lastItemId');
-    // async function initItemField() {
-    //     // 1a) First, load the items from the server
-    //     await loadBaseItems();
 
-    //     // 1b) Now that itemMap & the selector are ready, prefill from localStorage
-    //     if (savedItemId && fetched) {
-    //         // set the input
-    //         CATIdInput.value = savedItemId;
-    //         CATIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+    // Prefill CATIdInput if stored
+    const savedCATId = localStorage.getItem('lastCATId');
+    async function initCATField() {
+        // 1a) First, load the items from the server
+        await loadCAT();
 
-    //         // dispatch the 'input' event so your listener locks & updates the selector
-    //         CATIdInput.dispatchEvent(new Event('input'));
+        // 1b) Now that itemMap & the selector are ready, prefill from localStorage
+        if (savedCATId && fetchedCAT) {
+            // set the input
+            CATIdInput.value = savedCATId;
+            CATIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
 
-    //     }
-    // }
+            // dispatch the 'input' event so your listener locks & updates the selector
+            CATIdInput.dispatchEvent(new Event('input'));
 
-    // initItemField();
+        }
+    }
+
+    if (localStorage.lastCATId) initCATField();
+
+
 
     function isCATSelectionValid() {
         const id = CATIdInput.value.trim();
@@ -2575,7 +2582,7 @@ function showAddItemPopup() {
 
         // If they typed an ID, it must be one of the fetched keys
         if (id !== '') {
-            return Object.prototype.hasOwnProperty.call(itemMap, id);
+            return Object.prototype.hasOwnProperty.call(CATMap, id);
         }
         // If they used the dropdown, it must be a non-placeholder value
         if (sel !== '') {
@@ -2584,6 +2591,8 @@ function showAddItemPopup() {
         return false;
     }
 
+
+
     // Append containers to row
 
     row1.appendChild(CATIdContainer);
@@ -2591,6 +2600,735 @@ function showAddItemPopup() {
     content.appendChild(row1);
 
 
+
+    async function SUBinit() {
+        // console.log("called");
+
+        if (!isCATSelectionValid()) {
+            SUBIdInput.disabled = true;
+            SUBSelect.disabled = true;
+            SUBIdInput.value = '';
+            SUBSelect.innerHTML = `<option value="">Choose Category</option>`;
+            SUBIdInput.style.backgroundColor = '';
+            SUBSelect.style.backgroundColor = '';
+            // console.log("not");
+            return;
+        } else {
+            SUBIdInput.disabled = false;
+            SUBSelect.disabled = false;
+            SUBSelect.innerHTML = SUBoptions;
+            SUBIdInput.value = '';
+            return;
+        }
+
+    }
+
+
+
+    // ROW 2: Sub Category selection
+    const row2 = document.createElement('div');
+    row2.style.display = 'flex';
+    row2.style.gap = '8px';
+    row2.style.width = '100%';
+    row2.style.marginBottom = '12px';
+
+    // Input container (1 part)
+    const SUBIdContainer = document.createElement('div');
+    SUBIdContainer.style.flex = '1';
+    SUBIdContainer.style.minWidth = '0';
+
+    const SUBIdLabel = document.createElement('label');
+    SUBIdLabel.textContent = 'SUB Id';
+    SUBIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+
+    const SUBIdInput = document.createElement('input');
+    SUBIdInput.type = 'number';
+    SUBIdInput.placeholder = 'E.g  1';
+    SUBIdInput.maxLength = 3;
+    SUBIdInput.classList.add("rounded-input");
+
+
+    SUBIdInput.addEventListener('input', () => {
+        if (SUBIdInput.value.length > 3) {
+            SUBIdInput.value = SUBIdInput.value.slice(0, 3);
+        }
+    });
+
+    SUBIdInput.addEventListener('input', () => {
+        if (SUBIdInput.value.trim() !== '') {
+            SUBIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+        } else {
+            SUBIdInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+        }
+    });
+
+    SUBIdContainer.appendChild(SUBIdLabel);
+    SUBIdContainer.appendChild(SUBIdInput);
+
+    // Selector container (2 parts)
+    const SUBSelectContainer = document.createElement('div');
+    SUBSelectContainer.style.flex = '3';
+    SUBSelectContainer.style.minWidth = '0';
+
+    const SUBSelectLabel = document.createElement('label');
+    SUBSelectLabel.textContent = 'Sub Category Selector';
+    SUBSelectLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+
+    const SUBSelect = document.createElement('select');
+    SUBSelect.classList.add("rounded-input");
+
+    SUBSelect.addEventListener('change', () => {
+        if (SUBSelect.value !== '') {
+            SUBSelect.style.backgroundColor = 'rgba(193, 239, 183, 0.43)'; // light green
+        } else {
+            SUBSelect.style.backgroundColor = 'rgba(210, 185, 161, 0.46)'; // reset
+        }
+    });
+
+    SUBSelectContainer.appendChild(SUBSelectLabel);
+    SUBSelectContainer.appendChild(SUBSelect);
+
+
+
+
+    // Fetching Options from DB
+
+    let SUBMap = {};       // id → serial
+    let SUBserialToId = {};    // serial → id
+    let SUBoptions;
+    let fetchedSUB = false;    // to block future inputs incase of error    
+
+    async function loadSUB() {
+        // visuals when fetching items
+        SUBSelect.disabled = true;
+        SUBIdInput.disabled = true;
+        SUBSelect.innerHTML = '<option>Loading Sub Categories…</option>';
+
+        try {
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/sub_categories`
+            );
+            const json = await resp.json();
+            if (resp.ok) {
+                fetchedSUB = true;
+
+                // fill maps
+                SUBMap = {};
+                SUBserialToId = {};
+                json.items.forEach(({ id, category_id, code, name }) => {
+                    const label = `${code} : ${name}`;
+                    SUBMap[String(id)] = label;          // store combined label
+                    SUBserialToId[label] = String(id);          // reverse lookup if needed
+                });
+                console.log(SUBMap);
+
+
+                // build <option> list
+                SUBoptions = `
+                <option value="" selected>Select Item…</option>
+                    ${Object.entries(SUBMap)
+                        .map(([id, label]) => `<option value="${id}">${label}</option>`)
+                        .join('')}
+                    `;
+
+                SUBSelect.innerHTML = SUBoptions;
+
+                // visuals when items fetched
+                SUBSelect.disabled = false;
+                SUBIdInput.disabled = false;
+                Thirdinit();
+
+
+            } else {
+                console.error('Failed to load Items:', json.error);
+                throw new Error(json.error);
+            }
+
+
+        } catch (err) {
+            console.error('Failed to load items:', err);
+            SUBSelect.innerHTML = `<option value="">Error loading Sub Categories</option>`;
+        }
+    }
+
+    // call on init
+    loadSUB();
+
+    // two-way binding logic
+
+    // 1) when user types an ID
+    SUBIdInput.addEventListener('input', () => {
+        Thirdinit();
+        const id = SUBIdInput.value.trim();
+        if (id) {
+            // disable select
+            SUBSelect.disabled = true;
+            SUBSelect.style.opacity = '0.8';
+            SUBSelect.style.backgroundColor = '';
+
+            // show matching serial (or fallback)
+            const serial = SUBMap[id] || 'No Sub Category Found';
+            SUBSelect.innerHTML = `<option value="">${serial}</option>`;
+        } else {
+            // reset select
+            SUBSelect.disabled = false;
+            SUBSelect.style.opacity = '1';
+            SUBSelect.innerHTML = SUBoptions;  // repopulate full list
+        }
+    });
+
+    // 2) when user picks from the selector
+    SUBSelect.addEventListener('change', () => {
+        const selId = SUBSelect.value;       // this is the <option value="id">
+        if (selId) {
+            // disable input
+            SUBIdInput.readOnly = true;
+            SUBIdInput.style.opacity = '0.5';
+            SUBIdInput.style.backgroundColor = '';
+
+            // set input to the corresponding ID
+            SUBIdInput.value = selId;
+        } else {
+            // reset input
+            SUBIdInput.readOnly = false;
+            SUBIdInput.style.opacity = '1';
+            SUBIdInput.value = '';
+        }
+        Thirdinit();
+    });
+
+
+
+    // Prefill SUBIdInput if stored
+    const savedSUBId = localStorage.getItem('lastSUBId');
+    async function initSUBField() {
+        // 1a) First, load the items from the server
+        await initCATField();
+        await loadSUB();
+
+        // 1b) Now that itemMap & the selector are ready, prefill from localStorage
+        if (savedSUBId && fetchedSUB) {
+            // set the input
+            SUBIdInput.value = savedSUBId;
+            SUBIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+            // dispatch the 'input' event so your listener locks & updates the selector
+            SUBIdInput.dispatchEvent(new Event('input'));
+
+        }
+    }
+
+    if (localStorage.lastSUBId) initSUBField();
+
+
+
+    function isSUBSelectionValid() {
+        const id = SUBIdInput.value.trim();
+        const sel = SUBSelect.value;
+
+        // If they typed an ID, it must be one of the fetched keys
+        if (id !== '') {
+            return Object.prototype.hasOwnProperty.call(SUBMap, id);
+        }
+        // If they used the dropdown, it must be a non-placeholder value
+        if (sel !== '') {
+            return true;
+        }
+        return false;
+    }
+
+
+    if (!fetchedCAT) {
+        SUBIdInput.disabled = true;
+        SUBSelect.disabled = true;
+    }
+
+    // Append containers to row
+    row2.appendChild(SUBIdContainer);
+    row2.appendChild(SUBSelectContainer);
+    content.appendChild(row2);
+
+
+
+
+    async function Thirdinit() {
+        // console.log("called");
+
+        if (!isSUBSelectionValid()) {
+            THIRDIdInput.disabled = true;
+            THIRDSelect.disabled = true;
+            THIRDIdInput.value = '';
+            THIRDSelect.innerHTML = `<option value="">Choose Sub Category</option>`;
+            THIRDIdInput.style.backgroundColor = '';
+            THIRDSelect.style.backgroundColor = '';
+            // console.log("not");
+            return;
+            // } else if(!isSUBSelectionValid()) {
+
+        } else {
+            THIRDIdInput.disabled = false;
+            THIRDSelect.disabled = false;
+            THIRDSelect.innerHTML = THIRDoptions;
+            THIRDIdInput.value = '';
+            return;
+        }
+
+
+
+    }
+
+
+
+    // ROW 2: THIRD Category selection
+    const row3 = document.createElement('div');
+    row3.style.display = 'flex';
+    row3.style.gap = '8px';
+    row3.style.width = '100%';
+    row3.style.marginBottom = '12px';
+
+    // Input container (1 part)
+    const THIRDIdContainer = document.createElement('div');
+    THIRDIdContainer.style.flex = '1';
+    THIRDIdContainer.style.minWidth = '0';
+
+    const THIRDIdLabel = document.createElement('label');
+    THIRDIdLabel.textContent = 'THIRD Id';
+    THIRDIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+
+    const THIRDIdInput = document.createElement('input');
+    THIRDIdInput.type = 'number';
+    THIRDIdInput.placeholder = 'E.g  1';
+    THIRDIdInput.maxLength = 3;
+    THIRDIdInput.classList.add("rounded-input");
+
+
+    THIRDIdInput.addEventListener('input', () => {
+        if (THIRDIdInput.value.length > 3) {
+            THIRDIdInput.value = THIRDIdInput.value.slice(0, 3);
+        }
+    });
+
+    THIRDIdInput.addEventListener('input', () => {
+        if (THIRDIdInput.value.trim() !== '') {
+            THIRDIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+        } else {
+            THIRDIdInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+        }
+    });
+
+    THIRDIdContainer.appendChild(THIRDIdLabel);
+    THIRDIdContainer.appendChild(THIRDIdInput);
+
+    // Selector container (2 parts)
+    const THIRDSelectContainer = document.createElement('div');
+    THIRDSelectContainer.style.flex = '3';
+    THIRDSelectContainer.style.minWidth = '0';
+
+    const THIRDSelectLabel = document.createElement('label');
+    THIRDSelectLabel.textContent = 'THIRD Category Selector';
+    THIRDSelectLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+
+    const THIRDSelect = document.createElement('select');
+    THIRDSelect.classList.add("rounded-input");
+
+    THIRDSelect.addEventListener('change', () => {
+        if (THIRDSelect.value !== '') {
+            THIRDSelect.style.backgroundColor = 'rgba(193, 239, 183, 0.43)'; // light green
+        } else {
+            THIRDSelect.style.backgroundColor = 'rgba(210, 185, 161, 0.46)'; // reset
+        }
+    });
+
+    THIRDSelectContainer.appendChild(THIRDSelectLabel);
+    THIRDSelectContainer.appendChild(THIRDSelect);
+
+
+
+
+    // Fetching Options from DB
+
+    let THIRDMap = {};       // id → serial
+    let THIRDserialToId = {};    // serial → id
+    let THIRDoptions;
+    let fetchedTHIRD = false;    // to block future inputs incase of error    
+
+    async function loadTHIRD() {
+        // visuals when fetching items
+        THIRDSelect.disabled = true;
+        THIRDIdInput.disabled = true;
+        THIRDSelect.innerHTML = '<option>Loading THIRD Categories…</option>';
+
+        try {
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/third_letters`
+            );
+            const json = await resp.json();
+            if (resp.ok) {
+                fetchedTHIRD = true;
+
+                // fill maps
+                THIRDMap = {};
+                THIRDserialToId = {};
+                json.items.forEach(({ id, category_id, sub_category_id, code, name }) => {
+                    const label = `${code} : ${name}`;
+                    THIRDMap[String(id)] = label;          // store combined label
+                    THIRDserialToId[label] = String(id);          // reverse lookup if needed
+                });
+                console.log(THIRDMap);
+
+
+                // build <option> list
+                THIRDoptions = `
+                <option value="" selected>Select Item…</option>
+                    ${Object.entries(THIRDMap)
+                        .map(([id, label]) => `<option value="${id}">${label}</option>`)
+                        .join('')}
+                    `;
+
+                THIRDSelect.innerHTML = THIRDoptions;
+
+                // visuals when items fetched
+                THIRDSelect.disabled = false;
+                THIRDIdInput.disabled = false;
+
+
+            } else {
+                console.error('Failed to load Items:', json.error);
+                throw new Error(json.error);
+            }
+
+
+        } catch (err) {
+            console.error('Failed to load items:', err);
+            THIRDSelect.innerHTML = `<option value="">Error loading THIRD Categories</option>`;
+        }
+    }
+
+    // call on init
+    loadTHIRD();
+
+    // two-way binding logic
+
+    // 1) when user types an ID
+    THIRDIdInput.addEventListener('input', () => {
+        const id = THIRDIdInput.value.trim();
+        if (id) {
+            // disable select
+            THIRDSelect.disabled = true;
+            THIRDSelect.style.opacity = '0.8';
+            THIRDSelect.style.backgroundColor = '';
+
+            // show matching serial (or fallback)
+            const serial = THIRDMap[id] || 'No THIRD Category Found';
+            THIRDSelect.innerHTML = `<option value="">${serial}</option>`;
+        } else {
+            // reset select
+            THIRDSelect.disabled = false;
+            THIRDSelect.style.opacity = '1';
+            THIRDSelect.innerHTML = THIRDoptions;  // repopulate full list
+        }
+    });
+
+    // 2) when user picks from the selector
+    THIRDSelect.addEventListener('change', () => {
+        const selId = THIRDSelect.value;       // this is the <option value="id">
+        if (selId) {
+            // disable input
+            THIRDIdInput.readOnly = true;
+            THIRDIdInput.style.opacity = '0.5';
+            THIRDIdInput.style.backgroundColor = '';
+
+            // set input to the corresponding ID
+            THIRDIdInput.value = selId;
+        } else {
+            // reset input
+            THIRDIdInput.readOnly = false;
+            THIRDIdInput.style.opacity = '1';
+            THIRDIdInput.value = '';
+        }
+    });
+
+
+
+    // Prefill THIRDIdInput if stored
+    const savedTHIRDId = localStorage.getItem('lastTHIRDId');
+    async function initTHIRDField() {
+        // 1a) First, load the items from the server
+        await initSUBField();
+        await loadTHIRD();
+
+        // 1b) Now that itemMap & the selector are ready, prefill from localStorage
+        if (savedTHIRDId && fetchedTHIRD) {
+            // set the input
+            THIRDIdInput.value = savedTHIRDId;
+            THIRDIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+            // dispatch the 'input' event so your listener locks & updates the selector
+            THIRDIdInput.dispatchEvent(new Event('input'));
+
+        }
+    }
+
+    if (localStorage.lastTHIRDId) initTHIRDField();
+
+
+
+    function isTHIRDSelectionValid() {
+        const id = THIRDIdInput.value.trim();
+        const sel = THIRDSelect.value;
+
+        // If they typed an ID, it must be one of the fetched keys
+        if (id !== '') {
+            return Object.prototype.hasOwnProperty.call(THIRDMap, id);
+        }
+        // If they used the dropdown, it must be a non-placeholder value
+        if (sel !== '') {
+            return true;
+        }
+        return false;
+    }
+
+
+    if (!fetchedCAT) {
+        SUBIdInput.disabled = true;
+        SUBSelect.disabled = true;
+    }
+    if (!fetchedSUB) {
+        THIRDIdInput.disabled = true;
+        THIRDSelect.disabled = true;
+    }
+
+    // Append containers to row
+    row3.appendChild(THIRDIdContainer);
+    row3.appendChild(THIRDSelectContainer);
+    content.appendChild(row3);
+
+
+
+
+    // ROW 4 code and base serial 
+    const row4 = document.createElement('div');
+    row4.style.display = 'flex';
+    row4.style.gap = '8px';
+    row4.style.width = '100%';
+    row4.style.marginBottom = '12px';
+
+    // Material container
+    const materialContainer = document.createElement('div');
+    materialContainer.style.flex = '1';
+    const materialLabel = document.createElement('label');
+    materialLabel.textContent = 'Material';
+    materialLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+    const materialInput = document.createElement('input');
+    materialInput.placeholder = 'E.g   Cotton';
+    materialInput.classList.add("rounded-input");
+
+    materialInput.addEventListener('input', () => {
+        if (materialInput.value.trim() !== '') {
+            materialInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+        } else {
+            materialInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+        }
+    });
+
+    // Prefill if stored
+    const savedMaterial = localStorage.getItem('lastMaterial');
+    if (savedMaterial) {
+        materialInput.value = savedMaterial;
+        materialInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+        requestAnimationFrame(() => {
+            materialInput.dispatchEvent(new Event('input'));
+        });
+    }
+
+    materialContainer.appendChild(materialLabel);
+    materialContainer.appendChild(materialInput);
+
+    // Weight container
+    const weightContainer = document.createElement('div');
+    weightContainer.style.flex = '1';
+    const weightLabel = document.createElement('label');
+    weightLabel.textContent = 'Weight';
+    weightLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+    const weightInput = document.createElement('input');
+    weightInput.placeholder = 'E.g   1.2kg';
+    weightInput.classList.add("rounded-input");
+
+    weightInput.addEventListener('input', () => {
+        if (weightInput.value.trim() !== '') {
+            weightInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+        } else {
+            weightInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+        }
+    });
+    // Prefill if stored
+    const savedWeight = localStorage.getItem('lastWeight');
+    if (savedWeight) {
+        weightInput.value = savedWeight;
+        weightInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+        requestAnimationFrame(() => {
+            weightInput.dispatchEvent(new Event('input'));
+        });
+    }
+
+    weightContainer.appendChild(weightLabel);
+    weightContainer.appendChild(weightInput);
+
+    // Append both to row
+    row4.appendChild(materialContainer);
+    row4.appendChild(weightContainer);
+    content.appendChild(row4);
+
+
+
+
+    // ROW 10: Item Attributes textarea
+    const row5 = document.createElement('div');
+    row5.style.width = '100%';
+    row5.style.marginBottom = '12px';
+
+    // Label
+    const descriptionLabel = document.createElement('label');
+    descriptionLabel.textContent = 'Description';
+    descriptionLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+
+    // Textarea
+    const descriptionTextarea = document.createElement('textarea');
+    descriptionTextarea.placeholder = 'Enter any important information';
+    descriptionTextarea.style = `
+  width: 100%;
+  height: 80px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  resize: vertical;
+  overflow-y: auto;
+`;
+
+    descriptionTextarea.addEventListener('input', () => {
+        if (descriptionTextarea.value.trim() !== '') {
+            descriptionTextarea.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+        } else {
+            descriptionTextarea.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+        }
+    });
+
+    // Prefill if stored
+    const savedDescription = localStorage.getItem('lastItemDesc');
+    if (savedDescription) {
+        descriptionTextarea.value = savedDescription;
+        descriptionTextarea.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+
+        requestAnimationFrame(() => {
+            descriptionTextarea.dispatchEvent(new Event('input'));
+        });
+    }
+
+
+    // Append to row
+    row5.appendChild(descriptionLabel);
+    row5.appendChild(descriptionTextarea);
+    content.appendChild(row5);
+
+
+
+
+    // ROW 11: Confirm button
+    const row6 = document.createElement('div');
+
+    // Button
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.className = 'popup-confirm';
+
+
+    // Click logic
+    confirmBtn.addEventListener('click', async () => {
+        if (!isCATSelectionValid()) {
+            showMessage("Invalid Category Id");
+            return;
+        }
+        if (!isSUBSelectionValid()) {
+            showMessage("Invalid Sub-Cat Id");
+            return;
+        }
+        if (!isTHIRDSelectionValid()) {
+            showMessage("Invalid Third Id");
+            return;
+        }
+        // if (!isVersionValid()) {
+        //     showMessage("Invalid Version Id");
+        //     return;
+        // }
+        if (!descriptionTextarea.value) {
+            showMessage("Empty Description");
+            return;
+        }
+
+
+
+        // loadingStart(0.5);
+
+
+
+        const payload = {
+            category_id: CATIdInput.value,
+            sub_category_id: SUBIdInput.value,
+            // third_letter_id: titleInput.value || 3,
+            // code_number: priceInput.value || 3,
+            description: descriptionTextarea.value
+        };
+        console.log('Payload ready:', payload);
+
+
+        // the posting mechanism to the table : the content will be the payload
+
+        // try {
+        //     const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json"
+        //         },
+        //         body: JSON.stringify(payload)
+        //     });
+
+
+        //     const result = await response.json();
+
+        //     if (!response.ok) {
+        //         console.error("❌ Failed to add version:", result.error || result);
+        //         alert("Failed to add item version: " + (result.error || "Unknown error"));
+        //         return;
+        //     }
+
+        //     console.log("✅ Version added successfully:", result.data);
+        // } catch (err) {
+        //     console.error("❌ Error posting version:", err);
+        //     alert("Error sending request. Please try again.");
+        // }
+
+
+
+        // store history
+        localStorage.setItem('lastCATId', CATIdInput.value);
+        localStorage.setItem('lastSUBId', SUBIdInput.value);
+        localStorage.setItem('lastTHIRDId', THIRDIdInput.value);
+        localStorage.setItem('lastItemDesc', descriptionTextarea.value);
+
+
+        location.reload();
+        // loadingStop();
+        // overlay.remove();
+        // Saved();
+    });
+
+    // Append button
+    row6.appendChild(confirmBtn);
+    content.appendChild(row6);
 
 
 }

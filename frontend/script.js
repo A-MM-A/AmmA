@@ -518,7 +518,10 @@ function shuffle(arr) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    loadingStart(0.5);
+    // loadingStart(0.5);
+    if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/") {
+        loadingStart(0.5);
+    }
     // ─────────────────────────────────────────────────────────────────────────────
     //   Step A: Fetch rawItems from data.json  
     // ─────────────────────────────────────────────────────────────────────────────
