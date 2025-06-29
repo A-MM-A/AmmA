@@ -1648,6 +1648,7 @@ function showAddVersionPopup() {
 }
 
 
+
 // -----2----- Edit Version popup (step 1: ask for ID)
 function showEditVersionPopup() {
     // open base popup with back => Item Configuration
@@ -1773,7 +1774,6 @@ function showEditVersionPopup() {
 
     };
 }
-
 // -----2.1---- Edit Version popup (step 2: show fields)
 function showEditVersion2Popup(payload) {
     // open popup with back => ID prompt popup
@@ -2512,7 +2512,7 @@ function showAddItemPopup() {
     CATIdInput.addEventListener('input', () => {
         SUBinit();
         Thirdinit();
-        loadSUB();
+        if (isCATSelectionValid()) loadSUB();
         const id = CATIdInput.value.trim();
         if (id) {
             // disable select
@@ -2552,7 +2552,7 @@ function showAddItemPopup() {
         }
         SUBinit();
         Thirdinit();
-        loadSUB();
+        if (isCATSelectionValid()) loadSUB();
     });
 
 
@@ -2785,7 +2785,7 @@ function showAddItemPopup() {
     // 1) when user types an ID
     SUBIdInput.addEventListener('input', () => {
         Thirdinit();
-        loadTHIRD();
+        if (isSUBSelectionValid()) loadTHIRD();
         const id = SUBIdInput.value.trim();
         if (id) {
             // disable select
@@ -2824,7 +2824,7 @@ function showAddItemPopup() {
             SUBIdInput.value = '';
         }
         Thirdinit();
-        loadTHIRD();
+        if (isSUBSelectionValid()) loadTHIRD();
     });
 
 
@@ -2997,20 +2997,6 @@ function showAddItemPopup() {
             const json = await resp.json();
             if (resp.ok) {
                 fetchedTHIRD = true;
-
-                // // fill maps
-                // const chosenCat = Number(CATIdInput.value);
-                // const chosenSub = Number(SUBIdInput.value);
-
-                // THIRDMap = {};
-                // THIRDserialToId = {};
-                // json.items.forEach(({ id, category_id, sub_category_id, code, name }) => {
-                //     const label = `${code} : ${name}`;
-                //     THIRDMap[String(id)] = label;          // store combined label
-                //     THIRDserialToId[label] = String(id);          // reverse lookup if needed
-                // });
-                // console.log(THIRDMap);
-
 
                 // fill maps — only third‑letters matching both selected category & sub‑category
                 const chosenCat = Number(CATIdInput.value);
@@ -3413,6 +3399,7 @@ function showAddItemPopup() {
 
 
     async function Initload() {
+        loadingStart(0.5);
         // if there is no history.
         await loadTHIRD();
         await loadSUB();
@@ -3422,6 +3409,8 @@ function showAddItemPopup() {
         if (localStorage.lastCATId) initCATField();
         if (localStorage.lastSUBId) initSUBField();
         if (localStorage.lastTHIRDId) initTHIRDField();
+
+        loadingStop();
     }
 
 
@@ -3517,11 +3506,150 @@ function showAddItemPopup() {
 
 }
 
-// -----4----- Edit Item popup
+
+
+// -----4----- Edit Item popup (step 1: ask for ID)
 function showEditItemPopup() {
+    // open base popup with back => Item Configuration
+    const { overlay, title, content } = createPopup('Edit Version', showItemConfigPopup);
+
+
+    // 1) Input for item ID
+    const itemIdContainer = document.createElement('div');
+    itemIdContainer.style.flex = '1';
+    const itemIdLabel = document.createElement('label');
+    itemIdLabel.textContent = 'Enter Full Serial';
+    itemIdLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+    const itemIdInput = document.createElement('input');
+    itemIdInput.placeholder = 'E.g. FMA001';
+    itemIdInput.maxLength = 6;
+    itemIdInput.classList.add("rounded-input");
+    itemIdInput.style = `text-transform: uppercase; margin-bottom: 5%;`;
+
+    itemIdInput.addEventListener('input', () => {
+        itemIdInput.value = itemIdInput.value.toUpperCase();
+    });
+
+    itemIdInput.addEventListener('input', () => {
+        if (itemIdInput.value.length > 6) {
+            itemIdInput.value = itemIdInput.value.slice(0, 6);
+        }
+    });
+    itemIdInput.addEventListener('input', () => {
+        if (itemIdInput.value.trim() !== '') {
+            itemIdInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+        } else {
+            itemIdInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+        }
+    });
+
+    const errorMsgP = document.createElement('label');
+    errorMsgP.innerHTML = `
+        <br> 
+        <li> Fields Can not be empty </li>
+        <li> A Full Serial Contains 6 Characters </li>
+        <br>
+    `;
+    errorMsgP.style = `
+    display: none;
+    font-size: 17px; 
+    margin-bottom: 4px; 
+    color: rgb(167, 9, 9);
+    `;
+
+
+    itemIdContainer.appendChild(itemIdLabel);
+    itemIdContainer.appendChild(itemIdInput);
+    itemIdContainer.appendChild(errorMsgP);
+    content.appendChild(itemIdContainer);
+
+
+    // 2) Edit button
+    const editBtn = document.createElement('button');
+    editBtn.type = 'submit';
+    editBtn.textContent = 'Edit';
+    editBtn.className = 'popup-confirm';
+    content.appendChild(editBtn);
+
+
+    itemIdInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            editBtn.click();
+        }
+    });
+
+
+    // 3) On click, build fetch payload and open second popup
+    editBtn.onclick = async () => {
+        loadingStart(0.5);
+
+        const serial = itemIdInput.value.trim();
+
+        if (serial !== "" && itemIdInput.value.length >= 6) {
+
+            // fetching functionallity
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/products/base_items/serial/${serial}`
+                );
+                const json = await resp.json();
+
+                if (!resp.ok) {
+                    loadingStop();
+                    console.error('Not found:', json.error);
+                    showMessage("Item Not found");
+                    return;
+                }
+
+                const version = json.version;
+                const payload = {
+                    full_serial: version.full_serial,
+                    title: version.title,
+                    price: version.price,
+                    sizes: version.sizes,
+                    material: version.material,
+                    weight: version.weight,
+                    other_attrs: version.other_attrs,
+                    in_stock: version.in_stock,
+                    profit_margin: version.profit_margin,
+                    seller_id: version.seller_id,
+                    available: version.available
+                };
+
+                loadingStop();
+                document.body.removeChild(overlay);
+                showEditVersion2Popup(payload);
+
+            } catch (err) {
+                loadingStop();
+                showMessage("Error fetching version");
+                console.error('Fetch error:', err);
+            }
+
+        } else {
+            errorMsgP.style.display = 'block';
+            loadingStop();
+            return;
+        }
+
+    };
+}
+// -----4.1---- Edit Version popup (step 2: show fields)
+function showEditItemPopup2(payload) {
     createPopup('Edit Item', showItemConfigPopup);
 
 }
+
+const payload = {
+    category_id: 1,
+    sub_category_id: 1,
+    third_letter_id: 1,
+    code_number: '001',
+    description: 'Testing Description'
+};
+
+// showEditItemPopup2(payload);
+showEditItemPopup();
 
 
 // -----5----- Bulk Import popup

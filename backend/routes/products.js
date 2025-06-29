@@ -344,8 +344,56 @@ module.exports = (supabaseAdmin) => {
     //                                                     Editting & deleting an item 
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
 
+    // gets the item using full serial
+    router.get('/base_items/serial/:fullSerial', async (req, res) => {
+        try {
+            const fullSerial = req.params.fullSerial;
+            const { data, error } = await supabaseAdmin
+                .from('base_items')
+                .select(`
+                  category_id, sub_category_id, third_letter_id,
+                  code_number, description, base_serial
+                `)
+                .eq('base_serial', fullSerial)
+                .single();
+
+            if (error) {
+                console.error('❌ Item not found:', error);
+                return res.status(404).json({ error: 'Item not found' });
+            }
+            res.json({ items: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to fetch item' });
+        }
+    });
+
+    // editing the item 
+    router.put('/base_items/serial/:fullSerial', async (req, res) => {
+        try {
+            const fullSerial = req.params.fullSerial;
+            const updates = req.body; // expect the change
+            const { data, error } = await supabaseAdmin
+                .from('base_items')
+                .update(updates)
+                .eq('base_serial', fullSerial)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('❌ Failed to update item:', error);
+                return res.status(400).json({ error: error.message });
+            }
+            res.json({ message: 'Updated successfully', items: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to update item' });
+        }
+    });
+
+
     // deleting an item.
-     router.delete('/base-items/serial/:fullSerial', async (req, res) => {
+    router.delete('/base-items/serial/:fullSerial', async (req, res) => {
         try {
             const fullSerial = req.params.fullSerial;
 
@@ -371,7 +419,7 @@ module.exports = (supabaseAdmin) => {
             res.status(500).json({ error: 'Failed to delete item' });
         }
     });
-  
+
 
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
