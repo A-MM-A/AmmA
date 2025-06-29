@@ -340,6 +340,39 @@ module.exports = (supabaseAdmin) => {
     });
 
 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+    //                                                     Editting & deleting an item 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------- 
+
+    // deleting an item.
+     router.delete('/base-items/serial/:fullSerial', async (req, res) => {
+        try {
+            const fullSerial = req.params.fullSerial;
+
+            // attempt delete
+            const { data, error } = await supabaseAdmin
+                .from('base_items')
+                .delete()
+                .eq('base_serial', fullSerial)
+                .select()           // returns deleted row(s)
+                .single();          // expect exactly one
+
+            if (error) {
+                console.error('❌ Failed to delete item:', error);
+                return res.status(400).json({ error: error.message });
+            }
+            if (!data) {
+                return res.status(404).json({ error: 'item not found' });
+            }
+
+            res.json({ message: 'Deleted successfully', deleted: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to delete item' });
+        }
+    });
+  
+
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
     //                                                           Fetching an item for viewing

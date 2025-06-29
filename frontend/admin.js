@@ -4044,25 +4044,47 @@ function showDeleteItem() {
     `;
     content.appendChild(deleteBtn);
 
-    // 3) On click, build dummy payload and open second popup
-    deleteBtn.onclick = () => {
-        const input1 = itemIdInput.value.trim();
-        const input2 = itemIdInput2.value.trim();
-        if (input1 === input2 && input1 !== "" && itemIdInput.value.length >= 6) {
-            console.log(`Deleting Item : ${input1}`);
+    // 3) On click, delete
+    deleteBtn.onclick = async () => {
+        loadingStart(0.5);
+        const serial1 = itemIdInput.value.trim();
+        const serial2 = itemIdInput2.value.trim();
 
-            // deleting functionallity here
+        if (serial1 === serial2 && serial1 !== '' && serial1.length >= 6) {
+            // console.log(`Deleting Item Version : ${serial1}`);
 
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/products/base-items/serial/${serial1}`,
+                    { method: 'DELETE' }
+                );
+                const json = await resp.json();
 
-            // close current popup
-            document.body.removeChild(overlay);
-            Saved();
+                if (!resp.ok) {
+                    loadingStop();
+                    showMessage("Failed To Delete");
+                    // console.error('Delete failed:', json.error);
+                    // alert('Failed to delete version: ' + (json.error || resp.status));
+                    return;
+                }
+
+                // console.log('Deleted:', json.deleted);
+
+                // close current popup
+                loadingStop();
+                overlay.remove();
+                Saved();
+
+            } catch (err) {
+                loadingStop();
+                console.error('Delete error:', err);
+                showMessage("Error deleting version");
+            }
 
         } else {
+            loadingStop();
             errorMsgP2.style.display = 'block';
-
         }
-
     };
 
 }
@@ -4196,25 +4218,6 @@ function showDeleteVersion() {
     content.appendChild(deleteBtn);
 
     // 3) On click, build dummy payload and open second popup
-    deleteBtn.onclick = () => {
-        const input1 = itemIdInput.value.trim();
-        const input2 = itemIdInput2.value.trim();
-        if (input1 === input2 && input1 !== "" && input1.length >= 8) {
-            console.log(`Deleting Item Version : ${input1}`);
-
-            // deleting functionallity here
-
-
-            // close current popup
-            document.body.removeChild(overlay);
-            Saved();
-
-        } else {
-            errorMsgP2.style.display = 'block';
-
-        }
-
-    };
 
     deleteBtn.onclick = async () => {
         loadingStart(0.5);
