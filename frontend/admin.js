@@ -860,7 +860,7 @@ function showAddVersionPopup() {
         const v = Number(uniqueIdInput.value);
 
         // must be non-empty, numeric, and not in usedVersionId
-        return uniqueIdInput.value.trim() !== '' && !usedVersionId.includes(v);
+        return uniqueIdInput.value.trim() !== '' && !usedVersionId.includes(v) && v !== 0;
     }
 
     // incase the base item id has not been fetched
@@ -2804,7 +2804,7 @@ function showAddItemPopup() {
             SUBSelect.innerHTML = SUBoptions;  // repopulate full list
         }
     });
-    
+
     // 2) when user picks from the selector
     SUBSelect.addEventListener('change', () => {
         const selId = SUBSelect.value;       // this is the <option value="id">
@@ -2813,7 +2813,7 @@ function showAddItemPopup() {
             SUBIdInput.readOnly = true;
             SUBIdInput.style.opacity = '0.5';
             SUBIdInput.style.backgroundColor = '';
-            
+
             // set input to the corresponding ID
             SUBIdInput.value = selId;
             item_sub = SUBMap[selId];
@@ -3186,51 +3186,47 @@ function showAddItemPopup() {
         const Third_id = Number(THIRDIdInput.value);
         if (!Cat_id || !Sub_id || !Third_id) return;
 
-        codeInput.disabled = false;
-        console.log(Cat_id, Sub_id, Third_id);
 
 
-        /** below is the functionality where we send category id and sub category id 
-         *      and third letter id, to the backend, which will then go to my table 
-         *      and search in the correct columns and return all the values in code
-         *      column as an array. [for the values, cat,sub and third are same i.e
-         *      the same type but different item. ]
-         * **/
+        try {
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/base-items/codes/` +
+                `${Cat_id}/${Sub_id}/${Third_id}`
+            );
+            const json = await resp.json();
+            if (resp.ok) {
+                usedCodeId = json.codes;         // e.g. [1,2,3]
 
 
-        // dummy example
-        // try {
-        //     const resp = await fetch(
-        //         `${CONFIG.API_BASE_URL}/products/....`
-        //     );
-        //     const json = await resp.json();
-        //     if (resp.ok) {
-        //         usedCodeId = json.versions;         // e.g. [1,2,3]
-        //         // console.log('Used code IDs:', usedCodeId);
+                // assigning the next value
+                let nextId = 1;
+                while (usedCodeId.includes(nextId)) {
+                    nextId++;
+                }
+                codeInput.value = nextId;
 
+                // reset unique id input and indicator
+                codeInput.dispatchEvent(new Event('input'));
 
-        //         // assigning the next value
-        //         let nextId = 1;
-        //         while (usedCodeId.includes(nextId)) {
-        //             nextId++;
-        //         }
-        //         codeInput.value = nextId;
+                // visuals when loading values are fetched
+                baseSerialLabel.textContent = 'Base Serial :';
+                codeInput.disabled = false;
 
-        //         // reset unique id input and indicator
-        //         codeInput.dispatchEvent(new Event('input'));
-
-        //         // visuals when loading values are fetched
-        //         baseSerialLabel.textContent = 'Base Serial :';
-        //         codeInput.disabled = false;
-        //     } else {
-        //         console.error('Failed to load codes:', json.error);
-        //         baseSerialInput.value = `Failed ...`;
-        //     }
-        // } catch (err) {
-        //     console.error('Error loading codes:', err);
-        // }
+            } else {
+                console.error('Failed to load codes:', json.error);
+                baseSerialInput.value = `Failed …`;
+                return;
+            }
+        } catch (err) {
+            console.error('Error loading codes:', err);
+            baseSerialInput.value = `Error…`;
+            statusIndicator.style.backgroundColor = 'gray';
+        }
 
     }
+
+
+
 
 
 
@@ -3328,7 +3324,7 @@ function showAddItemPopup() {
     codeInput.addEventListener('input', () => {
         const inputValue = Number(codeInput.value);
 
-        if (codeInput.value === "") {
+        if (codeInput.value === "" || codeInput.value === "0") {
             statusIndicator.style.backgroundColor = 'gray';
         } else if (usedCodeId.includes(inputValue)) {
             statusIndicator.style.backgroundColor = 'rgb(255, 0, 0)'; // red for used ID
@@ -3337,12 +3333,14 @@ function showAddItemPopup() {
         }
     });
 
-    // function isCodeValid() {
-    //     const v = Number(uniqueIdInput.value);
+    function isCodeValid() {
+        console.log('called');
 
-    //     // must be non-empty, numeric, and not in usedVersionId
-    //     return uniqueIdInput.value.trim() !== '' && !usedVersionId.includes(v);
-    // }
+        const v = Number(codeInput.value);
+
+        // must be non-empty, numeric, and not in usedCodeId
+        return codeInput.value.trim() !== '' && !usedCodeId.includes(v) && v !== 0;
+    }
 
 
 
@@ -3440,26 +3438,26 @@ function showAddItemPopup() {
 
     // Click logic
     confirmBtn.addEventListener('click', async () => {
-        // if (!isCATSelectionValid()) {
-        //     showMessage("Invalid Category Id");
-        //     return;
-        // }
-        // if (!isSUBSelectionValid()) {
-        //     showMessage("Invalid Sub-Cat Id");
-        //     return;
-        // }
-        // if (!isTHIRDSelectionValid()) {
-        //     showMessage("Invalid Third Id");
-        //     return;
-        // }
-        // // if (!isVersionValid()) {
-        // //     showMessage("Invalid Version Id");
-        // //     return;
-        // // }
-        // if (!descriptionTextarea.value) {
-        //     showMessage("Empty Description");
-        //     return;
-        // }
+        if (!isCATSelectionValid()) {
+            showMessage("Invalid Category Id");
+            return;
+        }
+        if (!isSUBSelectionValid()) {
+            showMessage("Invalid Sub-Cat Id");
+            return;
+        }
+        if (!isTHIRDSelectionValid()) {
+            showMessage("Invalid Third Id");
+            return;
+        }
+        if (!isCodeValid()) {
+            showMessage("Invalid Unique Code");
+            return;
+        }
+        if (!descriptionTextarea.value) {
+            showMessage("Empty Description");
+            return;
+        }
 
 
 
@@ -3468,41 +3466,36 @@ function showAddItemPopup() {
 
 
         const payload = {
-            category_id: CATIdInput.value,
-            sub_category_id: SUBIdInput.value,
-            // third_letter_id: titleInput.value || 3,
-            // code_number: priceInput.value || 3,
+            category_id: Number(CATIdInput.value),
+            sub_category_id: Number(SUBIdInput.value),
+            third_letter_id: Number(THIRDIdInput.value),
+            code_number: codeInput.value.padStart(3, '0'),
             description: descriptionTextarea.value
         };
         console.log('Payload ready:', payload);
 
 
-        // the posting mechanism to the table : the content will be the payload
+        try {
+            const resp = await fetch(
+                `${CONFIG.API_BASE_URL}/products/base-items`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }
+            );
+            const json = await resp.json();
+            if (!resp.ok) {
+                console.error('❌ Failed to add item:', json.error);
+                alert('Failed to add item: ' + (json.error || resp.status));
+                return;
+            }
+            console.log('✅ Item added:', json.item);
 
-        // try {
-        //     const response = await fetch(`${CONFIG.API_BASE_URL}/products/versions`, {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json"
-        //         },
-        //         body: JSON.stringify(payload)
-        //     });
-
-
-        //     const result = await response.json();
-
-        //     if (!response.ok) {
-        //         console.error("❌ Failed to add version:", result.error || result);
-        //         alert("Failed to add item version: " + (result.error || "Unknown error"));
-        //         return;
-        //     }
-
-        //     console.log("✅ Version added successfully:", result.data);
-        // } catch (err) {
-        //     console.error("❌ Error posting version:", err);
-        //     alert("Error sending request. Please try again.");
-        // }
-
+        } catch (err) {
+            console.error('❌ Error adding base item:', err);
+            alert('Error adding item. Please try again.');
+        }
 
 
         // store history
@@ -3512,10 +3505,9 @@ function showAddItemPopup() {
         localStorage.setItem('lastItemDesc', descriptionTextarea.value);
 
 
-        location.reload();
-        // loadingStop();
-        // overlay.remove();
-        // Saved();
+        loadingStop();
+        overlay.remove();
+        Saved();
     });
 
     // Append button
@@ -3524,7 +3516,6 @@ function showAddItemPopup() {
 
 
 }
-showAddItemPopup();
 
 // -----4----- Edit Item popup
 function showEditItemPopup() {

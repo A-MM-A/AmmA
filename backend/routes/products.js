@@ -316,6 +316,30 @@ module.exports = (supabaseAdmin) => {
     );
 
 
+    // POST /api/products/base-items
+    router.post('/base-items', async (req, res) => {
+        try {
+            const payload = req.body; // { category_id, sub_category_id, third_letter_id, code_number, description }
+            // optional: validate each field here …
+
+            const { data, error } = await supabaseAdmin
+                .from('base_items')
+                .insert([payload])
+                .select()
+                .single();
+
+            if (error) {
+                console.error('❌ Failed to insert base_item:', error);
+                return res.status(400).json({ error: error.message });
+            }
+            res.status(201).json({ message: 'Base item added', item: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Failed to add base item' });
+        }
+    });
+
+
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
     //                                                           Fetching an item for viewing
