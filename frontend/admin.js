@@ -2449,6 +2449,7 @@ function showAddItemPopup() {
     let CATserialToId = {};    // serial → id
     let CAToptions;
     let fetchedCAT = false;    // to block future inputs incase of error    
+    let item_cat = "";
 
     async function loadCAT() {
         // visuals when fetching items
@@ -2472,7 +2473,7 @@ function showAddItemPopup() {
                     CATMap[String(id)] = label;          // store combined label
                     CATserialToId[label] = String(id);          // reverse lookup if needed
                 });
-                console.log(CATMap);
+                // console.log(CATMap);
 
 
                 // build <option> list
@@ -2504,8 +2505,6 @@ function showAddItemPopup() {
         }
     }
 
-    // call on init
-    loadCAT();
 
     // two-way binding logic
 
@@ -2513,6 +2512,7 @@ function showAddItemPopup() {
     CATIdInput.addEventListener('input', () => {
         SUBinit();
         Thirdinit();
+        loadSUB();
         const id = CATIdInput.value.trim();
         if (id) {
             // disable select
@@ -2523,6 +2523,7 @@ function showAddItemPopup() {
             // show matching serial (or fallback)
             const serial = CATMap[id] || 'No Category Found';
             CATSelect.innerHTML = `<option value="">${serial}</option>`;
+            item_cat = serial;
         } else {
             // reset select
             CATSelect.disabled = false;
@@ -2542,6 +2543,7 @@ function showAddItemPopup() {
 
             // set input to the corresponding ID
             CATIdInput.value = selId;
+            item_cat = CATMap[selId];
         } else {
             // reset input
             CATIdInput.readOnly = false;
@@ -2550,6 +2552,7 @@ function showAddItemPopup() {
         }
         SUBinit();
         Thirdinit();
+        loadSUB();
     });
 
 
@@ -2557,8 +2560,9 @@ function showAddItemPopup() {
     // Prefill CATIdInput if stored
     const savedCATId = localStorage.getItem('lastCATId');
     async function initCATField() {
+        console.log('called cat init');
         // 1a) First, load the items from the server
-        await loadCAT();
+        // await loadCAT();
 
         // 1b) Now that itemMap & the selector are ready, prefill from localStorage
         if (savedCATId && fetchedCAT) {
@@ -2572,7 +2576,7 @@ function showAddItemPopup() {
         }
     }
 
-    if (localStorage.lastCATId) initCATField();
+
 
 
 
@@ -2644,6 +2648,7 @@ function showAddItemPopup() {
     const SUBIdInput = document.createElement('input');
     SUBIdInput.type = 'number';
     SUBIdInput.placeholder = 'E.g  1';
+    SUBIdInput.min = 0;
     SUBIdInput.maxLength = 3;
     SUBIdInput.classList.add("rounded-input");
 
@@ -2697,6 +2702,7 @@ function showAddItemPopup() {
     let SUBserialToId = {};    // serial → id
     let SUBoptions;
     let fetchedSUB = false;    // to block future inputs incase of error    
+    let item_sub = "";
 
     async function loadSUB() {
         // visuals when fetching items
@@ -2712,15 +2718,36 @@ function showAddItemPopup() {
             if (resp.ok) {
                 fetchedSUB = true;
 
-                // fill maps
+                // // fill maps
+                // SUBMap = {};
+                // SUBserialToId = {};
+                // json.items.forEach(({ id, category_id, code, name }) => {
+                //     const label = `${code} : ${name}`;
+                //     SUBMap[String(id)] = label;          // store combined label
+                //     SUBserialToId[label] = String(id);          // reverse lookup if needed
+
+                //     CAT = Number(CATIdInput.value);
+                //     console.log('[', 'category chosen ',CAT, ']', id, '[', 'category available ',category_id, ']', code, name);
+
+                // });
+                // console.log(SUBMap);
+                // console.log(SUBserialToId);
+
+                // fill maps — only for the selected category
+
+                const chosenCat = Number(CATIdInput.value);
                 SUBMap = {};
                 SUBserialToId = {};
-                json.items.forEach(({ id, category_id, code, name }) => {
-                    const label = `${code} : ${name}`;
-                    SUBMap[String(id)] = label;          // store combined label
-                    SUBserialToId[label] = String(id);          // reverse lookup if needed
-                });
-                console.log(SUBMap);
+
+                json.items
+                    .filter(item => item.category_id === chosenCat)
+                    .forEach(({ id, code, name }) => {
+                        const label = `${code} : ${name}`;
+                        SUBMap[String(id)] = label;
+                        SUBserialToId[label] = String(id);
+                    });
+
+                console.log('Filtered SUBMap:', SUBMap);
 
 
                 // build <option> list
@@ -2751,14 +2778,14 @@ function showAddItemPopup() {
         }
     }
 
-    // call on init
-    loadSUB();
+
 
     // two-way binding logic
 
     // 1) when user types an ID
     SUBIdInput.addEventListener('input', () => {
         Thirdinit();
+        loadTHIRD();
         const id = SUBIdInput.value.trim();
         if (id) {
             // disable select
@@ -2769,6 +2796,7 @@ function showAddItemPopup() {
             // show matching serial (or fallback)
             const serial = SUBMap[id] || 'No Sub Category Found';
             SUBSelect.innerHTML = `<option value="">${serial}</option>`;
+            item_sub = serial;
         } else {
             // reset select
             SUBSelect.disabled = false;
@@ -2776,7 +2804,7 @@ function showAddItemPopup() {
             SUBSelect.innerHTML = SUBoptions;  // repopulate full list
         }
     });
-
+    
     // 2) when user picks from the selector
     SUBSelect.addEventListener('change', () => {
         const selId = SUBSelect.value;       // this is the <option value="id">
@@ -2785,9 +2813,10 @@ function showAddItemPopup() {
             SUBIdInput.readOnly = true;
             SUBIdInput.style.opacity = '0.5';
             SUBIdInput.style.backgroundColor = '';
-
+            
             // set input to the corresponding ID
             SUBIdInput.value = selId;
+            item_sub = SUBMap[selId];
         } else {
             // reset input
             SUBIdInput.readOnly = false;
@@ -2795,6 +2824,7 @@ function showAddItemPopup() {
             SUBIdInput.value = '';
         }
         Thirdinit();
+        loadTHIRD();
     });
 
 
@@ -2802,6 +2832,7 @@ function showAddItemPopup() {
     // Prefill SUBIdInput if stored
     const savedSUBId = localStorage.getItem('lastSUBId');
     async function initSUBField() {
+        console.log('called sub init');
         // 1a) First, load the items from the server
         await initCATField();
         await loadSUB();
@@ -2818,7 +2849,7 @@ function showAddItemPopup() {
         }
     }
 
-    if (localStorage.lastSUBId) initSUBField();
+
 
 
 
@@ -2951,6 +2982,7 @@ function showAddItemPopup() {
     let THIRDserialToId = {};    // serial → id
     let THIRDoptions;
     let fetchedTHIRD = false;    // to block future inputs incase of error    
+    let item_third = "";
 
     async function loadTHIRD() {
         // visuals when fetching items
@@ -2966,16 +2998,39 @@ function showAddItemPopup() {
             if (resp.ok) {
                 fetchedTHIRD = true;
 
-                // fill maps
+                // // fill maps
+                // const chosenCat = Number(CATIdInput.value);
+                // const chosenSub = Number(SUBIdInput.value);
+
+                // THIRDMap = {};
+                // THIRDserialToId = {};
+                // json.items.forEach(({ id, category_id, sub_category_id, code, name }) => {
+                //     const label = `${code} : ${name}`;
+                //     THIRDMap[String(id)] = label;          // store combined label
+                //     THIRDserialToId[label] = String(id);          // reverse lookup if needed
+                // });
+                // console.log(THIRDMap);
+
+
+                // fill maps — only third‑letters matching both selected category & sub‑category
+                const chosenCat = Number(CATIdInput.value);
+                const chosenSub = Number(SUBIdInput.value);
+
                 THIRDMap = {};
                 THIRDserialToId = {};
-                json.items.forEach(({ id, category_id, sub_category_id, code, name }) => {
-                    const label = `${code} : ${name}`;
-                    THIRDMap[String(id)] = label;          // store combined label
-                    THIRDserialToId[label] = String(id);          // reverse lookup if needed
-                });
-                console.log(THIRDMap);
 
+                json.items
+                    .filter(item =>
+                        item.category_id === chosenCat &&
+                        item.sub_category_id === chosenSub
+                    )
+                    .forEach(({ id, code, name }) => {
+                        const label = `${code} : ${name}`;
+                        THIRDMap[String(id)] = label;
+                        THIRDserialToId[label] = String(id);
+                    });
+
+                console.log('Filtered THIRDMap:', THIRDMap);
 
                 // build <option> list
                 THIRDoptions = `
@@ -2990,6 +3045,7 @@ function showAddItemPopup() {
                 // visuals when items fetched
                 THIRDSelect.disabled = false;
                 THIRDIdInput.disabled = false;
+                loadUsedCode();
 
 
             } else {
@@ -3004,13 +3060,13 @@ function showAddItemPopup() {
         }
     }
 
-    // call on init
-    loadTHIRD();
+
 
     // two-way binding logic
 
     // 1) when user types an ID
     THIRDIdInput.addEventListener('input', () => {
+        loadUsedCode();
         const id = THIRDIdInput.value.trim();
         if (id) {
             // disable select
@@ -3021,6 +3077,7 @@ function showAddItemPopup() {
             // show matching serial (or fallback)
             const serial = THIRDMap[id] || 'No THIRD Category Found';
             THIRDSelect.innerHTML = `<option value="">${serial}</option>`;
+            item_third = serial;
         } else {
             // reset select
             THIRDSelect.disabled = false;
@@ -3040,12 +3097,14 @@ function showAddItemPopup() {
 
             // set input to the corresponding ID
             THIRDIdInput.value = selId;
+            item_third = THIRDMap[selId];
         } else {
             // reset input
             THIRDIdInput.readOnly = false;
             THIRDIdInput.style.opacity = '1';
             THIRDIdInput.value = '';
         }
+        loadUsedCode();
     });
 
 
@@ -3053,6 +3112,8 @@ function showAddItemPopup() {
     // Prefill THIRDIdInput if stored
     const savedTHIRDId = localStorage.getItem('lastTHIRDId');
     async function initTHIRDField() {
+        console.log('called third init');
+
         // 1a) First, load the items from the server
         await initSUBField();
         await loadTHIRD();
@@ -3069,7 +3130,7 @@ function showAddItemPopup() {
         }
     }
 
-    if (localStorage.lastTHIRDId) initTHIRDField();
+
 
 
 
@@ -3104,6 +3165,73 @@ function showAddItemPopup() {
     content.appendChild(row3);
 
 
+    let usedCodeId = [];   // array containing all codes
+
+    async function loadUsedCode() {
+
+        // visuals when fetching loading values
+        baseSerialInput.value = `Loading...`;
+        statusIndicator.style.backgroundColor = 'blue';
+        codeInput.disabled = true;
+
+        if (!isTHIRDSelectionValid()) {
+            codeInput.style.backgroundColor = '';
+            codeInput.value = '';
+            statusIndicator.style.backgroundColor = 'gray';
+            return;
+        }
+
+        const Cat_id = Number(CATIdInput.value);
+        const Sub_id = Number(SUBIdInput.value);
+        const Third_id = Number(THIRDIdInput.value);
+        if (!Cat_id || !Sub_id || !Third_id) return;
+
+        codeInput.disabled = false;
+        console.log(Cat_id, Sub_id, Third_id);
+
+
+        /** below is the functionality where we send category id and sub category id 
+         *      and third letter id, to the backend, which will then go to my table 
+         *      and search in the correct columns and return all the values in code
+         *      column as an array. [for the values, cat,sub and third are same i.e
+         *      the same type but different item. ]
+         * **/
+
+
+        // dummy example
+        // try {
+        //     const resp = await fetch(
+        //         `${CONFIG.API_BASE_URL}/products/....`
+        //     );
+        //     const json = await resp.json();
+        //     if (resp.ok) {
+        //         usedCodeId = json.versions;         // e.g. [1,2,3]
+        //         // console.log('Used code IDs:', usedCodeId);
+
+
+        //         // assigning the next value
+        //         let nextId = 1;
+        //         while (usedCodeId.includes(nextId)) {
+        //             nextId++;
+        //         }
+        //         codeInput.value = nextId;
+
+        //         // reset unique id input and indicator
+        //         codeInput.dispatchEvent(new Event('input'));
+
+        //         // visuals when loading values are fetched
+        //         baseSerialLabel.textContent = 'Base Serial :';
+        //         codeInput.disabled = false;
+        //     } else {
+        //         console.error('Failed to load codes:', json.error);
+        //         baseSerialInput.value = `Failed ...`;
+        //     }
+        // } catch (err) {
+        //     console.error('Error loading codes:', err);
+        // }
+
+    }
+
 
 
     // ROW 4 code and base serial 
@@ -3113,72 +3241,119 @@ function showAddItemPopup() {
     row4.style.width = '100%';
     row4.style.marginBottom = '12px';
 
-    // Material container
-    const materialContainer = document.createElement('div');
-    materialContainer.style.flex = '1';
-    const materialLabel = document.createElement('label');
-    materialLabel.textContent = 'Material';
-    materialLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
-    const materialInput = document.createElement('input');
-    materialInput.placeholder = 'E.g   Cotton';
-    materialInput.classList.add("rounded-input");
+    // code container
+    const codeContainer = document.createElement('div');
+    codeContainer.style.flex = '3';
+    const codeLabel = document.createElement('label');
+    codeLabel.textContent = 'Unique Code';
+    codeLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+    const codeInput = document.createElement('input');
+    codeInput.type = 'number';
+    codeInput.placeholder = 'E.g 001';
+    codeInput.classList.add("rounded-input");
 
-    materialInput.addEventListener('input', () => {
-        if (materialInput.value.trim() !== '') {
-            materialInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+    codeInput.maxLength = 3;
+
+    codeInput.addEventListener('input', () => {
+        if (codeInput.value.length > 3) {
+            codeInput.value = codeInput.value.slice(0, 3);
+        }
+    });
+
+    codeInput.addEventListener('input', () => {
+        if (codeInput.value.trim() !== '') {
+            codeInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
         } else {
-            materialInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+            codeInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
         }
     });
 
     // Prefill if stored
-    const savedMaterial = localStorage.getItem('lastMaterial');
-    if (savedMaterial) {
-        materialInput.value = savedMaterial;
-        materialInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
-
-        requestAnimationFrame(() => {
-            materialInput.dispatchEvent(new Event('input'));
-        });
+    const savedcode = localStorage.getItem('lastitemcode');
+    if (savedcode) {
+        codeInput.placeholder = `E.g. ${savedcode}`;
     }
 
-    materialContainer.appendChild(materialLabel);
-    materialContainer.appendChild(materialInput);
+    codeContainer.appendChild(codeLabel);
+    codeContainer.appendChild(codeInput);
 
-    // Weight container
-    const weightContainer = document.createElement('div');
-    weightContainer.style.flex = '1';
-    const weightLabel = document.createElement('label');
-    weightLabel.textContent = 'Weight';
-    weightLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
-    const weightInput = document.createElement('input');
-    weightInput.placeholder = 'E.g   1.2kg';
-    weightInput.classList.add("rounded-input");
+    // serial container
+    const baseSerialContainer = document.createElement('div');
+    baseSerialContainer.style.flex = '3';
+    const baseSerialLabel = document.createElement('label');
+    baseSerialLabel.textContent = 'Base Serial :';
+    baseSerialLabel.style = 'display: block; font-size: 13px; margin-bottom: 4px; color: rgb(161, 156, 156);';
+    const baseSerialInput = document.createElement('input');
+    baseSerialInput.classList.add("rounded-input");
 
-    weightInput.addEventListener('input', () => {
-        if (weightInput.value.trim() !== '') {
-            weightInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
+    baseSerialInput.readOnly = true;
+    baseSerialInput.style.opacity = 0.5;
+    baseSerialInput.placeholder = 'Loading ...';
+
+
+    // visual for base serial
+    codeInput.addEventListener('input', () => {
+        if (codeInput.value.trim() !== '') {
+            const cat = item_cat.substring(0, 1);
+            const sub = item_sub.substring(0, 1);
+            const third = item_third.substring(0, 1);
+            const code = codeInput.value.padStart(3, '0');
+            const serial = cat + sub + third + code;
+            baseSerialInput.value = serial;
         } else {
-            weightInput.style.backgroundColor = 'rgba(210, 185, 161, 0.46)';
+            baseSerialInput.value = '';
         }
     });
-    // Prefill if stored
-    const savedWeight = localStorage.getItem('lastWeight');
-    if (savedWeight) {
-        weightInput.value = savedWeight;
-        weightInput.style.backgroundColor = 'rgba(193, 239, 183, 0.43)';
 
-        requestAnimationFrame(() => {
-            weightInput.dispatchEvent(new Event('input'));
-        });
-    }
+    baseSerialContainer.appendChild(baseSerialLabel);
+    baseSerialContainer.appendChild(baseSerialInput);
 
-    weightContainer.appendChild(weightLabel);
-    weightContainer.appendChild(weightInput);
+    // Indicator container (30%)
+    const statusContainer = document.createElement('div');
+    statusContainer.style.flex = '1';
+    statusContainer.style.display = 'flex';
+    statusContainer.style.alignItems = 'flex-end'; // align with input
+    statusContainer.style.justifyContent = 'center';
+
+    const statusIndicator = document.createElement('div');
+    statusIndicator.style = `
+      width: 20px;
+      height: 20px;
+      margin: 9px;
+      border-radius: 50%;
+      background-color: gray; /* will be updated based on availability */
+      border: 2px solid #fff;
+      `;
+
+    codeInput.addEventListener('input', () => {
+        const inputValue = Number(codeInput.value);
+
+        if (codeInput.value === "") {
+            statusIndicator.style.backgroundColor = 'gray';
+        } else if (usedCodeId.includes(inputValue)) {
+            statusIndicator.style.backgroundColor = 'rgb(255, 0, 0)'; // red for used ID
+        } else {
+            statusIndicator.style.backgroundColor = 'rgb(0, 255, 0)'; // green for available ID
+        }
+    });
+
+    // function isCodeValid() {
+    //     const v = Number(uniqueIdInput.value);
+
+    //     // must be non-empty, numeric, and not in usedVersionId
+    //     return uniqueIdInput.value.trim() !== '' && !usedVersionId.includes(v);
+    // }
+
+
+
+
+
+    statusContainer.appendChild(statusIndicator);
 
     // Append both to row
-    row4.appendChild(materialContainer);
-    row4.appendChild(weightContainer);
+    row4.appendChild(codeContainer);
+    row4.appendChild(baseSerialContainer);
+    row4.appendChild(statusContainer);
     content.appendChild(row4);
 
 
@@ -3235,6 +3410,23 @@ function showAddItemPopup() {
     content.appendChild(row5);
 
 
+    // call on init for row 1,2,3
+    Initload();
+
+
+    async function Initload() {
+        // if there is no history.
+        await loadTHIRD();
+        await loadSUB();
+        await loadCAT();
+
+        // if there is history.
+        if (localStorage.lastCATId) initCATField();
+        if (localStorage.lastSUBId) initSUBField();
+        if (localStorage.lastTHIRDId) initTHIRDField();
+    }
+
+
 
 
     // ROW 11: Confirm button
@@ -3248,26 +3440,26 @@ function showAddItemPopup() {
 
     // Click logic
     confirmBtn.addEventListener('click', async () => {
-        if (!isCATSelectionValid()) {
-            showMessage("Invalid Category Id");
-            return;
-        }
-        if (!isSUBSelectionValid()) {
-            showMessage("Invalid Sub-Cat Id");
-            return;
-        }
-        if (!isTHIRDSelectionValid()) {
-            showMessage("Invalid Third Id");
-            return;
-        }
-        // if (!isVersionValid()) {
-        //     showMessage("Invalid Version Id");
+        // if (!isCATSelectionValid()) {
+        //     showMessage("Invalid Category Id");
         //     return;
         // }
-        if (!descriptionTextarea.value) {
-            showMessage("Empty Description");
-            return;
-        }
+        // if (!isSUBSelectionValid()) {
+        //     showMessage("Invalid Sub-Cat Id");
+        //     return;
+        // }
+        // if (!isTHIRDSelectionValid()) {
+        //     showMessage("Invalid Third Id");
+        //     return;
+        // }
+        // // if (!isVersionValid()) {
+        // //     showMessage("Invalid Version Id");
+        // //     return;
+        // // }
+        // if (!descriptionTextarea.value) {
+        //     showMessage("Empty Description");
+        //     return;
+        // }
 
 
 

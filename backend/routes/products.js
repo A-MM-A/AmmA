@@ -245,12 +245,12 @@ module.exports = (supabaseAdmin) => {
                 .from('sub_categories')
                 .select('id, category_id, code, name')
                 .order('id', { ascending: true });
-                
-                if (error) {
+
+            if (error) {
                 console.error('❌ Error fetching sub_categories:', error);
                 return res.status(400).json({ error: error.message });
             }
-            
+
             // send back an array of fetched data
             res.json({ items: data });
         } catch (err) {
@@ -258,18 +258,18 @@ module.exports = (supabaseAdmin) => {
             res.status(500).json({ error: 'Failed to load sub_categories.' });
         }
     });
-    
-    
+
+
     // GET /api/products/third_letters
     // → returns all third_letters as [{ id, category_id, sub_category_id, code, name }, …]
     router.get('/third_letters', async (req, res) => {
         try {
             const { data, error } = await supabaseAdmin
-            .from('third_letters')
+                .from('third_letters')
                 .select('id, category_id, sub_category_id, code, name')
                 .order('id', { ascending: true });
 
-                if (error) {
+            if (error) {
                 console.error('❌ Error fetching third_letters:', error);
                 return res.status(400).json({ error: error.message });
             }
@@ -281,6 +281,40 @@ module.exports = (supabaseAdmin) => {
             res.status(500).json({ error: 'Failed to load third_letters.' });
         }
     });
+
+
+    // GET /api/products/base-items/codes/:categoryId/:subCategoryId/:thirdLetterId
+    router.get(
+        '/base-items/codes/:categoryId/:subCategoryId/:thirdLetterId',
+        async (req, res) => {
+            try {
+                const categoryId = Number(req.params.categoryId);
+                const subCategoryId = Number(req.params.subCategoryId);
+                const thirdLetterId = Number(req.params.thirdLetterId);
+
+                const { data, error } = await supabaseAdmin
+                    .from('base_items')
+                    .select('code_number')
+                    .eq('category_id', categoryId)
+                    .eq('sub_category_id', subCategoryId)
+                    .eq('third_letter_id', thirdLetterId);
+
+                if (error) {
+                    console.error('❌ Error fetching codes:', error);
+                    return res.status(400).json({ error: error.message });
+                }
+
+                // extract just the code_number values
+                const codes = data.map(row => Number(row.code_number));
+
+                res.json({ codes });
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Failed to load codes.' });
+            }
+        }
+    );
+
 
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------- 
